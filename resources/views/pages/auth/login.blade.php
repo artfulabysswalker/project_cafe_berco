@@ -1,59 +1,77 @@
-<x-layouts::auth>
-    <div class="flex flex-col gap-6">
-        <x-auth-header :title="__('Log in to your account')" :description="__('Enter your email and password below to log in')" />
-
-        <!-- Session Status -->
-        <x-auth-session-status class="text-center" :status="session('status')" />
-
-        <form method="POST" action="{{ route('login.store') }}" class="flex flex-col gap-6">
-            @csrf
-
-            <!-- Email Address -->
-            <flux:input
-                name="email"
-                :label="__('Email address')"
-                :value="old('email')"
-                type="email"
-                required
-                autofocus
-                autocomplete="email"
-                placeholder="email@example.com"
-            />
-
-            <!-- Password -->
-            <div class="relative">
-                <flux:input
-                    name="password"
-                    :label="__('Password')"
-                    type="password"
-                    required
-                    autocomplete="current-password"
-                    :placeholder="__('Password')"
-                    viewable
-                />
-
-                @if (Route::has('password.request'))
-                    <flux:link class="absolute top-0 text-sm end-0" :href="route('password.request')" wire:navigate>
-                        {{ __('Forgot your password?') }}
-                    </flux:link>
-                @endif
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Berco Cafe</title>
+    <link rel="stylesheet" href="{{ asset('style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body class="login-page">
+    <div class="login-container">
+        <div class="login-header">
+            <div class="login-logo-circle">
+                <i class="fas fa-mug-hot"></i>
             </div>
+            <h1>BERCO CAFE</h1>
+            <p>Sistem Pemesanan Online</p>
+        </div>
 
-            <!-- Remember Me -->
-            <flux:checkbox name="remember" :label="__('Remember me')" :checked="old('remember')" />
-
-            <div class="flex items-center justify-end">
-                <flux:button variant="primary" type="submit" class="w-full" data-test="login-button">
-                    {{ __('Log in') }}
-                </flux:button>
-            </div>
-        </form>
-
-        @if (Route::has('register'))
-            <div class="space-x-1 text-sm text-center rtl:space-x-reverse text-zinc-600 dark:text-zinc-400">
-                <span>{{ __('Don\'t have an account?') }}</span>
-                <flux:link :href="route('register')" wire:navigate>{{ __('Sign up') }}</flux:link>
+        @if ($errors->any())
+            <div class="alert-warning" style="background:#fee2e2; border-color:#fecaca; color:#991b1b;">
+                <ul style="margin:0; padding-left:18px;">
+                    @foreach ($errors->all() as $error)
+                        <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
             </div>
         @endif
+
+        @if (session('status'))
+            <div class="alert-warning" style="background:#d1fae5; border-color:#a7f3d0; color:#065f46;">
+                {{ session('status') }}
+            </div>
+        @endif
+
+        <div class="login-card">
+            <h2>Selamat Datang</h2>
+            <p class="subtitle">Login atau daftar untuk mulai memesan</p>
+
+            <div class="login-toggle">
+                <button class="active">Login</button>
+                <button type="button" onclick="window.location.href='{{ route('register') }}'">Daftar</button>
+            </div>
+
+            <form method="POST" action="{{ route('login.store') }}">
+                @csrf
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" name="email" placeholder="email@example.com" value="{{ old('email') }}" required autofocus>
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" name="password" placeholder="******" required>
+                </div>
+                <div class="form-group" style="display:flex; align-items:center; justify-content:space-between; gap:10px;">
+                    <label style="font-size: 14px; font-weight: 600;">
+                        <input type="checkbox" name="remember" {{ old('remember') ? 'checked' : '' }}> Ingat Saya
+                    </label>
+                    @if (Route::has('password.request'))
+                        <a href="{{ route('password.request') }}" style="color:#5d2e1a; font-weight:600;">Lupa password?</a>
+                    @endif
+                </div>
+                <button type="submit" class="btn-login-submit">Login</button>
+            </form>
+
+            <div class="divider"><span>Atau</span></div>
+
+            <button class="btn-guest" type="button" onclick="window.location.href='{{ route('menu') }}'">
+                <i class="far fa-user-circle"></i> Lanjutkan sebagai Guest
+            </button>
+            <p class="guest-note">Mode guest memungkinkan Anda memesan tanpa akun</p>
+        </div>
+
+        <a href="{{ route('home') }}" class="back-link">Kembali ke Beranda</a>
     </div>
-</x-layouts::auth>
+</body>
+</html>
