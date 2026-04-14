@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transaksi Berhasil - Berco Cafe</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body class="menu-page">
+
+    <header class="header">
+        <div class="container header-container">
+            <div class="logo-area">
+                <div class="logo-icon">☕</div>
+                <h2 class="logo-text">BERCO</h2>
+            </div>
+            <nav class="nav">
+                <ul>
+                    <li><a href="index.html">Beranda</a></li>
+                    <li><a href="menu.html">Pesan Menu</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container success-container">
+        <div class="success-toast">
+            <i class="fas fa-check-circle"></i>
+            <span>Pesanan berhasil dibuat!</span>
+        </div>
+
+        <div class="success-banner">
+            <div class="banner-content">
+                <i class="fas fa-check-circle"></i>
+                <div>
+                    <h2>Pembayaran Berhasil!</h2>
+                    <p>Terima kasih telah memesan di Berco Cafe</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="receipt-card">
+            <div class="receipt-header">
+                <h1>BERCO CAFE</h1>
+                <p>Purwoharjo, Banyuwangi</p>
+                <p>Buka setiap hari: 16.00 - 22.00 WIB</p>
+                
+                <div class="receipt-meta">
+                    <p>No. Pesanan: <strong>ORD-1774976221374</strong></p>
+                    <p>31 Maret 2026, 23:57 WIB</p>
+                </div>
+            </div>
+
+            <div class="receipt-body">
+                <div class="receipt-row-main">
+                    <div>
+                        <span>Tipe Layanan:</span>
+                        <strong>Dine In</strong>
+                    </div>
+                    <div>
+                        <span>Metode Pembayaran:</span>
+                        <strong>Tunai</strong>
+                    </div>
+                </div>
+
+                <div class="receipt-divider"></div>
+
+                <h3>Pesanan:</h3>
+                <div id="receipt-items-list">
+                    <!-- Daftar produk akan diisi otomatis oleh JavaScript -->
+                </div>
+
+                <div class="receipt-divider"></div>
+
+                <div class="receipt-total-row">
+                    <span>Subtotal:</span>
+                    <span>Rp 12.000</span>
+                </div>
+                <div class="receipt-total-row final">
+                    <span>Total:</span>
+                    <span>Rp 12.000</span>
+                </div>
+
+                <div class="wifi-box">
+                    <i class="fas fa-wifi"></i>
+                    <div>
+                        <p>Password WiFi Khusus Pelanggan:</p>
+                        <strong>BercoNikmat2026</strong>
+                    </div>
+                </div>
+            </div>
+
+            <div class="receipt-footer">
+                <p>Terima kasih atas kunjungan Anda!</p>
+                <p>Berco Cafe - Kopi lokal Tanah Blambangan</p>
+                <p>Struk ini adalah bukti transaksi yang sah</p>
+            </div>
+        </div>
+
+        <div class="success-actions">
+            <button class="btn-secondary" onclick="window.print()">
+                <i class="fas fa-download"></i> Cetak/Download
+            </button>
+            <a href="index.html" class="btn-primary">
+                <i class="fas fa-home"></i> Kembali ke Beranda
+            </a>
+        </div>
+    </main>
+
+    <script src="script.js"></script>
+</body>
+</html>

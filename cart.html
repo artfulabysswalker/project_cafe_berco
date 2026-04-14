@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Keranjang - Berco Cafe</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body class="menu-page"> <header class="header">
+        <div class="container header-container">
+            <div class="logo-area">
+                <div class="logo-icon">☕</div>
+                <div>
+                    <h2 class="logo-text">BERCO</h2>
+                    <div class="status-badge"><span>🕒</span> TUTUP</div>
+                </div>
+            </div>
+            <nav class="nav">
+                <ul>
+                    <li><a href="index.html">Beranda</a></li>
+                    <li><a href="menu.html">Pesan Menu</a></li>
+                    <li>
+                        <a href="cart.html" class="active">Keranjang 
+                            <span class="badge" id="cart-count">0</span>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+            <div class="user-action">
+                <a href="login.html" class="btn-login">Masuk</a>
+            </div>
+        </div>
+    </header>
+
+    <main class="container cart-main-section">
+        <div class="cart-items-container">
+            <!-- Akan diisi otomatis oleh JavaScript -->
+        </div>
+
+        <div class="cart-summary-card">
+            <div class="summary-row">
+                <span>Subtotal</span>
+                <span class="summary-val">Rp 12.000</span>
+            </div>
+            <hr class="summary-divider">
+            <div class="summary-row total-row">
+                <span>Total</span>
+                <span class="total-val">Rp 12.000</span>
+            </div>
+            
+            <div class="summary-btns">
+                <a href="menu.html" class="btn-add-more">Tambah Item</a>
+                <a href="checkout.html" class="btn-checkout">Lanjut ke Pembayaran</a>
+            </div>
+        </div>
+    </main>
+<script src="script.js"></script>
+</body>
+</html>

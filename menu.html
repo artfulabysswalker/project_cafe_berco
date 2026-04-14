@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Menu Berco Cafe</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body class="menu-page">
+
+    <header class="header">
+        <div class="container header-container">
+            <div class="logo-area">
+                <i class="fas fa-coffee cup-icon"></i>
+                <div class="logo-text">
+                    <h1 class="brand-name">BERCO</h1>
+                    <span class="status-badge"><i class="far fa-clock"></i> TUTUP</span>
+                </div>
+            </div>
+            <nav class="nav">
+                <ul>
+                    <li><a href="index.html"><i class="fas fa-home"></i> Beranda</a></li>
+                    <li><a href="menu.html" class="active"><i class="fas fa-mug-hot"></i> Pesan Menu</a></li>
+                    <li><a href="leaderboard.html"><i class="fas fa-trophy"></i> Leaderboard</a></li>
+                    <li><a href="redeem.html"><i class="fas fa-gift"></i> Tukar EXP</a></li>
+                    <li>
+                        <a href="cart.html" style="position: relative;">
+                            <i class="fas fa-shopping-cart"></i> Keranjang
+                            <span id="cart-badge" class="badge" style="display: none;">0</span>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+            <div class="user-action" style="display: flex; align-items: center; gap: 15px;">
+                <span id="user-exp-display" class="status-badge" style="background: #bf4f08; color: white; display: none;">0 XP</span>
+                <a href="login.html" class="btn-login">Login</a>
+            </div>
+        </div>
+    </header>
+
+    <main class="container menu-section">
+        <div class="menu-header">
+            <div class="header-info">
+                <h1>Menu Berco Cafe</h1>
+                <p>Jelajahi menu kami</p>
+            </div>
+            <div class="cart-floating" onclick="window.location.href='cart.html'" style="position: relative; cursor: pointer;">
+                <i class="fas fa-shopping-cart"></i>
+                <span id="floating-badge" class="badge" style="display: none; top: -5px; right: -5px;">0</span>
+            </div>
+        </div>
+
+        <div class="filter-bar">
+            <div class="search-input">
+                <i class="fas fa-search"></i>
+                <input type="text" id="search-input" placeholder="Cari menu...">
+            </div>
+            <select id="price-filter">
+                <option value="all">Semua Harga</option>
+                <option value="low">Dibawah Rp 15.000</option>
+                <option value="high">Rp 15.000 ke Atas</option>
+            </select>
+            <button id="fav-filter-btn" class="btn-fav"><i class="far fa-heart"></i> Favorit Saja</button>
+        </div>
+
+        <div class="category-tabs">
+            <button class="active" data-category="all">Semua</button>
+            <button data-category="kopi">Kopi</button>
+            <button data-category="non-kopi">Non Kopi</button>
+            <button data-category="ice-blend">Ice Blended</button>
+            <button data-category="snack">Snack</button>
+            <button data-category="dessert">Dessert</button>
+            <button data-category="makanan">Makanan</button>
+        </div>
+
+        <p class="menu-count">Menampilkan 4 menu</p>
+
+        <div class="menu-grid">
+            <div class="menu-card" data-category="kopi" data-id="espresso">
+                <div class="card-img">
+                    <img src="https://images.unsplash.com/photo-1510591509098-f4fdc6d0ff04?q=80&w=400" alt="Espresso">
+                    <button class="wishlist-btn" onclick="toggleFavorite('espresso', this)"><i class="far fa-heart"></i></button>
+                </div>
+                <div class="card-body">
+                    <h3>Espresso</h3>
+                    <p>Shot kopi espresso murni</p>
+                    <span class="price">Rp 12.000</span>
+                    <button class="btn-add-cart" onclick="addToCart(this)">
+                        <i class="fas fa-shopping-cart"></i> Tambah ke Keranjang
+                    </button>
+                </div>
+            </div>
+
+            <div class="menu-card" data-category="kopi" data-id="americano">
+                <div class="card-img">
+                    <img src="https://images.unsplash.com/photo-1509042239860-f550ce710b93?q=80&w=400" alt="Americano">
+                    <button class="wishlist-btn" onclick="toggleFavorite('americano', this)"><i class="far fa-heart"></i></button>
+                </div>
+                <div class="card-body">
+                    <h3>Americano</h3>
+                    <p>Espresso dengan air panas</p>
+                    <span class="price">Rp 14.000</span>
+                    <button class="btn-add-cart" onclick="addToCart(this)">
+                        <i class="fas fa-shopping-cart"></i> Tambah ke Keranjang
+                    </button>
+                </div>
+            </div>
+
+            <div class="menu-card" data-category="kopi" data-id="cafe-latte">
+                <div class="card-img">
+                    <img src="https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?q=80&w=400" alt="Cafe Latte">
+                    <button class="wishlist-btn" onclick="toggleFavorite('cafe-latte', this)"><i class="far fa-heart"></i></button>
+                </div>
+                <div class="card-body">
+                    <h3>Cafe Latte</h3>
+                    <p>Espresso dengan susu steamed</p>
+                    <span class="price">Rp 18.000</span>
+                    <button class="btn-add-cart" onclick="addToCart(this)">
+                        <i class="fas fa-shopping-cart"></i> Tambah ke Keranjang
+                    </button>
+                </div>
+            </div>
+
+            <div class="menu-card" data-category="kopi" data-id="es-kopi-susu">
+                <div class="card-img">
+                    <img src="https://images.unsplash.com/photo-1572442388796-11668a67e53d?q=80&w=400" alt="Es Kopi Susu">
+                    <button class="wishlist-btn" onclick="toggleFavorite('es-kopi-susu', this)"><i class="far fa-heart"></i></button>
+                </div>
+                <div class="card-body">
+                    <h3>Es Kopi Susu Berco</h3>
+                    <p>Signature kopi susu kami</p>
+                    <span class="price">Rp 15.000</span>
+                    <button class="btn-add-cart" onclick="addToCart(this)">
+                        <i class="fas fa-shopping-cart"></i> Tambah ke Keranjang
+                    </button>
+                </div>
+            </div>
+
+            <!-- Contoh Non Kopi -->
+            <div class="menu-card" data-category="non-kopi" data-id="matcha-latte">
+                <div class="card-img">
+                    <img src="https://images.unsplash.com/photo-1515823064-d6e0c04616a7?q=80&w=400" alt="Matcha">
+                    <button class="wishlist-btn" onclick="toggleFavorite('matcha-latte', this)"><i class="far fa-heart"></i></button>
+                </div>
+                <div class="card-body">
+                    <h3>Matcha Latte</h3>
+                    <p>Teh hijau Jepang dengan susu</p>
+                    <span class="price">Rp 18.000</span>
+                    <button class="btn-add-cart" onclick="addToCart(this)">
+                        <i class="fas fa-shopping-cart"></i> Tambah
+                    </button>
+                </div>
+            </div>
+
+            <!-- Contoh Snack -->
+            <div class="menu-card" data-category="snack" data-id="french-fries">
+                <div class="card-img">
+                    <img src="https://images.unsplash.com/photo-1573080496219-bb080dd4f877?q=80&w=400" alt="Kentang Goreng">
+                    <button class="wishlist-btn" onclick="toggleFavorite('french-fries', this)"><i class="far fa-heart"></i></button>
+                </div>
+                <div class="card-body">
+                    <h3>French Fries</h3>
+                    <p>Kentang goreng renyah gurih</p>
+                    <span class="price">Rp 12.000</span>
+                    <button class="btn-add-cart" onclick="addToCart(this)">
+                        <i class="fas fa-shopping-cart"></i> Tambah
+                    </button>
+                </div>
+            </div>
+
+            <!-- Contoh Dessert -->
+            <div class="menu-card" data-category="dessert" data-id="donat-gula">
+                <div class="card-img">
+                    <img src="https://images.unsplash.com/photo-1551024601-bec78aea704b?q=80&w=400" alt="Donut">
+                    <button class="wishlist-btn" onclick="toggleFavorite('donat-gula', this)"><i class="far fa-heart"></i></button>
+                </div>
+                <div class="card-body">
+                    <h3>Donat Gula</h3>
+                    <p>Donat lembut tabur gula halus</p>
+                    <span class="price">Rp 8.000</span>
+                    <button class="btn-add-cart" onclick="addToCart(this)">
+                        <i class="fas fa-shopping-cart"></i> Tambah
+                    </button>
+                </div>
+            </div>
+
+            <!-- Contoh Makanan -->
+            <div class="menu-card" data-category="makanan" data-id="nasi-goreng">
+                <div class="card-img">
+                    <img src="https://images.unsplash.com/photo-1512058560366-cd2427ffbbbe?q=80&w=400" alt="Nasi Goreng">
+                    <button class="wishlist-btn" onclick="toggleFavorite('nasi-goreng', this)"><i class="far fa-heart"></i></button>
+                </div>
+                <div class="card-body">
+                    <h3>Nasi Goreng Berco</h3>
+                    <p>Nasi goreng spesial rempah asli</p>
+                    <span class="price">Rp 25.000</span>
+                    <button class="btn-add-cart" onclick="addToCart(this)">
+                        <i class="fas fa-shopping-cart"></i> Tambah
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+    <script src="script.js"></script>
+</body>
+</html>

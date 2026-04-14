@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pembayaran - Berco Cafe</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body class="menu-page">
+
+    <header class="header">
+        <div class="container header-container">
+            <div class="logo-area">
+                <div class="logo-icon">☕</div>
+                <div>
+                    <h2 class="logo-text">BERCO</h2>
+                    <div class="status-badge"><span>🕒</span> TUTUP</div>
+                </div>
+            </div>
+            <nav class="nav">
+                <ul>
+                    <li><a href="index.html">Beranda</a></li>
+                    <li><a href="menu.html">Pesan Menu</a></li>
+                    <li><a href="cart.html">Keranjang <span id="cart-badge" class="badge">0</span></a></li>
+                </ul>
+            </nav>
+            <div class="user-action">
+                <a href="login.html" class="btn-login">Masuk</a>
+            </div>
+        </div>
+    </header>
+
+    <main class="container checkout-container">
+        <div class="checkout-header">
+            <h1>Pembayaran</h1>
+            <p>Selesaikan pesanan Anda</p>
+        </div>
+
+        <div class="checkout-content">
+            <div class="checkout-options">
+                
+                <section class="checkout-card">
+                    <h3>Tipe Layanan</h3>
+                    <div class="option-group">
+                        <label class="option-item">
+                            <input type="radio" name="service" checked>
+                            <div class="option-info">
+                                <i class="fas fa-store"></i>
+                                <div>
+                                    <strong>Dine In</strong>
+                                    <span>Makan di tempat</span>
+                                </div>
+                            </div>
+                        </label>
+                        <label class="option-item">
+                            <input type="radio" name="service">
+                            <div class="option-info">
+                                <i class="fas fa-box"></i>
+                                <div>
+                                    <strong>Take Away</strong>
+                                    <span>Bungkus dibawa pulang</span>
+                                </div>
+                            </div>
+                        </label>
+                    </div>
+                </section>
+
+                <section class="checkout-card">
+                    <h3>Metode Pembayaran</h3>
+                    <div class="option-group">
+                        <label class="option-item">
+                            <input type="radio" name="payment" checked>
+                            <div class="option-info">
+                                <i class="fas fa-money-bill-wave" style="color: #27ae60;"></i>
+                                <div>
+                                    <strong>Tunai</strong>
+                                    <span>Bayar dengan uang tunai</span>
+                                </div>
+                            </div>
+                        </label>
+                        <label class="option-item">
+                            <input type="radio" name="payment">
+                            <div class="option-info">
+                                <i class="fas fa-credit-card" style="color: #2980b9;"></i>
+                                <div>
+                                    <strong>Kartu Debit</strong>
+                                    <span>Bayar dengan kartu debit</span>
+                                </div>
+                            </div>
+                        </label>
+                        <label class="option-item">
+                            <input type="radio" name="payment">
+                            <div class="option-info">
+                                <i class="fas fa-wallet" style="color: #8e44ad;"></i>
+                                <div>
+                                    <strong>Kartu Kredit</strong>
+                                    <span>Bayar dengan kartu kredit</span>
+                                </div>
+                            </div>
+                        </label>
+                        <label class="option-item">
+                            <input type="radio" name="payment">
+                            <div class="option-info">
+                                <i class="fas fa-mobile-alt" style="color: #e67e22;"></i>
+                                <div>
+                                    <strong>Pembayaran Digital</strong>
+                                    <span>GoPay, OVO, Dana, dll</span>
+                                </div>
+                            </div>
+                        </label>
+                    </div>
+                </section>
+            </div>
+
+            <div class="checkout-summary">
+                <div class="summary-card-sticky">
+                    <h3>Ringkasan Pesanan</h3>
+                    <div class="summary-list">
+                        <div class="summary-item">
+                            <span>Espresso x1</span>
+                            <span>Rp 12.000</span>
+                        </div>
+                    </div>
+                    <hr>
+                    <div class="summary-total-row">
+                        <span>Subtotal</span>
+                        <span>Rp 12.000</span>
+                    </div>
+                    <div class="summary-total-row final-total">
+                        <span>Total</span>
+                        <span>Rp 12.000</span>
+                    </div>
+                    <a href="success.html" class="btn-pay" style="display: block; text-align: center;">Bayar Rp 12.000</a>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="script.js"></script>
+</body>
+</html>
