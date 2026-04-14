@@ -4,6 +4,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const totalElement = document.querySelector('.total-val');
     const cartBadge = document.getElementById('cart-count') || document.getElementById('cart-badge');
     const floatBadge = document.getElementById('floating-badge');
+    const expDisplay = document.getElementById('user-exp-display');
     
     // Elemen untuk halaman Checkout & Success
     const checkoutList = document.querySelector('.summary-list');
@@ -21,6 +22,13 @@ document.addEventListener('DOMContentLoaded', () => {
         if (floatBadge) {
             floatBadge.innerText = count;
             floatBadge.style.display = count > 0 ? 'inline-block' : 'none';
+        }
+
+        // Update XP Display jika ada
+        let currentExp = localStorage.getItem('berco_exp') || 0;
+        if (expDisplay) {
+            expDisplay.innerText = `${parseInt(currentExp).toLocaleString('id-ID')} XP`;
+            expDisplay.style.display = 'inline-block';
         }
     };
 
@@ -61,7 +69,7 @@ document.addEventListener('DOMContentLoaded', () => {
         let cart = JSON.parse(localStorage.getItem('berco_cart')) || [];
 
         if (cart.length === 0) {
-            cartItemsContainer.innerHTML = '<p style="text-align:center; padding: 40px; color: #718096;">Keranjangmu kosong. <br><a href="menu.html" style="color: #bf4f08; font-weight: bold;">Pesan menu sekarang!</a></p>';
+            cartItemsContainer.innerHTML = '<p style="text-align:center; padding: 40px; color: #718096;">Keranjangmu kosong. <br><a href="/menu" style="color: #bf4f08; font-weight: bold;">Pesan menu sekarang!</a></p>';
             subtotalElement.innerText = "Rp 0";
             totalElement.innerText = "Rp 0";
             updateUI();
@@ -159,6 +167,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
         let total = cart.reduce((sum, i) => sum + (i.price * i.quantity), 0);
         const formatted = "Rp " + total.toLocaleString('id-ID');
+
+        // Tambahkan Logika EXP: 1 EXP setiap Rp 1.000
+        let gainedExp = Math.floor(total / 1000);
+        let currentExp = parseInt(localStorage.getItem('berco_exp')) || 0;
+        localStorage.setItem('berco_exp', currentExp + gainedExp);
 
         // Update nilai total di struk
         const receiptTotals = receiptBody.querySelectorAll('.receipt-total-row span:last-child');
