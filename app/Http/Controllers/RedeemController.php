@@ -45,7 +45,7 @@ class RedeemController extends Controller
                 'exp_used' => $totalExpNeeded,
                 'status' => 'completed',
             ]);
-        ]);
+        });
 
         return redirect()->route('redeem.receipt', $redemption);
     }
@@ -86,6 +86,7 @@ class RedeemController extends Controller
     public function leaderboard()
     {
         $topUsers = User::orderBy('exp', 'desc')
+            ->where('exp', '>', 0) // Saran: hanya tampilkan yang punya EXP
             ->limit(10)
             ->get(['name', 'exp']);
             
