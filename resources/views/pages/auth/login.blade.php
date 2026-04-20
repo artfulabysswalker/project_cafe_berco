@@ -1,59 +1,72 @@
-<x-layouts::auth>
-    <div class="flex flex-col gap-6">
-        <x-auth-header :title="__('Log in to your account')" :description="__('Enter your email and password below to log in')" />
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Login - Berco Cafe</title>
+    <link rel="preconnect" href="https://fonts.bunny.net">
+    <link href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600,700" rel="stylesheet" />
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
+</head>
+<body class="min-h-screen bg-[#FEF3C7] antialiased text-[#422006]">
 
-        <!-- Session Status -->
-        <x-auth-session-status class="text-center" :status="session('status')" />
+    <div class="flex flex-col items-center pt-12 px-4">
+        <div class="flex flex-col items-center mb-8 text-center">
+            <div class="w-20 h-20 bg-[#78350F] rounded-full flex items-center justify-center mb-3 shadow-lg">
+                <span class="text-3xl">☕</span>
+            </div>
+            <h1 class="text-4xl font-bold tracking-tight text-[#78350F]">BERCO CAFE</h1>
+            <p class="text-zinc-600 mt-1">Sistem Pemesanan Online</p>
+        </div>
 
-        <form method="POST" action="{{ route('login.store') }}" class="flex flex-col gap-6">
-            @csrf
+        <div class="w-full max-w-lg bg-[#FFFBEC] border border-[#FDE68A] rounded-2xl p-4 mb-6 text-center shadow-sm">
+            <p class="text-[#92400E] text-sm font-medium">Kami sudah tutup. Buka kembali besok pukul 16.00 WIB</p>
+        </div>
 
-            <!-- Email Address -->
-            <flux:input
-                name="email"
-                :label="__('Email address')"
-                :value="old('email')"
-                type="email"
-                required
-                autofocus
-                autocomplete="email"
-                placeholder="email@example.com"
-            />
+        <div class="w-full max-w-lg bg-white p-8 md:p-10 rounded-[2.5rem] shadow-xl border border-orange-100/50">
+            <h2 class="text-2xl font-bold mb-1">Selamat Datang</h2>
+            <p class="text-zinc-500 mb-8 text-sm">Login atau daftar untuk mulai memesan</p>
 
-            <!-- Password -->
-            <div class="relative">
-                <flux:input
-                    name="password"
-                    :label="__('Password')"
-                    type="password"
-                    required
-                    autocomplete="current-password"
-                    :placeholder="__('Password')"
-                    viewable
-                />
-
-                @if (Route::has('password.request'))
-                    <flux:link class="absolute top-0 text-sm end-0" :href="route('password.request')" wire:navigate>
-                        {{ __('Forgot your password?') }}
-                    </flux:link>
-                @endif
+            <div class="flex bg-zinc-100 rounded-full p-1.5 mb-8">
+                <a href="#" class="w-1/2 text-center bg-white text-[#78350F] py-2.5 rounded-full font-bold shadow-sm">Login</a>
+                <a href="{{ route('register') }}" class="w-1/2 text-center text-zinc-500 py-2.5 rounded-full font-medium hover:text-zinc-800">Daftar</a>
             </div>
 
-            <!-- Remember Me -->
-            <flux:checkbox name="remember" :label="__('Remember me')" :checked="old('remember')" />
+            <form action="{{ route('login') }}" method="POST" class="space-y-5">
+                @csrf
+                <div>
+                    <label class="block text-sm font-semibold mb-1.5 ml-1">Email</label>
+                    <input type="email" name="email" class="w-full px-5 py-3.5 bg-zinc-50 border border-zinc-200 rounded-2xl focus:ring-2 focus:ring-orange-200 outline-none transition" placeholder="email@example.com" required>
+                </div>
 
-            <div class="flex items-center justify-end">
-                <flux:button variant="primary" type="submit" class="w-full" data-test="login-button">
-                    {{ __('Log in') }}
-                </flux:button>
-            </div>
-        </form>
+                <div>
+                    <div class="flex justify-between mb-1.5 ml-1">
+                        <label class="text-sm font-semibold">Password</label>
+                        <a href="#" class="text-xs text-zinc-400 hover:text-orange-700">Lupa password?</a>
+                    </div>
+                    <input type="password" name="password" class="w-full px-5 py-3.5 bg-zinc-50 border border-zinc-200 rounded-2xl focus:ring-2 focus:ring-orange-200 outline-none transition" placeholder="••••••" required>
+                </div>
 
-        @if (Route::has('register'))
-            <div class="space-x-1 text-sm text-center rtl:space-x-reverse text-zinc-600 dark:text-zinc-400">
-                <span>{{ __('Don\'t have an account?') }}</span>
-                <flux:link :href="route('register')" wire:navigate>{{ __('Sign up') }}</flux:link>
+                <button type="submit" class="w-full bg-[#78350F] text-white py-4 rounded-2xl font-bold text-lg hover:bg-[#5D290B] transition-all shadow-lg shadow-orange-900/20">
+                    Login
+                </button>
+            </form>
+
+            <div class="relative my-10 text-center">
+                <div class="absolute inset-0 flex items-center"><div class="w-full border-t border-zinc-100"></div></div>
+                <span class="relative px-4 bg-white text-zinc-400 text-xs uppercase tracking-widest">atau</span>
             </div>
-        @endif
+
+            <button class="w-full flex items-center justify-center gap-3 border-2 border-zinc-100 py-4 rounded-2xl font-semibold text-zinc-700 hover:bg-zinc-50 transition">
+                <span>👤</span> Lanjutkan sebagai Guest
+            </button>
+            <p class="text-center text-[10px] text-zinc-400 mt-3 italic">Mode guest memungkinkan Anda memesan tanpa akun</p>
+        </div>
+
+        <a href="{{ route('home') }}" class="mt-10 mb-20 text-[#78350F] font-bold text-sm hover:underline tracking-wide">
+            ← Kembali ke Beranda
+        </a>
     </div>
-</x-layouts::auth>
+
+</body>
+</html>
