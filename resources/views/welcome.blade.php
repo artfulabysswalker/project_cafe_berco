@@ -32,7 +32,7 @@
         <div class="relative z-20 text-white px-4">
             <h1 class="text-6xl md:text-8xl font-bold tracking-tight mb-6">BERCO CAFE</h1>
             <p class="text-xl md:text-2xl font-light mb-10 max-w-3xl mx-auto text-orange-50">
-                Nikmati kopi dan kue-kue terbaik dalam suasana yang nyaman di jantung Kota Banyuwangi.
+                Nikmati kopi dan makanan terbaik dalam suasana yang nyaman di Banyuwangi bagian selatan.
             </p>
             <div class="flex flex-col md:flex-row gap-4 justify-center">
                 <button class="bg-[#C2410C] hover:bg-orange-800 text-white px-10 py-4 rounded-xl font-bold text-lg transition-all transform hover:scale-105">
