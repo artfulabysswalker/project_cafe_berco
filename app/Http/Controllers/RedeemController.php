@@ -19,16 +19,19 @@ class RedeemController extends Controller
 
     public function redeem(Request $request, Reward $reward)
     {
-        $request->validate([
-            'quantity' => 'required|integer|min:1',
+        // Menjadikan quantity nullable karena di view redeem.blade.php belum ada input quantity
+        $validated = $request->validate([
+            'quantity' => 'nullable|integer|min:1',
         ]);
+
+        $quantity = $validated['quantity'] ?? 1; // Gunakan nilai dari validasi, default 1
 
         if (!$reward->available) {
             return back()->withErrors(['reward' => 'Reward ini sedang tidak tersedia.']);
         }
 
         $user = Auth::user();
-        $totalExpNeeded = $reward->exp_cost * $request->quantity;
+        $totalExpNeeded = $reward->exp_cost * $quantity; // Gunakan variabel $quantity yang sudah di-handle
 
         if ($user->exp < $totalExpNeeded) {
             return back()->withErrors(['exp' => 'EXP tidak cukup untuk penukaran ini.']);
@@ -75,9 +78,9 @@ class RedeemController extends Controller
             return back()->withErrors(['daily' => 'Anda sudah mengambil reward hari ini!']);
         }
 
+        // Optimasi: Melakukan increment EXP dan update timestamp dalam satu query database
         DB::transaction(function () use ($user) {
-            $user->increment('exp', 50); // Gunakan increment agar atomic
-            $user->update(['last_daily_claim' => now()]);
+            $user->increment('exp', 50, ['last_daily_claim' => now()]);
         });
 
         return back()->with('success', 'Selamat! 50 EXP telah ditambahkan ke akun Anda.');

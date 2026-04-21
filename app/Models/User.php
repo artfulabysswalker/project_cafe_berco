@@ -23,6 +23,8 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'exp', // Tambahkan 'exp' agar bisa diisi
+        'last_daily_claim', // Tambahkan 'last_daily_claim'
     ];
 
     /**
@@ -46,6 +48,8 @@ class User extends Authenticatable
     {
         return [
             'email_verified_at' => 'datetime',
+            'exp' => 'integer', // Cast 'exp' sebagai integer
+            'last_daily_claim' => 'datetime', // Cast 'last_daily_claim' sebagai datetime
             'password' => 'hashed',
         ];
     }
@@ -60,5 +64,13 @@ class User extends Authenticatable
             ->take(2)
             ->map(fn ($word) => Str::substr($word, 0, 1))
             ->implode('');
+    }
+
+    /**
+     * Get the redemptions for the user.
+     */
+    public function redemptions()
+    {
+        return $this->hasMany(Redemption::class);
     }
 }
