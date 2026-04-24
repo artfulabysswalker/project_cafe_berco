@@ -73,4 +73,20 @@ class User extends Authenticatable
     {
         return $this->hasMany(Redemption::class);
     }
+
+    /**
+     * Get all orders by this user
+     */
+    public function orders()
+    {
+        return $this->hasMany(Order::class);
+    }
+
+    /**
+     * Get all cart items for this user
+     */
+    public function cartItems()
+    {
+        return $this->hasMany(CartItem::class);
+    }
 }
