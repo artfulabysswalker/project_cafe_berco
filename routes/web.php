@@ -3,6 +3,10 @@
 use App\Http\Controllers\MenuController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\OrderController;
+use App\Http\Controllers\Admin\AdminDashboardController;
+use App\Http\Controllers\Admin\AdminProductController;
+use App\Http\Controllers\Admin\AdminOrderController;
+use App\Http\Controllers\RedeemController;
 use Illuminate\Support\Facades\Route;
 
 // Halaman Utama
@@ -35,6 +39,19 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/order/{order}/receipt', [OrderController::class, 'receipt'])->name('order.receipt');
     Route::get('/orders', [OrderController::class, 'history'])->name('order.history');
     Route::get('/order/{order}', [OrderController::class, 'show'])->name('order.show');
+
+    // Poin & Daily Claim
+    Route::get('/redeem', [RedeemController::class, 'index'])->name('redeem.index');
+    Route::post('/daily-claim', [RedeemController::class, 'claimDaily'])->name('daily.claim');
+});
+
+// Admin Routes (Hanya untuk is_admin = true)
+Route::middleware(['auth', 'verified', 'App\Http\Middleware\IsAdmin'])->prefix('admin')->name('admin.')->group(function () {
+    Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
+    Route::resource('products', AdminProductController::class);
+    Route::get('/orders', [AdminOrderController::class, 'index'])->name('orders.index');
+    Route::get('/orders/{order}', [AdminOrderController::class, 'show'])->name('orders.show');
+    Route::patch('/orders/{order}/status', [AdminOrderController::class, 'updateStatus'])->name('orders.update-status');
 });
 
 require __DIR__.'/settings.php';

@@ -12,9 +12,3 @@ Route::get('/login', function () {
 Route::post('/register', function () {
     return view('auth.register');
 })->name('register');
-
-// Logout route
-Route::post('/logout', function () {
-    auth()->logout();
-    return redirect('/');
-})->name('logout');

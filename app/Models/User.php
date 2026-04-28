@@ -25,6 +25,7 @@ class User extends Authenticatable
         'password',
         'exp', // Tambahkan 'exp' agar bisa diisi
         'last_daily_claim', // Tambahkan 'last_daily_claim'
+        'is_admin',
     ];
 
     /**
@@ -50,6 +51,7 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'exp' => 'integer', // Cast 'exp' sebagai integer
             'last_daily_claim' => 'datetime', // Cast 'last_daily_claim' sebagai datetime
+            'is_admin' => 'boolean',
             'password' => 'hashed',
         ];
     }
