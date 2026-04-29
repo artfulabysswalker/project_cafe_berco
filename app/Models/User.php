@@ -23,6 +23,9 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'phone',
+        'notification_enabled',
+        'role',
     ];
 
     /**
@@ -47,6 +50,9 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'last_visit_at' => 'datetime',
+            'is_active' => 'boolean',
+            'notification_enabled' => 'boolean',
         ];
     }
 
@@ -76,5 +82,63 @@ class User extends Authenticatable
     public function cartItems()
     {
         return $this->hasMany(CartItem::class);
+    }
+
+    /**
+     * Get all vouchers for this user
+     */
+    public function vouchers()
+    {
+        return $this->belongsToMany(Voucher::class, 'user_vouchers')
+            ->withPivot('assigned_at', 'used_at', 'is_used')
+            ->withTimestamps();
+    }
+
+    /**
+     * Get all notifications for this user
+     */
+    public function notifications()
+    {
+        return $this->hasMany(Notification::class);
+    }
+
+    /**
+     * Check if user is inactive (hasn't visited for more than 30 days)
+     */
+    public function isInactive(): bool
+    {
+        if (!$this->last_visit_at) {
+            return false;
+        }
+
+        return now()->diffInDays($this->last_visit_at) > 30;
+    }
+
+    /**
+     * Update user's last visit time
+     */
+    public function updateLastVisit(): void
+    {
+        $this->update(['last_visit_at' => now()]);
+    }
+
+    /**
+     * Get days since last visit
+     */
+    public function daysSinceLastVisit(): ?int
+    {
+        if (!$this->last_visit_at) {
+            return null;
+        }
+
+        return now()->diffInDays($this->last_visit_at);
+    }
+
+    /**
+     * Check if user is an admin
+     */
+    public function isAdmin(): bool
+    {
+        return $this->role === 'admin';
     }
 }

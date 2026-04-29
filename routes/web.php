@@ -3,6 +3,8 @@
 use App\Http\Controllers\MenuController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\OrderController;
+use App\Http\Controllers\VoucherController;
+use App\Http\Controllers\NotificationController;
 use Illuminate\Support\Facades\Route;
 
 // Halaman Utama
@@ -35,6 +37,21 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/order/{order}/receipt', [OrderController::class, 'receipt'])->name('order.receipt');
     Route::get('/orders', [OrderController::class, 'history'])->name('order.history');
     Route::get('/order/{order}', [OrderController::class, 'show'])->name('order.show');
+
+    // Notifications
+    Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
+    Route::post('/notifications/{notification}/mark-as-read', [NotificationController::class, 'markAsRead'])->name('notifications.mark-as-read');
+    Route::post('/notifications/mark-all-as-read', [NotificationController::class, 'markAllAsRead'])->name('notifications.mark-all-as-read');
+    Route::delete('/notifications/{notification}', [NotificationController::class, 'destroy'])->name('notifications.destroy');
+    Route::get('/api/notifications/unread-count', [NotificationController::class, 'getUnreadCount'])->name('api.notifications.unread-count');
+});
+
+// Admin routes
+Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.')->group(function () {
+    // Vouchers management
+    Route::resource('vouchers', VoucherController::class);
+    Route::post('/vouchers/{voucher}/toggle-active', [VoucherController::class, 'toggleActive'])->name('vouchers.toggle-active');
+    Route::post('/vouchers/send-to-inactive', [VoucherController::class, 'sendToInactiveCustomers'])->name('vouchers.send-to-inactive');
 });
 
 require __DIR__.'/settings.php';
