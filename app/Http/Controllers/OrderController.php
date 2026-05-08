@@ -4,6 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Models\Order;
 use App\Models\OrderItem;
+use App\Models\Referral;
+use App\Models\UserAchievement;
+use App\Models\Achievement;
 use Illuminate\Http\Request;
 
 class OrderController extends Controller
@@ -86,6 +89,23 @@ class OrderController extends Controller
                 ]);
             }
 
+            // Handle referral completion on first order
+            if ($user->referred_by) {
+                $isFirstOrder = $user->orders()->count() === 1;
+                if ($isFirstOrder) {
+                    $referral = Referral::where('referee_id', $user->id)
+                        ->where('status', 'pending')
+                        ->first();
+
+                    if ($referral) {
+                        $referral->markAsCompleted($order);
+                    }
+                }
+            }
+
+            // Check and award achievements
+            $this->checkAndAwardAchievements($user);
+
             // Clear cart
             $user->cartItems()->delete();
 
@@ -143,5 +163,41 @@ class OrderController extends Controller
         $order->load('items.product');
 
         return response()->json($order);
+    }
+
+    /**
+     * Check and award achievements for user
+     */
+    private function checkAndAwardAchievements($user)
+    {
+        $achievements = Achievement::where('is_active', true)->get();
+
+        foreach ($achievements as $achievement) {
+            // Skip if already earned
+            if ($user->achievements()->where('achievement_id', $achievement->id)->exists()) {
+                continue;
+            }
+
+            $isEarned = match ($achievement->type) {
+                'orders_count' => $user->getCompletedOrdersCount() >= $achievement->threshold,
+                'total_spent' => $user->getTotalSpent() >= $achievement->threshold,
+                'referrals_count' => $user->referralsMade()
+                    ->where('status', 'completed')
+                    ->count() >= $achievement->threshold,
+                default => false,
+            };
+
+            if ($isEarned) {
+                // Award achievement
+                UserAchievement::create([
+                    'user_id' => $user->id,
+                    'achievement_id' => $achievement->id,
+                    'earned_at' => now(),
+                ]);
+
+                // Add reward to user's referral balance
+                $user->increment('referral_balance', $achievement->reward_amount);
+            }
+        }
     }
 }

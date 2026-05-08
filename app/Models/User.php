@@ -23,6 +23,9 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'referral_code',
+        'referred_by',
+        'referral_balance',
     ];
 
     /**
@@ -76,5 +79,57 @@ class User extends Authenticatable
     public function cartItems()
     {
         return $this->hasMany(CartItem::class);
+    }
+
+    /**
+     * Get all referrals made by this user
+     */
+    public function referralsMade()
+    {
+        return $this->hasMany(Referral::class, 'referrer_id');
+    }
+
+    /**
+     * Get all referrals received by this user
+     */
+    public function referralsReceived()
+    {
+        return $this->hasMany(Referral::class, 'referee_id');
+    }
+
+    /**
+     * Get the user who referred this user
+     */
+    public function referredBy()
+    {
+        return $this->belongsTo(User::class, 'referred_by');
+    }
+
+    /**
+     * Get all achievements earned by this user
+     */
+    public function achievements()
+    {
+        return $this->hasMany(UserAchievement::class);
+    }
+
+    /**
+     * Get count of completed orders
+     */
+    public function getCompletedOrdersCount(): int
+    {
+        return $this->orders()
+            ->where('status', 'completed')
+            ->count();
+    }
+
+    /**
+     * Get total spent by this user
+     */
+    public function getTotalSpent(): float
+    {
+        return (float) $this->orders()
+            ->where('status', 'completed')
+            ->sum('total');
     }
 }

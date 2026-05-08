@@ -3,6 +3,8 @@
 use App\Http\Controllers\MenuController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\OrderController;
+use App\Http\Controllers\ReferralController;
+use App\Http\Controllers\AchievementController;
 use Illuminate\Support\Facades\Route;
 
 // Halaman Utama
@@ -35,6 +37,18 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/order/{order}/receipt', [OrderController::class, 'receipt'])->name('order.receipt');
     Route::get('/orders', [OrderController::class, 'history'])->name('order.history');
     Route::get('/order/{order}', [OrderController::class, 'show'])->name('order.show');
+
+    // Referral routes
+    Route::get('/referral', [ReferralController::class, 'index'])->name('referral.index');
+    Route::post('/referral/apply', [ReferralController::class, 'apply'])->name('referral.apply');
+    Route::post('/referral/generate-code', [ReferralController::class, 'generateCode'])->name('referral.generate');
+    Route::get('/referral/stats', [ReferralController::class, 'stats'])->name('referral.stats');
+
+    // Achievement routes
+    Route::get('/achievements', [AchievementController::class, 'index'])->name('achievement.index');
+    Route::get('/achievement/{achievement}', [AchievementController::class, 'show'])->name('achievement.show');
+    Route::get('/achievements/list', [AchievementController::class, 'list'])->name('achievement.list');
+    Route::post('/achievements/check', [AchievementController::class, 'checkAndAward'])->name('achievement.check');
 });
 
 require __DIR__.'/settings.php';
