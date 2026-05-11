@@ -26,6 +26,7 @@ class User extends Authenticatable
         'referral_code',
         'referred_by',
         'referral_balance',
+        'last_activity_at',
     ];
 
     /**
@@ -50,6 +51,7 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'last_activity_at' => 'datetime',
         ];
     }
 
@@ -131,5 +133,47 @@ class User extends Authenticatable
         return (float) $this->orders()
             ->where('status', 'completed')
             ->sum('total');
+    }
+
+    /**
+     * Get all vouchers for this user
+     */
+    public function vouchers()
+    {
+        return $this->belongsToMany(Voucher::class, 'user_vouchers')
+            ->withPivot('status', 'used_at', 'notified_at')
+            ->withTimestamps();
+    }
+
+    /**
+     * Get active vouchers for this user
+     */
+    public function getActiveVouchers()
+    {
+        return $this->vouchers()
+            ->where('is_active', true)
+            ->where('valid_until', '>=', now())
+            ->wherePivot('status', 'active')
+            ->get();
+    }
+
+    /**
+     * Check if user is inactive (hasn't visited in 30+ days)
+     */
+    public function isInactive(int $days = 30): bool
+    {
+        if ($this->last_activity_at === null) {
+            return true;
+        }
+
+        return $this->last_activity_at->addDays($days)->isPast();
+    }
+
+    /**
+     * Update last activity timestamp
+     */
+    public function updateLastActivity(): void
+    {
+        $this->update(['last_activity_at' => now()]);
     }
 }

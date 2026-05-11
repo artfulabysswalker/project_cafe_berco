@@ -5,6 +5,8 @@ use App\Http\Controllers\CartController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\ReferralController;
 use App\Http\Controllers\AchievementController;
+use App\Http\Controllers\VoucherController;
+use App\Http\Controllers\FileController;
 use Illuminate\Support\Facades\Route;
 
 // Halaman Utama
@@ -49,7 +51,19 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/achievement/{achievement}', [AchievementController::class, 'show'])->name('achievement.show');
     Route::get('/achievements/list', [AchievementController::class, 'list'])->name('achievement.list');
     Route::post('/achievements/check', [AchievementController::class, 'checkAndAward'])->name('achievement.check');
+
+    // Voucher routes for users
+    Route::get('/vouchers', [VoucherController::class, 'myVouchers'])->name('voucher.my-vouchers');
 });
+
+// Admin Voucher Management
+Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(function () {
+    Route::resource('vouchers', VoucherController::class);
+    Route::get('/vouchers/{voucher}/distribute', [VoucherController::class, 'distributeForm'])->name('voucher.distribute-form');
+    Route::post('/vouchers/{voucher}/distribute', [VoucherController::class, 'distribute'])->name('voucher.distribute');
+});
+
+Route::get('/download', [FileController::class, 'downloadFile']);
 
 require __DIR__.'/settings.php';
 require __DIR__.'/auth.php';

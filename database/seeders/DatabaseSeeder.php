@@ -15,9 +15,11 @@ class DatabaseSeeder extends Seeder
         User::factory()->create([
             'name' => 'Test User',
             'email' => 'test@example.com',
+            'last_activity_at' => now(),
         ]);
 
         $this->call(ProductSeeder::class);
         $this->call(AchievementSeeder::class);
+        $this->call(VoucherSeeder::class);
     }
 }
