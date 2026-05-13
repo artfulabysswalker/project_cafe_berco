@@ -33,10 +33,13 @@ class MenuController extends Controller
             }
         }
 
-        $products = $query->latest()->paginate(12);
+        $products = $query->with(['reviews.user'])->latest()->paginate(12);
+        $reviewCollection = $products->getCollection()->flatMap(fn ($product) => $product->reviews);
+        $totalReviews = $reviewCollection->count();
+        $recentReviews = $reviewCollection->sortByDesc('created_at')->take(4);
         $categories = ['kopi', 'non-kopi', 'ice-blend', 'snack', 'dessert', 'makanan'];
 
-        return view('menu', compact('products', 'categories'));
+        return view('menu', compact('products', 'categories', 'totalReviews', 'recentReviews'));
     }
 
     /**
