@@ -13,44 +13,34 @@ class RedeemController extends Controller
 {
     public function index()
     {
-        $rewards = Reward::all(); // Tampilkan semua rewards, bukan hanya available
+        $rewards = Reward::where('available', true)->get();
         return view('redeem', compact('rewards'));
     }
 
     public function redeem(Request $request, Reward $reward)
     {
-        // Menjadikan quantity nullable karena di view redeem.blade.php belum ada input quantity
-        $validated = $request->validate([
-            'quantity' => 'nullable|integer|min:1',
-        ]);
-
-        $quantity = $validated['quantity'] ?? 1; // Gunakan nilai dari validasi, default 1
+        $user = Auth::user();
 
         if (!$reward->available) {
-            return back()->withErrors(['reward' => 'Reward ini sedang tidak tersedia.']);
+            return back()->withErrors(['reward' => 'Voucher tidak tersedia.']);
         }
 
-        $user = Auth::user();
-        $totalExpNeeded = $reward->exp_cost * $quantity; // Gunakan variabel $quantity yang sudah di-handle
-
-        if ($user->exp < $totalExpNeeded) {
-            return back()->withErrors(['exp' => 'EXP tidak cukup untuk penukaran ini.']);
+        if ($user->exp < $reward->exp_cost) {
+            return back()->withErrors(['reward' => 'EXP Anda belum cukup untuk menukar voucher ini.']);
         }
 
-        $redemption = DB::transaction(function () use ($user, $reward, $totalExpNeeded) {
-            // Kurangi EXP user
-            $user->decrement('exp', $totalExpNeeded);
+        $redemption = DB::transaction(function () use ($user, $reward) {
+            $user->decrement('exp', $reward->exp_cost);
 
-            // Buat record redemption
             return Redemption::create([
                 'user_id' => $user->id,
                 'reward_id' => $reward->id,
-                'exp_used' => $totalExpNeeded,
+                'exp_used' => $reward->exp_cost,
                 'status' => 'completed',
             ]);
         });
 
-        return redirect()->route('redeem.receipt', $redemption);
+        return redirect()->route('redeem.receipt', $redemption)->with('success', 'Voucher berhasil ditukar.');
     }
 
     public function receipt(Redemption $redemption)
@@ -60,13 +50,13 @@ class RedeemController extends Controller
             abort(403);
         }
 
-        return view('receipt', compact('redemption'));
+        return view('redeem-receipt', compact('redemption'));
     }
 
     public function history()
     {
         $redemptions = Auth::user()->redemptions()->with('reward')->latest()->get();
-        return view('history', compact('redemptions'));
+        return view('redeem-history', compact('redemptions'));
     }
 
     public function claimDaily()

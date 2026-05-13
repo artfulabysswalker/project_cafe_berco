@@ -180,6 +180,7 @@
                     <li><a href="{{ route('home') }}"><i class="fas fa-home"></i> Beranda</a></li>
                     <li><a href="{{ route('menu.index') }}" {{ request()->routeIs('menu*') ? 'class=active' : '' }}><i class="fas fa-mug-hot"></i> Menu</a></li>
                     @auth
+                        <li><a href="{{ route('redeem.index') }}" {{ request()->routeIs('redeem*') ? 'class=active' : '' }}><i class="fas fa-gift"></i> Tukar EXP</a></li>
                         <li>
                             <a href="{{ route('cart.index') }}" {{ request()->routeIs('cart*') ? 'class=active' : '' }} style="position: relative;">
                                 <i class="fas fa-shopping-cart"></i> Keranjang

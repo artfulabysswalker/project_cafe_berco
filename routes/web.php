@@ -11,6 +11,9 @@ use Illuminate\Support\Facades\Route;
 
 // Halaman Utama
 Route::get('/', function () {
+    if (auth()->check()) {
+        return view('index');
+    }
     return view('welcome');
 })->name('home');
 
@@ -43,11 +46,19 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Poin & Daily Claim
     Route::get('/redeem', [RedeemController::class, 'index'])->name('redeem.index');
     Route::post('/daily-claim', [RedeemController::class, 'claimDaily'])->name('daily.claim');
+    Route::post('/redeem/{reward}', [RedeemController::class, 'redeem'])->name('redeem.redeem');
+    Route::get('/redeem/receipt/{redemption}', [RedeemController::class, 'receipt'])->name('redeem.receipt');
+    Route::get('/redeem/history', [RedeemController::class, 'history'])->name('redeem.history');
+    Route::get('/redeem/leaderboard', [RedeemController::class, 'leaderboard'])->name('redeem.leaderboard');
+});
+
+// Admin routes
+Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(function () {
+    Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
 });
 
 // Admin Routes (Hanya untuk is_admin = true)
-Route::middleware(['auth', 'verified', 'App\Http\Middleware\IsAdmin'])->prefix('admin')->name('admin.')->group(function () {
-    Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
+Route::middleware(['auth', 'verified', 'is_admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::resource('products', AdminProductController::class);
     Route::get('/orders', [AdminOrderController::class, 'index'])->name('orders.index');
     Route::get('/orders/{order}', [AdminOrderController::class, 'show'])->name('orders.show');

@@ -56,7 +56,10 @@
                         <p>{{ $product->description ?? 'Menu pilihan' }}</p>
                         <span class="price">Rp {{ number_format($product->price, 0, ',', '.') }}</span>
                         @auth
-                            <button class="btn-add-cart" onclick="addToCart({{ $product->id }}, '{{ $product->name }}')" type="button">
+                            <button class="btn-add-cart add-to-cart-btn" 
+                                    data-id="{{ $product->id }}" 
+                                    data-name="{{ $product->name }}" 
+                                    type="button">
                                 <i class="fas fa-shopping-cart"></i> Tambah ke Keranjang
                             </button>
                         @else
@@ -359,8 +362,24 @@ function updateCartBadge() {
         });
 }
 
-// Update badge on page load
-document.addEventListener('DOMContentLoaded', updateCartBadge);
+function attachCartButtons() {
+    document.querySelectorAll('.add-to-cart-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const productId = this.dataset.id;
+            const productName = this.dataset.name;
+
+            if (productId && productName) {
+                addToCart(productId, productName);
+            }
+        });
+    });
+}
+
+// Update badge and attach events on page load
+document.addEventListener('DOMContentLoaded', function() {
+    attachCartButtons();
+    updateCartBadge();
+});
 </script>
 @endauth
 @endsection

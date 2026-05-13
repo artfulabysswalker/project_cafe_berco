@@ -6,23 +6,75 @@
     <title>Berco Cafe - Home</title>
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600,700" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="min-h-screen bg-[#FFFBEB] antialiased text-[#422006]">
-    
+    @if(session('success'))
+        <div class="fixed top-20 right-6 z-[60] bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg">
+            <i class="fas fa-check-circle mr-2"></i> {{ session('success') }}
+        </div>
+    @endif
+
+    @if($errors->has('daily'))
+        <div class="fixed top-20 right-6 z-[60] bg-orange-500 text-white px-6 py-3 rounded-lg shadow-lg">
+            <i class="fas fa-info-circle mr-2"></i> {{ $errors->first('daily') }}
+        </div>
+    @endif
+
     <nav class="bg-[#78350F] text-white px-6 py-4 flex justify-between items-center sticky top-0 z-50 shadow-lg">
         <a href="{{ route('home') }}" class="flex flex-col items-center">
             <span class="font-bold text-xl tracking-wider">BERCO</span>
-            <span class="bg-[#22C55E] text-[10px] px-2 rounded-full font-bold uppercase">Buka</span>
+            @php
+                $hour = now()->format('H');
+                $isOpen = ($hour >= 16 && $hour < 22);
+            @endphp
+            <span class="{{ $isOpen ? 'bg-[#22C55E]' : 'bg-red-500' }} text-[10px] px-2 rounded-full font-bold uppercase">
+                {{ $isOpen ? 'Buka' : 'Tutup' }}
+            </span>
         </a>
         
         <div class="hidden md:flex items-center gap-8 text-sm font-medium">
             <a href="{{ route('home') }}" class="hover:text-orange-200 transition">Beranda</a>
-            <a href="#" class="hover:text-orange-200 transition">Pesan Menu</a>
-            <a href="#" class="hover:text-orange-200 transition">Keranjang</a>
-            <a href="{{ route('login') }}" class="bg-white text-[#78350F] px-6 py-2 rounded-lg font-bold hover:bg-orange-50 transition shadow-sm">
-                Masuk
-            </a>
+            <a href="{{ route('menu.index') }}" class="hover:text-orange-200 transition">Pesan Menu</a>
+            <a href="{{ route('cart.index') }}" class="hover:text-orange-200 transition">Keranjang</a>
+            
+            @guest
+                <a href="{{ route('login') }}" class="bg-white text-[#78350F] px-6 py-2 rounded-lg font-bold hover:bg-orange-50 transition shadow-sm">
+                    Masuk
+                </a>
+            @endguest
+
+            @auth
+                <div class="flex items-center gap-4 border-l border-orange-800 pl-4">
+                    <div class="text-right">
+                        <div class="font-bold text-xs">{{ Auth::user()->name }}</div>
+                        <div class="text-[10px] text-orange-200">{{ Auth::user()->exp }} EXP</div>
+                    </div>
+
+                    @if(!Auth::user()->last_daily_claim || !Auth::user()->last_daily_claim->isToday())
+                        <form method="POST" action="{{ route('daily.claim') }}" class="inline">
+                            @csrf
+                            <button type="submit" class="text-yellow-400 hover:text-yellow-300 transition animate-bounce" title="Klaim Bonus Harian!">
+                                <i class="fas fa-gift text-lg"></i>
+                            </button>
+                        </form>
+                    @endif
+
+                    @if(Auth::user()->is_admin)
+                        <a href="{{ route('admin.dashboard') }}" title="Panel Admin" class="text-yellow-400 hover:text-yellow-300 transition text-lg">
+                            <i class="fas fa-user-shield"></i>
+                        </a>
+                    @endif
+
+                    <form method="POST" action="{{ route('logout') }}" class="inline">
+                        @csrf
+                        <button type="submit" class="hover:text-orange-200 transition">
+                            <i class="fas fa-sign-out-alt"></i>
+                        </button>
+                    </form>
+                </div>
+            @endauth
         </div>
     </nav>
 
@@ -35,9 +87,9 @@
                 Nikmati kopi dan makanan terbaik dalam suasana yang nyaman di Banyuwangi bagian selatan.
             </p>
             <div class="flex flex-col md:flex-row gap-4 justify-center">
-                <button class="bg-[#C2410C] hover:bg-orange-800 text-white px-10 py-4 rounded-xl font-bold text-lg transition-all transform hover:scale-105">
+                <a href="{{ route('menu.index') }}" class="bg-[#C2410C] hover:bg-orange-800 text-white px-10 py-4 rounded-xl font-bold text-lg transition-all transform hover:scale-105 no-underline inline-block">
                     Pesan Sekarang
-                </button>
+                </a>
             </div>
         </div>
     </div>

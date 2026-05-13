@@ -87,7 +87,7 @@
                         </div>
 
                         <div class="order-actions">
-                            <a href="{{ route('order.receipt', $order) }}" class="btn-view-receipt" onclick="event.preventDefault(); viewReceipt('{{ route('order.receipt', $order) }}')">
+                            <a href="{{ route('order.receipt', $order) }}" class="btn-view-receipt receipt-link" data-url="{{ route('order.receipt', $order) }}">
                                 <i class="fas fa-receipt"></i> Lihat Struk
                             </a>
                             <a href="{{ route('menu.index') }}" class="btn-order-again">
@@ -325,4 +325,18 @@
         }
     }
 </style>
+
+<script>
+document.addEventListener('click', function(e) {
+    if (e.target.closest('.receipt-link')) {
+        e.preventDefault();
+        const url = e.target.closest('.receipt-link').dataset.url;
+        if (typeof viewReceipt === 'function') {
+            viewReceipt(url);
+        } else {
+            window.location.href = url;
+        }
+    }
+});
+</script>
 @endsection

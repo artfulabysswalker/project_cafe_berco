@@ -39,8 +39,8 @@
             <nav class="nav">
                 <ul>
                     <li><a href="{{ route('home') }}"><i class="fas fa-home"></i> Beranda</a></li>
-                    <li><a href="{{ route('menu') }}"><i class="fas fa-mug-hot"></i> Pesan Menu</a></li>
-                    <li><a href="{{ route('cart') }}"><i class="fas fa-shopping-cart"></i> Keranjang</a></li>
+                    <li><a href="{{ route('menu.index') }}"><i class="fas fa-mug-hot"></i> Pesan Menu</a></li>
+                    <li><a href="{{ route('cart.index') }}"><i class="fas fa-shopping-cart"></i> Keranjang</a></li>
                 </ul>
             </nav>
             <div class="user-action">
@@ -55,6 +55,12 @@
                             <div style="font-weight: bold;"><i class="fas fa-user-circle"></i> {{ Auth::user()->name }}</div>
                             <div style="font-size: 0.75rem; opacity: 0.8;"><i class="fas fa-star" style="color: #f1c40f;"></i> {{ Auth::user()->exp }} EXP</div>
                         </div>
+                        
+                        @if(Auth::user()->is_admin)
+                            <a href="{{ route('admin.dashboard') }}" class="btn-admin-panel" title="Panel Admin" style="color: #f1c40f; margin: 0 10px; font-size: 1.2rem;">
+                                <i class="fas fa-user-shield"></i>
+                            </a>
+                        @endif
                         
                         {{-- Route name di web.php adalah daily.claim, pastikan method POST --}}
                         <form method="POST" action="{{ route('daily.claim') }}">
@@ -86,7 +92,7 @@
             <h2 class="hero-title">BERCO CAFE</h2>
             <p class="hero-subtitle">Nikmati kopi dan kue-kue terbaik dalam suasana yang nyaman.</p>
             <div class="hero-btns">
-                <a href="{{ route('menu') }}" class="btn btn-primary">Pesan Sekarang</a>
+                <a href="{{ route('menu.index') }}" class="btn btn-primary">Pesan Sekarang</a>
                 <a href="#" class="btn btn-secondary">Kunjungi Kami</a>
             </div>
         </div>
@@ -190,7 +196,7 @@
             <div class="footer-links">
                 <h3>Quick Links</h3>
                 <ul>
-                    <li><a href="{{ route('menu') }}">Menu</a></li>
+                    <li><a href="{{ route('menu.index') }}">Menu</a></li>
                     <li><a href="#">About Us</a></li>
                     <li><a href="#">Gallery</a></li>
                     <li><a href="#">Contact</a></li>

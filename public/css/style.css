@@ -262,13 +262,22 @@ ul { list-style: none; }
     align-items: center;
     margin: 0 auto 15px;
     color: white;
-    font-size: 35px;
+    font-size: 45px;
+    line-height: 1;
+}
+
+.login-header {
+    margin-bottom: 30px;
+    text-align: center;
 }
 
 .login-header h1 {
     color: #5d2e1a;
     letter-spacing: 1px;
     margin-bottom: 5px;
+    font-size: 32px;
+    font-weight: bold;
+    margin-top: 15px;
 }
 
 .login-header p {

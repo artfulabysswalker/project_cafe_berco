@@ -5,10 +5,10 @@ use Laravel\Fortify\Fortify;
 
 // Custom login route tanpa redirect untuk user yang sudah auth
 Route::get('/login', function () {
-    return view('auth.login');
+    return view('pages.auth.login');
 })->name('login')->middleware('guest');
 
 // Register route
-Route::post('/register', function () {
-    return view('auth.register');
-})->name('register');
+Route::get('/register', function () {
+    return view('pages.auth.register');
+})->name('register')->middleware('guest');
