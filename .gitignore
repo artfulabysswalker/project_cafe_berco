@@ -1,0 +1,38 @@
++
+# Laravel core
+/vendor
+/node_modules
+
+# Environment files (VERY IMPORTANT)
+.env
+.env.*
+
+# Laravel storage
+/storage/*.key
+/storage/app/*
+/storage/framework/cache/*
+/storage/framework/sessions/*
+/storage/framework/views/*
+/storage/logs/*
+
+# Cache & compiled
+/bootstrap/cache/*.php
+/bootstrap/cache/*.json
+
+# Vite / Build files
+/public/build/////////*
+/public/hot
+
+# IDE / Editor
+/.idea
+/.vscode
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Testing
+/phpunit.result.cache

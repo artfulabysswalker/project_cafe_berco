@@ -1,0 +1,32 @@
+/* Tailwind entry (Vite style) */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import "../../vendor/livewire/flux/dist/flux.css";
+
+/* Base styles */
+@layer base {
+    *,
+    ::after,
+    ::before,
+    ::backdrop,
+    ::file-selector-button {
+        border-color: #e5e5e5;
+    }
+}
+
+/* Flux components */
+[data-flux-field]:not(ui-radio, ui-checkbox) {
+    @apply grid gap-2;
+}
+
+[data-flux-label] {
+    @apply !mb-0 !leading-tight;
+}
+
+input:focus[data-flux-control],
+textarea:focus[data-flux-control],
+select:focus[data-flux-control] {
+    @apply outline-none ring-2 ring-offset-2;
+}

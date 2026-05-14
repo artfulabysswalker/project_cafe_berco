@@ -1,0 +1,76 @@
+
+body {
+
+.menu:hover {
+    background:#B7791F;
+}
+
+.menu.active {
+    background:#B7791F;
+}
+
+.menu.logout {
+    margin-top:30px;
+    background:#92400E;
+}
+
+.container {
+    display:flex;
+    min-height:100vh;
+}
+
+.main {
+    flex:1;
+    padding:20px;
+    padding-top:80px;
+}
+
+.topbar {
+    position:absolute;
+    top:0;
+    left:240px;
+    right:0;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:10px 20px;
+    background:#bbaa3a;
+    border-radius:10px;
+}
+
+.top-icons {
+    display:flex;
+    gap:10px;
+}
+
+.icon {
+    width:40px;
+    height:40px;
+    background:#5d2e1a;
+    border-radius:50%;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    color:white;
+    cursor:pointer;
+}
+
+.icon:hover {
+    background:#B7791F;
+}
+
+.menu-card {
+    background:white;
+    padding:15px;
+    border-radius:12px;
+    width:180px;
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+}
+
+.menu-actions button {
+    margin-right:5px;
+    cursor:pointer;
+}
+}
