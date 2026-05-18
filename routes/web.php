@@ -123,9 +123,6 @@ Route::middleware(['customer'])->group(function () {
     Route::post('/daily-claim', [RedeemController::class, 'claimDaily'])
         ->name('daily.claim');
 
-    Route::post('/redeem/{reward}', [RedeemController::class, 'redeem'])
-        ->name('redeem.redeem');
-
     Route::get('/redeem/receipt/{redemption}', [RedeemController::class, 'receipt'])
         ->name('redeem.receipt');
 
@@ -134,6 +131,9 @@ Route::middleware(['customer'])->group(function () {
 
     Route::get('/redeem/leaderboard', [RedeemController::class, 'leaderboard'])
         ->name('redeem.leaderboard');
+
+    Route::post('/redeem/{reward}', [RedeemController::class, 'redeem'])
+        ->name('redeem.redeem');
 
     // Orders
     Route::get('/orders', [OrderController::class, 'history'])
@@ -153,11 +153,11 @@ Route::middleware(['customer'])->group(function () {
     Route::get('/achievements', [AchievementController::class, 'index'])
         ->name('achievements.index');
 
-    Route::get('/achievement/{achievement}', [AchievementController::class, 'show'])
-        ->name('achievement.show');
-
     Route::get('/achievements/list', [AchievementController::class, 'list'])
         ->name('achievements.list');
+
+    Route::get('/achievement/{achievement}', [AchievementController::class, 'show'])
+        ->name('achievement.show');
 
     // Referral
     Route::get('/referral', [ReferralController::class, 'index'])
@@ -172,31 +172,7 @@ Route::middleware(['customer'])->group(function () {
     Route::get('/referral/stats', [ReferralController::class, 'stats'])
         ->name('referral.stats');
 
-    // Vouchers
-    Route::get('/vouchers', [VoucherController::class, 'index'])
-        ->name('vouchers.index');
-
-    Route::get('/vouchers/create', [VoucherController::class, 'create'])
-        ->name('vouchers.create');
-
-    Route::post('/vouchers', [VoucherController::class, 'store'])
-        ->name('vouchers.store');
-
-    Route::get('/vouchers/{voucher}/edit', [VoucherController::class, 'edit'])
-        ->name('vouchers.edit');
-
-    Route::put('/vouchers/{voucher}', [VoucherController::class, 'update'])
-        ->name('vouchers.update');
-
-    Route::delete('/vouchers/{voucher}', [VoucherController::class, 'destroy'])
-        ->name('vouchers.destroy');
-
-    Route::get('/vouchers/{voucher}/distribute-form', [VoucherController::class, 'distributeForm'])
-        ->name('vouchers.distributeForm');
-
-    Route::post('/vouchers/{voucher}/distribute', [VoucherController::class, 'distribute'])
-        ->name('vouchers.distribute');
-
+    // My Vouchers
     Route::get('/my-vouchers', [VoucherController::class, 'myVouchers'])
         ->name('vouchers.myVouchers');
 
@@ -209,6 +185,12 @@ Route::middleware(['customer'])->group(function () {
 
     Route::post('/playlists', [PlaylistController::class, 'store'])
         ->name('playlists.store');
+
+    Route::get('/playlists/top-voted', [PlaylistController::class, 'topVoted'])
+        ->name('playlists.topVoted');
+
+    Route::get('/playlists/current-playing', [PlaylistController::class, 'currentPlaying'])
+        ->name('playlists.currentPlaying');
 
     Route::get('/playlists/{playlist}', [PlaylistController::class, 'show'])
         ->name('playlists.show');
@@ -224,12 +206,6 @@ Route::middleware(['customer'])->group(function () {
 
     Route::post('/playlists/{playlist}/vote', [PlaylistController::class, 'vote'])
         ->name('playlists.vote');
-
-    Route::get('/playlists/top-voted', [PlaylistController::class, 'topVoted'])
-        ->name('playlists.topVoted');
-
-    Route::get('/playlists/current-playing', [PlaylistController::class, 'currentPlaying'])
-        ->name('playlists.currentPlaying');
 
 });
 
@@ -260,17 +236,17 @@ Route::middleware(['guest.mode'])->group(function () {
     Route::post('/cart/add', [CartController::class, 'add'])
         ->name('cart.add');
 
-    Route::post('/cart/{cartItem}/update', [CartController::class, 'update'])
-        ->name('cart.update');
-
-    Route::post('/cart/{cartItem}/remove', [CartController::class, 'remove'])
-        ->name('cart.remove');
-
     Route::post('/cart/clear', [CartController::class, 'clear'])
         ->name('cart.clear');
 
     Route::get('/cart/count', [CartController::class, 'count'])
         ->name('cart.count');
+
+    Route::post('/cart/{cartItem}/update', [CartController::class, 'update'])
+        ->name('cart.update');
+
+    Route::post('/cart/{cartItem}/remove', [CartController::class, 'remove'])
+        ->name('cart.remove');
 
     // Checkout
     Route::get('/checkout', [OrderController::class, 'checkout'])
@@ -298,7 +274,8 @@ Route::middleware(['admin.staff'])->prefix('admin')->group(function () {
     Route::get('/staff', [StaffController::class, 'index'])
         ->name('admin.staffoption.index');
 
-    Route::get('/staff/delete/{id}', [StaffController::class, 'delete']);
+    Route::delete('/staff/{id}', [StaffController::class, 'destroy'])
+        ->name('admin.staff.destroy');
 
     Route::put('/staff/{id_user}/role', [StaffController::class, 'updateRole'])
         ->name('admin.staff.role');
@@ -338,6 +315,31 @@ Route::middleware(['admin.staff'])->prefix('admin')->group(function () {
 
     Route::delete('/menu/{id}', [MenuController::class, 'destroy'])
         ->name('admin.menu.delete');
+
+    // Vouchers CRUD
+    Route::get('/vouchers', [VoucherController::class, 'index'])
+        ->name('vouchers.index');
+
+    Route::get('/vouchers/create', [VoucherController::class, 'create'])
+        ->name('vouchers.create');
+
+    Route::post('/vouchers', [VoucherController::class, 'store'])
+        ->name('vouchers.store');
+
+    Route::get('/vouchers/{voucher}/edit', [VoucherController::class, 'edit'])
+        ->name('vouchers.edit');
+
+    Route::put('/vouchers/{voucher}', [VoucherController::class, 'update'])
+        ->name('vouchers.update');
+
+    Route::delete('/vouchers/{voucher}', [VoucherController::class, 'destroy'])
+        ->name('vouchers.destroy');
+
+    Route::get('/vouchers/{voucher}/distribute-form', [VoucherController::class, 'distributeForm'])
+        ->name('vouchers.distributeForm');
+
+    Route::post('/vouchers/{voucher}/distribute', [VoucherController::class, 'distribute'])
+        ->name('vouchers.distribute');
 
     // Receipt
     Route::get('/receipt/view/{id}', [ReceiptController::class, 'view'])

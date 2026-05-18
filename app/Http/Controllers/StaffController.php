@@ -121,4 +121,13 @@ return view('admin.staffoption.index', compact(
 
     return back()->with('success','Role updated');
 }
+
+    // Delete staff
+    public function destroy($id)
+    {
+        $staff = User::findOrFail($id);
+        $staff->delete();
+
+        return redirect()->route('admin.staffoption.index')->with('success', 'Staff account deleted successfully.');
+    }
 }
