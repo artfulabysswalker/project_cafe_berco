@@ -17,6 +17,10 @@ use App\Http\Controllers\RedeemController;
 use App\Http\Controllers\Customer\CartController;
 use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\CostumerController;
+use App\Http\Controllers\VoucherController;
+use App\Http\Controllers\PlaylistController;
+use App\Http\Controllers\ReferralController;
+use App\Http\Controllers\AchievementController;
 
 /*
 |--------------------------------------------------------------------------
@@ -144,6 +148,88 @@ Route::middleware(['customer'])->group(function () {
     // Reviews
     Route::post('/menu/{menu}/reviews', [ReviewController::class, 'store'])
         ->name('reviews.store');
+
+    // Achievements
+    Route::get('/achievements', [AchievementController::class, 'index'])
+        ->name('achievements.index');
+
+    Route::get('/achievement/{achievement}', [AchievementController::class, 'show'])
+        ->name('achievement.show');
+
+    Route::get('/achievements/list', [AchievementController::class, 'list'])
+        ->name('achievements.list');
+
+    // Referral
+    Route::get('/referral', [ReferralController::class, 'index'])
+        ->name('referral.index');
+
+    Route::post('/referral/apply', [ReferralController::class, 'apply'])
+        ->name('referral.apply');
+
+    Route::get('/referral/generate-code', [ReferralController::class, 'generateCode'])
+        ->name('referral.generateCode');
+
+    Route::get('/referral/stats', [ReferralController::class, 'stats'])
+        ->name('referral.stats');
+
+    // Vouchers
+    Route::get('/vouchers', [VoucherController::class, 'index'])
+        ->name('vouchers.index');
+
+    Route::get('/vouchers/create', [VoucherController::class, 'create'])
+        ->name('vouchers.create');
+
+    Route::post('/vouchers', [VoucherController::class, 'store'])
+        ->name('vouchers.store');
+
+    Route::get('/vouchers/{voucher}/edit', [VoucherController::class, 'edit'])
+        ->name('vouchers.edit');
+
+    Route::put('/vouchers/{voucher}', [VoucherController::class, 'update'])
+        ->name('vouchers.update');
+
+    Route::delete('/vouchers/{voucher}', [VoucherController::class, 'destroy'])
+        ->name('vouchers.destroy');
+
+    Route::get('/vouchers/{voucher}/distribute-form', [VoucherController::class, 'distributeForm'])
+        ->name('vouchers.distributeForm');
+
+    Route::post('/vouchers/{voucher}/distribute', [VoucherController::class, 'distribute'])
+        ->name('vouchers.distribute');
+
+    Route::get('/my-vouchers', [VoucherController::class, 'myVouchers'])
+        ->name('vouchers.myVouchers');
+
+    // Playlists
+    Route::get('/playlists', [PlaylistController::class, 'index'])
+        ->name('playlists.index');
+
+    Route::get('/playlists/create', [PlaylistController::class, 'create'])
+        ->name('playlists.create');
+
+    Route::post('/playlists', [PlaylistController::class, 'store'])
+        ->name('playlists.store');
+
+    Route::get('/playlists/{playlist}', [PlaylistController::class, 'show'])
+        ->name('playlists.show');
+
+    Route::get('/playlists/{playlist}/edit', [PlaylistController::class, 'edit'])
+        ->name('playlists.edit');
+
+    Route::put('/playlists/{playlist}', [PlaylistController::class, 'update'])
+        ->name('playlists.update');
+
+    Route::delete('/playlists/{playlist}', [PlaylistController::class, 'destroy'])
+        ->name('playlists.destroy');
+
+    Route::post('/playlists/{playlist}/vote', [PlaylistController::class, 'vote'])
+        ->name('playlists.vote');
+
+    Route::get('/playlists/top-voted', [PlaylistController::class, 'topVoted'])
+        ->name('playlists.topVoted');
+
+    Route::get('/playlists/current-playing', [PlaylistController::class, 'currentPlaying'])
+        ->name('playlists.currentPlaying');
 
 });
 
