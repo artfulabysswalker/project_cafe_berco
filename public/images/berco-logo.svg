@@ -1,0 +1,11 @@
+<svg viewBox="0 0 200 250" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- B Letter -->
+  <path d="M 50 30 L 110 30 Q 130 30 130 50 Q 130 65 115 70 Q 130 75 130 90 Q 130 110 110 110 L 50 110 L 50 30 Z" fill="#8B1A1A" stroke="#6B0000" stroke-width="2" stroke-linejoin="round"/>
+  
+  <!-- Coffee Cup/Circle in B -->
+  <circle cx="95" cy="70" r="20" fill="white" stroke="#6B0000" stroke-width="2"/>
+  <path d="M 95 55 Q 100 55 100 70 Q 100 85 95 85 Q 90 85 90 70 Q 90 55 95 55 Z" fill="#8B1A1A"/>
+  
+  <!-- BERCO Text -->
+  <text x="100" y="160" font-family="Arial, sans-serif" font-size="36" font-weight="900" text-anchor="middle" fill="#8B1A1A" letter-spacing="2">BERCO</text>
+</svg>

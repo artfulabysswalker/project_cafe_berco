@@ -109,6 +109,10 @@ Route::middleware(['customer'])->group(function () {
         return view('customerviews.home');
     })->name('home');
 
+    Route::get('/dashboard', function () {
+        return view('customerviews.dashboard');
+    })->name('dashboard');
+
     // Loyalty
     Route::view('/daily-quest', 'CustomerViews.daily-quest')
         ->name('daily-quest');

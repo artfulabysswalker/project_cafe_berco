@@ -526,16 +526,18 @@
 
     {{-- NAVBAR --}}
     <nav class="bg-[#78350F] text-white px-6 py-4 flex justify-between items-center fixed top-0 w-full z-50 shadow-lg">
-        {{-- Logo & Status --}}
-        <a href="{{ route('home') }}" class="flex flex-col items-center hover:opacity-90 transition">
+        {{-- Logo --}}
+        <a href="{{ route('home') }}" class="flex items-center gap-3 hover:opacity-90 transition group relative cursor-pointer">
             <span class="font-bold text-xl tracking-wider">🍵 BERCO</span>
-            @php
-                $hour = now()->format('H');
-                $isOpen = ($hour >= 16 && $hour < 22);
-            @endphp
-            <span class="{{ $isOpen ? 'bg-[#22C55E]' : 'bg-red-500' }} text-[10px] px-2 rounded-full font-bold uppercase transition">
-                {{ $isOpen ? '✓ Buka' : '✗ Tutup' }}
-            </span>
+            
+            {{-- Status Indicator (Dot only) --}}
+            <span id="statusDot" class="w-3 h-3 rounded-full bg-[#22C55E] animate-pulse"></span>
+            
+            <!-- Tooltip on Hover -->
+            <div class="absolute left-0 top-full mt-2 hidden group-hover:block bg-gray-900 text-white text-xs px-3 py-2 rounded-lg whitespace-nowrap z-50 pointer-events-none">
+                <span id="tooltipText">🟢 Kafe sedang BUKA (16:00 - 22:00)</span>
+                <div class="absolute bottom-full left-8 border-4 border-transparent border-b-gray-900"></div>
+            </div>
         </a>
 
         {{-- Navigation Links --}}
@@ -555,12 +557,14 @@
             @auth
                 <div class="flex items-center gap-4 border-l border-orange-800 pl-4">
                     <div class="text-right">
-                        <div class="font-bold text-xs">{{ Auth::user()->name }}</div>
+                        <div class="font-bold text-xs">
+                            {{ Auth::user()->is_guest ? '👤 Guest' : Auth::user()->name }}
+                        </div>
                         <div class="text-[10px] text-orange-200">{{ Auth::user()->exp ?? 0 }} EXP</div>
                     </div>
 
                     {{-- Daily Claim Button --}}
-                    @if(!Auth::user()->last_daily_claim || !Auth::user()->last_daily_claim->isToday())
+                    @if(Auth::user()->last_daily_claim === null || !Auth::user()->last_daily_claim->isToday())
                         <form method="POST" action="{{ route('daily.claim') }}" class="inline">
                             @csrf
                             <button type="submit" class="text-yellow-400 hover:text-yellow-300 transition animate-bounce" title="Klaim Bonus Harian!">
@@ -579,8 +583,9 @@
                     {{-- Logout --}}
                     <form method="POST" action="{{ route('logout') }}" class="inline">
                         @csrf
-                        <button type="submit" class="hover:text-orange-200 transition" title="Keluar">
+                        <button type="submit" class="bg-red-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-red-700 transition flex items-center gap-2" title="Keluar dari akun">
                             <i class="fas fa-sign-out-alt"></i>
+                            Logout
                         </button>
                     </form>
                 </div>
@@ -696,7 +701,12 @@
         <p><i class="fas fa-copyright mr-2"></i>2026 Berco Cafe Banyuwangi. All Rights Reserved.</p>
         <p style="margin-top: 10px; font-size: 0.9rem;">Crafted with ❤️ for Coffee Lovers</p>
     </footer>
-</body>
 
-</html>
-
+    {{-- Real-time Status Update Script --}}
+    <script>
+        function updateStatusIndicator() {
+            const now = new Date();
+            const hour = now.getHours();
+            const isOpen = hour >= 16 && hour < 22;
+            
+            const statusDot = document.getElementById('statusDot');
