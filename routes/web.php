@@ -82,13 +82,13 @@ Route::middleware(['guest'])->group(function () {
 
 Route::middleware(['auth'])->group(function () {
 
-    Route::post('/logout', function () {
+    Route::post('/logout', function (Illuminate\Http\Request $request) {
 
         Auth::logout();
 
-        request()->session()->invalidate();
+        $request->session()->invalidate();
 
-        request()->session()->regenerateToken();
+        $request->session()->regenerateToken();
 
         return redirect('/testlogin');
 
