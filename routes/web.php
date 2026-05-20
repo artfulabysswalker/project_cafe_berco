@@ -29,7 +29,7 @@ use App\Http\Controllers\AchievementController;
 */
 
 Route::get('/', function () {
-    return view('customerviews.welcome');
+    return view('Customerviews.welcome');
 });
 
 Route::get('/menu', [MenuController::class, 'customerIndex'])
@@ -47,17 +47,17 @@ Route::get('/menu/{menu}', [MenuController::class, 'showProduct'])
 
 Route::middleware(['guest'])->group(function () {
 
-    // Customer Login
+    // Customer Login - Redirect to standard /login
     Route::get('/testlogin', function () {
-        return view('Customerviews.pages.auth.login');
+        return redirect('/login');
     })->name('testlogin');
 
     Route::post('/login-user', [CostumerController::class, 'login'])
         ->name('login.user');
 
-    // Customer Register
+    // Customer Register - Redirect to standard /register
     Route::get('/testregister', function () {
-        return view('Customerviews.pages.auth.register');
+        return redirect('/register');
     })->name('testregister');
 
     Route::post('/register-user', [CostumerController::class, 'register'])
@@ -90,7 +90,7 @@ Route::middleware(['auth'])->group(function () {
 
         $request->session()->regenerateToken();
 
-        return redirect('/testlogin');
+        return redirect('/login');
 
     })->name('logout');
 
@@ -106,11 +106,11 @@ Route::middleware(['auth'])->group(function () {
 Route::middleware(['customer'])->group(function () {
 
     Route::get('/home', function () {
-        return view('customerviews.home');
+        return view('Customerviews.index');
     })->name('home');
 
     Route::get('/dashboard', function () {
-        return view('customerviews.dashboard');
+        return view('Customerviews.dashboard');
     })->name('dashboard');
 
     // Loyalty
@@ -211,29 +211,7 @@ Route::middleware(['customer'])->group(function () {
     Route::post('/playlists/{playlist}/vote', [PlaylistController::class, 'vote'])
         ->name('playlists.vote');
 
-});
-
-
-/*
-|--------------------------------------------------------------------------
-| GUEST MODE
-|--------------------------------------------------------------------------
-*/
-
-Route::middleware(['guest.mode'])->group(function () {
-
-
-    Route::post('/guest-login', function () {
-
-        session([
-            'is_guest' => true,
-            'guest_name' => 'Guest'
-        ]);
-
-        return redirect()->route('home');
-
-    })->name('guest.login');
-    // Cart
+    // Cart Routes - For authenticated customers
     Route::get('/cart', [CartController::class, 'index'])
         ->name('cart.index');
 
@@ -252,12 +230,34 @@ Route::middleware(['guest.mode'])->group(function () {
     Route::post('/cart/{cartItem}/remove', [CartController::class, 'remove'])
         ->name('cart.remove');
 
-    // Checkout
+    // Checkout Routes - For authenticated customers
     Route::get('/checkout', [OrderController::class, 'checkout'])
         ->name('checkout');
 
     Route::post('/order', [OrderController::class, 'store'])
         ->name('order.store');
+
+});
+
+
+/*
+|--------------------------------------------------------------------------
+| GUEST MODE
+|--------------------------------------------------------------------------
+*/
+
+Route::middleware(['guest.mode'])->group(function () {
+
+    Route::post('/guest-login', function () {
+
+        session([
+            'is_guest' => true,
+            'guest_name' => 'Guest'
+        ]);
+
+        return redirect()->route('home');
+
+    })->name('guest.login');
 
 });
 

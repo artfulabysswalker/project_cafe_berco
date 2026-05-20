@@ -11,13 +11,13 @@ class CustomerMiddleware
     public function handle(Request $request, Closure $next)
     {
         if (!Auth::check()) {
-            return redirect('/');
+            return redirect('/login');
         }
 
         $user = Auth::user();
 
-        // customer role (id_role 4 = Customer)
-        if ($user->id_role == 4 && !$user->is_guest) {
+        // customer role (id_role 2 = Customer)
+        if ($user->id_role == 2 && !$user->is_guest) {
             return $next($request);
         }
 

@@ -1,4 +1,4 @@
-@extends('layouts.web')
+@extends('Customerviews.layouts.web')
 
 @section('title', 'Menu - Berco Cafe')
 
@@ -41,34 +41,32 @@
 
         <div class="menu-grid">
             @forelse($products as $product)
-                <div class="menu-card" data-category="{{ $product->category }}" data-id="{{ $product->slug }}">
+                <div class="menu-card" data-id="{{ $product->id_menu }}">
                     <div class="card-img">
-                        <img src="{{ $product->image_url ?? 'https://images.unsplash.com/photo-1495521821757-a1efb6729352?q=80&w=400' }}" 
-                             alt="{{ $product->name }}">
+                        <img src="{{ asset('storage/' . $product->foto) ?? 'https://images.unsplash.com/photo-1495521821757-a1efb6729352?q=80&w=400' }}" 
+                             alt="{{ $product->nama_menu }}">
                         <div class="image-overlay"></div>
-                        @auth
-                            <button class="wishlist-btn" onclick="toggleFavorite('{{ $product->slug }}', this)" type="button">
-                                <i class="far fa-heart"></i>
-                            </button>
-                        @endauth
                         <div class="card-category">
-                            <span class="category-badge">{{ ucfirst($product->category) }}</span>
+                            @if($product->rating)
+                                <span class="category-badge">⭐ {{ $product->rating }}/5</span>
+                            @endif
                         </div>
                     </div>
                     <div class="card-body">
-                        <h3>{{ $product->name }}</h3>
-                        <p>{{ $product->description ?? 'Menu pilihan' }}</p>
-                        <span class="price">Rp {{ number_format($product->price, 0, ',', '.') }}</span>
+                        <h3>{{ $product->nama_menu }}</h3>
+                        <p>{{ $product->deskripsi ?? 'Menu pilihan' }}</p>
+                        <span class="price">Rp {{ number_format($product->harga, 0, ',', '.') }}</span>
 
                         @auth
                             <button class="btn-add-cart add-to-cart-btn" 
-                                    data-id="{{ $product->id }}" 
-                                    data-name="{{ $product->name }}" 
+                                    data-id="{{ $product->id_menu }}" 
+                                    data-name="{{ $product->nama_menu }}" 
+                                    data-price="{{ $product->harga }}"
                                     type="button">
                                 <i class="fas fa-shopping-cart"></i> Tambah ke Keranjang
                             </button>
                         @else
-                            <a href="{{ route('login') }}" class="btn-add-cart" style="text-decoration: none; display: block; text-align: center;">
+                            <a href="{{ route('testlogin') }}" class="btn-add-cart" style="text-decoration: none; display: block; text-align: center;">
                                 <i class="fas fa-shopping-cart"></i> Masuk untuk Pesan
                             </a>
                         @endauth
@@ -723,7 +721,7 @@ function addToCart(productId, productName) {
             'X-CSRF-TOKEN': '{{ csrf_token() }}'
         },
         body: JSON.stringify({
-            product_id: productId,
+            menu_id: productId,
             quantity: 1
         })
     })
@@ -761,7 +759,6 @@ function updateCartBadge() {
         });
 }
 
-<<<<<<< HEAD
 function attachCartButtons() {
     document.querySelectorAll('.add-to-cart-btn').forEach(btn => {
         btn.addEventListener('click', function() {
@@ -779,10 +776,6 @@ function attachCartButtons() {
 document.addEventListener('DOMContentLoaded', function() {
     attachCartButtons();
     updateCartBadge();
-=======
-// Update badge on page load
-document.addEventListener('DOMContentLoaded', () => {
-    updateCartBadge();
     const reviewSelector = document.getElementById('review-product-select');
     const reviewForm = document.getElementById('menu-review-form');
 
@@ -791,7 +784,6 @@ document.addEventListener('DOMContentLoaded', () => {
             reviewForm.action = this.value;
         });
     }
->>>>>>> c1f9b47b2b32ef16af6de90aff6579bb39bed917
 });
 </script>
 @endauth

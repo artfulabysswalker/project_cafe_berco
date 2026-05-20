@@ -53,7 +53,7 @@ class CartController extends Controller
 
             // Create new cart item
             CartItem::create([
-                'user_id' => $user->id,
+                'user_id' => $user->id_user,
                 'menu_id' => $request->menu_id,
                 'quantity' => $request->quantity,
             ]);
@@ -102,9 +102,10 @@ class CartController extends Controller
     /**
      * Clear cart
      */
-    public function clear()
+    public function clear(Request $request)
     {
-        auth()->user()->cartItems()->delete();
+        $user = auth()->user();
+        $user->cartItems()->delete();
 
         return response()->json([
             'success' => true,
@@ -113,16 +114,15 @@ class CartController extends Controller
     }
 
     /**
-     * Cart item count
+     * Get cart count
      */
-    public function count()
+    public function count(Request $request)
     {
-        $count = auth()->user()
-            ->cartItems()
-            ->sum('quantity');
+        $user = auth()->user();
+        $count = $user->cartItems()->sum('quantity');
 
         return response()->json([
-            'count' => $count
+            'count' => $count,
         ]);
     }
 }

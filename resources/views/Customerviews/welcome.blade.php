@@ -535,7 +535,7 @@
             
             <!-- Tooltip on Hover -->
             <div class="absolute left-0 top-full mt-2 hidden group-hover:block bg-gray-900 text-white text-xs px-3 py-2 rounded-lg whitespace-nowrap z-50 pointer-events-none">
-                <span id="tooltipText">🟢 Kafe sedang BUKA (16:00 - 22:00)</span>
+                <span id="tooltipText">🟢 Kafe sedang BUKA (16:00 - 23:00)</span>
                 <div class="absolute bottom-full left-8 border-4 border-transparent border-b-gray-900"></div>
             </div>
         </a>
@@ -707,6 +707,6 @@
         function updateStatusIndicator() {
             const now = new Date();
             const hour = now.getHours();
-            const isOpen = hour >= 16 && hour < 22;
+            const isOpen = hour >= 16 && hour < 23;
             
             const statusDot = document.getElementById('statusDot');

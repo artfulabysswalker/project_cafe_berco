@@ -16,7 +16,11 @@ return Application::configure(basePath: dirname(__DIR__))
         'customer' => \App\Http\Middleware\CustomerMiddleware::class,
         'admin.staff' => \App\Http\Middleware\AdminMiddleware::class,
         'guest.mode' => \App\Http\Middleware\GuestModeMiddleware::class,
+        'ensure.valid.role' => \App\Http\Middleware\EnsureUserHasValidRole::class,
     ]);
+
+    // Add ensure.valid.role to auth middleware group
+    $middleware->appendToGroup('auth', \App\Http\Middleware\EnsureUserHasValidRole::class);
 
 })
     ->withExceptions(function (Exceptions $exceptions): void {

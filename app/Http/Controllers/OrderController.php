@@ -1,164 +1,136 @@
 <?php
 
-namespace App\Http\Controllers\Customer;
+namespace App\\Http\\Controllers;
 
-use App\Http\Controllers\Controller;
-use App\Models\Menu;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
+use App\\Models\\Order;
+use App\\Models\\OrderItem;
+use App\\Models\\CartItem;
+use Illuminate\\Http\\Request;
+use Carbon\\Carbon;
 
-class MenuController extends Controller
+class OrderController extends Controller
 {
-
-    /*
-    |--------------------------------------------------------------------------
-    | ADMIN METHODS
-    |--------------------------------------------------------------------------
-    */
-
-    // Admin Menu List
-    public function index()
+    /**
+     * Show checkout page
+     */
+    public function checkout()
     {
-        $menus = Menu::all();
+        $user = auth()->user();
+        $cartItems = $user->cartItems()->with('menu')->get();
 
-        return view('admin.menu', compact('menus'));
+        if ($cartItems->isEmpty()) {
+            return redirect()->route('cart.index')
+                ->with('error', 'Keranjang Anda kosong');
+        }
+
+        $subtotal = $cartItems->sum(function ($item) {
+            return $item->menu->harga * $item->quantity;
+        });
+
+        $tax = $subtotal * 0.1;
+        $total = $subtotal + $tax;
+
+        return view('Customerviews.checkout', compact('cartItems', 'subtotal', 'tax', 'total'));
     }
 
-    // Admin Create Page
-    public function create()
+    /**
+     * Show order history
+     */
+    public function history()
     {
-        return view('admin.menu.create');
+        $user = auth()->user();
+        $orders = $user->orders()
+            ->with('items.menu')
+            ->latest()
+            ->paginate(10);
+
+        return view('Customerviews.order.history', compact('orders'));
     }
 
-    // Store Menu
+    /**
+     * Show single order detail
+     */
+    public function show(Order $order)
+    {
+        if ($order->id_user !== auth()->user()->id_user && !auth()->user()->is_admin) {
+            return redirect()->route('home')->with('error', 'Unauthorized');
+        }
+
+        $order->load('items.menu', 'user');
+
+        return view('Customerviews.receipt', compact('order'));
+    }
+
+    /**
+     * Process order (payment)
+     */
     public function store(Request $request)
     {
         $request->validate([
-            'nama_menu' => 'required',
-            'harga' => 'required|numeric',
-            'deskripsi' => 'required',
-            'foto' => 'required|image|mimes:jpg,jpeg,png|max:2048',
-            'rating' => 'required|numeric|min:0|max:5',
+            'customer_name' => 'required|string|max:255',
+            'payment_method' => 'required|in:cash,debit,credit',
+            'notes' => 'nullable|string|max:500',
         ]);
 
-        $path = $request->file('foto')->store('menu', 'public');
+        $user = auth()->user();
+        $cartItems = $user->cartItems()->with('menu')->get();
 
-        Menu::create([
-            'nama_menu' => $request->nama_menu,
-            'harga' => $request->harga,
-            'status_tersedia' => true,
-            'foto' => $path,
-            'rating' => $request->rating,
-            'deskripsi' => $request->deskripsi,
-        ]);
+        if ($cartItems->isEmpty()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Keranjang Anda kosong',
+            ], 400);
+        }
 
-        return redirect()->route('admin.menu');
-    }
+        try {
+            $total = $cartItems->sum(function ($item) {
+                return $item->menu->harga * $item->quantity;
+            });
 
-    // Admin Show
-    public function show($id)
-    {
-        $menu = Menu::where('id_menu', $id)->firstOrFail();
+            $order = Order::create([
+                'tanggal' => Carbon::now(),
+                'nama_pelanggan' => $request->customer_name,
+                'total_harga' => $total,
+                'status_pembayaran' => 'pending',
+                'status_order' => 'pending',
+                'id_user' => $user->id_user,
+            ]);
 
-        return view('admin.menu.show', compact('menu'));
-    }
-
-    // Admin Edit
-    public function edit($id)
-    {
-        $menu = Menu::where('id_menu', $id)->firstOrFail();
-
-        return view('admin.menu.edit', compact('menu'));
-    }
-
-    // Admin Update
-    public function update(Request $request, $id)
-    {
-        $menu = Menu::where('id_menu', $id)->firstOrFail();
-
-        $request->validate([
-            'nama_menu' => 'required',
-            'harga' => 'required|numeric',
-            'rating' => 'required|numeric|min:0|max:5',
-            'deskripsi' => 'required',
-            'foto' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
-        ]);
-
-        if ($request->hasFile('foto')) {
-
-            if ($menu->foto) {
-                Storage::disk('public')->delete($menu->foto);
+            foreach ($cartItems as $cartItem) {
+                OrderItem::create([
+                    'id_order' => $order->id_order,
+                    'id_menu' => $cartItem->menu_id,
+                    'quantity' => $cartItem->quantity,
+                    'subtotal' => $cartItem->menu->harga * $cartItem->quantity,
+                ]);
             }
 
-            $path = $request->file('foto')->store('menu', 'public');
+            CartItem::where('user_id', $user->id_user)->delete();
 
-            $menu->foto = $path;
+            return response()->json([
+                'success' => true,
+                'order_id' => $order->id_order,
+                'redirect_url' => route('order.receipt', $order->id_order),
+            ]);
+        } catch (\\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal membuat order: ' . $e->getMessage(),
+            ], 500);
         }
-
-        $menu->update([
-            'nama_menu' => $request->nama_menu,
-            'harga' => $request->harga,
-            'status_tersedia' => $request->has('status_tersedia'),
-            'rating' => $request->rating,
-            'deskripsi' => $request->deskripsi,
-            'foto' => $menu->foto,
-        ]);
-
-        return redirect()->route('admin.menu');
     }
 
-    // Admin Delete
-    public function destroy($id)
+    /**
+     * Show receipt/invoice
+     */
+    public function receipt(Order $order)
     {
-        $menu = Menu::where('id_menu', $id)->firstOrFail();
-
-        $menu->delete();
-
-        return redirect()->route('admin.menu');
-    }
-
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | CUSTOMER METHODS
-    |--------------------------------------------------------------------------
-    */
-
-    // Customer Menu Page
-    public function customerIndex(Request $request)
-    {
-        $query = Menu::query()
-            ->where('status_tersedia', true);
-
-        // Search
-        if ($request->filled('search')) {
-            $query->where(
-                'nama_menu',
-                'like',
-                '%' . $request->search . '%'
-            );
+        if ($order->id_user !== auth()->user()->id_user && !auth()->user()->is_admin) {
+            return redirect()->route('home')->with('error', 'Unauthorized');
         }
 
-        // Price Filter
-        if ($request->filled('price')) {
+        $order->load('items.menu', 'user');
 
-            if ($request->price === 'low') {
-                $query->where('harga', '<', 15000);
-
-            } elseif ($request->price === 'high') {
-                $query->where('harga', '>=', 15000);
-            }
-        }
-
-        $menus = $query->latest()->paginate(12);
-
-        return view('CustomerViews.menu', compact('menus'));
-    }
-
-    // Customer Product Detail AJAX
-    public function showProduct(Menu $menu)
-    {
-        return response()->json($menu);
+        return view('Customerviews.orders.receipt', compact('order'));
     }
 }

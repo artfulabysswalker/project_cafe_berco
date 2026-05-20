@@ -54,16 +54,10 @@
                 if (alertElement) {
                     if (isOpen) {
                         alertElement.className = 'mb-4 p-3 bg-green-100 border border-green-300 rounded-lg text-center';
-                        const timeUntilClose = ((23 - hour) * 60) + (60 - minute);
-                        const closeHours = Math.floor(timeUntilClose / 60);
-                        const closeMinutes = timeUntilClose % 60;
-                        alertElement.innerHTML = `<p class="text-sm text-green-800">Toko sedang buka sampai jam <strong>${String(23).padStart(2, '0')}:00 WIB</strong> (${closeHours}j ${closeMinutes}m lagi)</p>`;
+                        alertElement.innerHTML = `<p class="text-sm text-green-800">Toko sedang buka sampai jam <strong>${String(23).padStart(2, '0')}:00 WIB</strong></p>`;
                     } else {
                         alertElement.className = 'mb-4 p-3 bg-orange-100 border border-orange-300 rounded-lg text-center';
-                        const timeUntilOpen = ((openHour - hour) * 60) + (60 - minute);
-                        const openHours = Math.floor(timeUntilOpen / 60);
-                        const openMinutes = timeUntilOpen % 60;
-                        alertElement.innerHTML = `<p class="text-sm text-orange-800">Kami sudah tutup. Buka kembali besok jam <strong>16:00 WIB</strong> (${openHours}j ${openMinutes}m lagi)</p>`;
+                        alertElement.innerHTML = `<p class="text-sm text-orange-800">Kami sudah tutup. Buka kembali besok jam <strong>16:00 WIB</strong></p>`;
                     }
                 }
             }

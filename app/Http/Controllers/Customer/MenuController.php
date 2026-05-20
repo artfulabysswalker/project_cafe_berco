@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Customer;
 
 use App\Http\Controllers\Controller;
 use App\Models\Menu;
+use App\Models\Review;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
@@ -157,11 +158,15 @@ class MenuController extends Controller
             }
         }
 
-        $menus = $query
+        $products = $query
             ->latest()
             ->paginate(12);
 
-        return view('CustomerViews.menu', compact('menus'));
+        // Get review data
+        $totalReviews = Review::count();
+        $recentReviews = Review::with('user', 'product')->latest()->take(5)->get();
+
+        return view('CustomerViews.menu', compact('products', 'totalReviews', 'recentReviews'));
     }
 
     // Customer AJAX Detail

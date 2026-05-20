@@ -1,4 +1,4 @@
-@extends('layouts.web')
+@extends('Customerviews.layouts.web')
 
 @section('title', 'Pembayaran - Berco Cafe')
 
@@ -13,32 +13,6 @@
         <div class="checkout-content">
             <div class="checkout-options">
                 
-                <section class="checkout-card">
-                    <h3>Tipe Layanan</h3>
-                    <div class="option-group">
-                        <label class="option-item">
-                            <input type="radio" name="service_type" value="dine_in" checked>
-                            <div class="option-info">
-                                <i class="fas fa-store"></i>
-                                <div>
-                                    <strong>Dine In</strong>
-                                    <span>Makan di tempat</span>
-                                </div>
-                            </div>
-                        </label>
-                        <label class="option-item">
-                            <input type="radio" name="service_type" value="take_away">
-                            <div class="option-info">
-                                <i class="fas fa-box"></i>
-                                <div>
-                                    <strong>Take Away</strong>
-                                    <span>Bungkus dibawa pulang</span>
-                                </div>
-                            </div>
-                        </label>
-                    </div>
-                </section>
-
                 <section class="checkout-card">
                     <h3>Metode Pembayaran</h3>
                     <div class="option-group">
@@ -88,10 +62,10 @@
                         @foreach($cartItems as $item)
                             <div class="summary-item">
                                 <div class="item-info">
-                                    <span class="item-name">{{ $item->product->name }}</span>
+                                    <span class="item-name">{{ $item->menu->nama_menu }}</span>
                                     <span class="item-qty">x{{ $item->quantity }}</span>
                                 </div>
-                                <span class="item-total">Rp {{ number_format($item->product->price * $item->quantity, 0, ',', '.') }}</span>
+                                <span class="item-total">Rp {{ number_format($item->menu->harga * $item->quantity, 0, ',', '.') }}</span>
                             </div>
                         @endforeach
                     </div>
@@ -366,9 +340,9 @@
 
 <script>
 function processPayment() {
-    const serviceType = document.querySelector('input[name="service_type"]:checked').value;
     const paymentMethod = document.querySelector('input[name="payment_method"]:checked').value;
     const notes = document.querySelector('textarea[name="notes"]').value;
+    const customerName = '{{ auth()->user()->name }}'; // Get from logged-in user
 
     const btn = document.querySelector('.btn-pay');
     btn.disabled = true;
@@ -381,7 +355,7 @@ function processPayment() {
             'X-CSRF-TOKEN': '{{ csrf_token() }}'
         },
         body: JSON.stringify({
-            service_type: serviceType,
+            customer_name: customerName,
             payment_method: paymentMethod,
             notes: notes
         })
@@ -389,7 +363,7 @@ function processPayment() {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            window.location.href = data.redirect;
+            window.location.href = data.redirect_url;
         } else {
             alert('Error: ' + data.message);
             btn.disabled = false;

@@ -6,13 +6,22 @@ use Illuminate\Database\Eloquent\Model;
 
 class OrderItem extends Model
 {
-public function order()
-{
-    return $this->belongsTo(Order::class, 'id_order', 'id_order');
-}
+    protected $table = 'order_items';
 
-public function menu()
-{
-    return $this->belongsTo(Menu::class, 'id_menu', 'id_menu');
-}
+    protected $fillable = [
+        'id_order',
+        'id_menu',
+        'quantity',
+        'subtotal',
+    ];
+
+    public function order()
+    {
+        return $this->belongsTo(Order::class, 'id_order', 'id_order');
+    }
+
+    public function menu()
+    {
+        return $this->belongsTo(Menu::class, 'id_menu', 'id_menu');
+    }
 }

@@ -79,12 +79,12 @@ class User extends Authenticatable
 
     /*
     |--------------------------------------------------------------------------
-    | Login uses username instead of email
+    | Authentication Identifier
     |--------------------------------------------------------------------------
     */
     public function getAuthIdentifierName()
     {
-        return 'username';
+        return $this->getKeyName(); // Return primary key: id_user
     }
 
 
@@ -104,12 +104,17 @@ class User extends Authenticatable
 
     public function cartItems()
     {
-        return $this->hasMany(CartItem::class);
+        return $this->hasMany(CartItem::class, 'user_id', 'id_user');
     }
 
     public function redemptions()
     {
-        return $this->hasMany(Redemption::class);
+        return $this->hasMany(Redemption::class, 'id_user', 'id_user');
+    }
+
+    public function orders()
+    {
+        return $this->hasMany(Order::class, 'id_user', 'id_user');
     }
 
 

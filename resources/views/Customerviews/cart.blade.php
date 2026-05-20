@@ -1,4 +1,4 @@
-@extends('layouts.web')
+@extends('Customerviews.layouts.web')
 
 @section('title', 'Keranjang - Berco Cafe')
 
@@ -22,12 +22,12 @@
                     @foreach($cartItems as $item)
                         <div class="cart-item" data-item-id="{{ $item->id }}">
                             <div class="item-image">
-                                <img src="{{ $item->product->image_url ?? 'https://images.unsplash.com/photo-1495521821757-a1efb6729352?q=80&w=200' }}" 
-                                     alt="{{ $item->product->name }}" style="width: 100px; height: 100px; object-fit: cover; border-radius: 4px;">
+                                <img src="{{ asset('storage/' . $item->menu->foto) ?? 'https://images.unsplash.com/photo-1495521821757-a1efb6729352?q=80&w=200' }}" 
+                                     alt="{{ $item->menu->nama_menu }}" style="width: 100px; height: 100px; object-fit: cover; border-radius: 4px;">
                             </div>
                             <div class="item-details">
-                                <h3>{{ $item->product->name }}</h3>
-                                <p class="item-price">Rp {{ number_format($item->product->price, 0, ',', '.') }}</p>
+                                <h3>{{ $item->menu->nama_menu }}</h3>
+                                <p class="item-price">Rp {{ number_format($item->menu->harga, 0, ',', '.') }}</p>
                             </div>
                             <div class="item-quantity">
                                 <button type="button" onclick="decreaseQuantity({{ $item->id }}, {{ $item->quantity }})">-</button>
@@ -37,7 +37,7 @@
                                 <button type="button" onclick="increaseQuantity({{ $item->id }}, {{ $item->quantity }})">+</button>
                             </div>
                             <div class="item-subtotal">
-                                <p class="subtotal-price">Rp {{ number_format($item->product->price * $item->quantity, 0, ',', '.') }}</p>
+                                <p class="subtotal-price">Rp {{ number_format($item->menu->harga * $item->quantity, 0, ',', '.') }}</p>
                             </div>
                             <div class="item-remove">
                                 <button type="button" onclick="removeFromCart({{ $item->id }})" class="btn-remove">
