@@ -29,6 +29,7 @@ class CostumerController extends Controller
             'email' => $request->email,
             'password' => Hash::make($request->password),
             'id_role' => $customerRole->id_role,
+            'is_guest' => false,
         ]);
 
         return redirect()->route('home')
@@ -38,22 +39,30 @@ class CostumerController extends Controller
 
 
     public function login(Request $request)
-{
-    $credentials = $request->validate([
-        'email' => 'required|email',
-        'password' => 'required',
-    ]);
+    {
+        $credentials = $request->validate([
+            'email' => 'required|email',
+            'password' => 'required',
+        ]);
 
-    if (Auth::attempt($credentials)) {
+        if (Auth::attempt($credentials)) {
+            $user = Auth::user();
+            
+            // Ensure user has proper role setup and is not guest
+            if (!$user->id_role) {
+                $customerRole = Role::where('role_name', 'customer')->first();
+                $user->update(['id_role' => $customerRole->id_role]);
+            }
+            
+            $user->update(['is_guest' => false]);
+            $request->session()->regenerate();
 
-        $request->session()->regenerate();
+            return redirect()->route('home')
+                ->with('success', 'Login berhasil');
+        }
 
-        return redirect()->route('home')
-            ->with('success', 'Login berhasil');
+        return back()->withErrors([
+            'email' => 'Email atau password salah',
+        ])->onlyInput('email');
     }
-
-    return back()->withErrors([
-        'email' => 'Email atau password salah',
-    ])->onlyInput('email');
-}
 }

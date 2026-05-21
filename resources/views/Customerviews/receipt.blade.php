@@ -27,27 +27,28 @@
             <div class="receipt-info">
                 <div class="info-row">
                     <span class="label">Nomor Pesanan</span>
-                    <span class="value" id="order-number">{{ $order->order_number }}</span>
+                    <span class="value">#{{ $order->id_order }}</span>
+                </div>
+                <div class="info-row">
+                    <span class="label">Nama Pelanggan</span>
+                    <span class="value">{{ $order->nama_pelanggan }}</span>
                 </div>
                 <div class="info-row">
                     <span class="label">Tanggal & Waktu</span>
-                    <span class="value">{{ $order->created_at->format('d/m/Y H:i') }}</span>
+                    <span class="value">{{ $order->tanggal->format('d/m/Y H:i') }}</span>
                 </div>
                 <div class="info-row">
-                    <span class="label">Tipe Layanan</span>
+                    <span class="label">Status Pesanan</span>
                     <span class="value">
-                        @if($order->service_type === 'dine_in')
-                            <i class="fas fa-store"></i> Dine In
-                        @else
-                            <i class="fas fa-box"></i> Take Away
-                        @endif
+                        <span class="badge" style="background: #3498db; color: white; padding: 4px 8px; border-radius: 3px;">{{ ucfirst($order->status_order) }}</span>
                     </span>
                 </div>
                 <div class="info-row">
-                    <span class="label">Metode Pembayaran</span>
+                    <span class="label">Status Pembayaran</span>
                     <span class="value">
-                        @if($order->payment_method === 'cash')
-                            <i class="fas fa-money-bill-wave"></i> Tunai
+                        <span class="badge" style="background: {{ $order->status_pembayaran === 'paid' ? '#27ae60' : '#e74c3c' }}; color: white; padding: 4px 8px; border-radius: 3px;">{{ ucfirst($order->status_pembayaran) }}</span>
+                    </span>
+                </div>
                         @elseif($order->payment_method === 'debit')
                             <i class="fas fa-credit-card"></i> Kartu Debit
                         @else
@@ -64,7 +65,7 @@
                 @foreach($order->items as $item)
                     <div class="receipt-item">
                         <div class="item-name-qty">
-                            <span class="item-name">{{ $item->product->name }}</span>
+                            <span class="item-name">{{ $item->menu->nama_menu }}</span>
                             <span class="item-qty">x{{ $item->quantity }}</span>
                         </div>
                         <span class="item-price">Rp {{ number_format($item->subtotal, 0, ',', '.') }}</span>
@@ -76,16 +77,8 @@
 
             <div class="receipt-total">
                 <div class="total-row">
-                    <span>Subtotal</span>
-                    <span>Rp {{ number_format($order->subtotal, 0, ',', '.') }}</span>
-                </div>
-                <div class="total-row">
-                    <span>Pajak (10%)</span>
-                    <span>Rp {{ number_format($order->tax, 0, ',', '.') }}</span>
-                </div>
-                <div class="total-row grand-total">
                     <span>Total</span>
-                    <span>Rp {{ number_format($order->total, 0, ',', '.') }}</span>
+                    <span>Rp {{ number_format($order->total_harga, 0, ',', '.') }}</span>
                 </div>
             </div>
 
