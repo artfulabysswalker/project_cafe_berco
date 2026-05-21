@@ -20,22 +20,28 @@
             </div>
         </section>
 
-        <section class="badge-cards">
-            <article class="badge-card badge-gold">
-                <div class="badge-icon">🏅</div>
-                <h2>First Sip</h2>
-                <p>Badge untuk pembelian pertama di Berco.</p>
-            </article>
-            <article class="badge-card badge-fire">
-                <div class="badge-icon">🔥</div>
-                <h2>Daily Regular</h2>
-                <p>Beli menu setiap hari untuk menjaga streak dan naik level.</p>
-            </article>
-            <article class="badge-card badge-star">
-                <div class="badge-icon">⭐</div>
-                <h2>Trusted Reviewer</h2>
-                <p>Tulis review pada menu yang dipesan untuk mendapatkan badge eksklusif.</p>
-            </article>
+        <section class="feature-section">
+            <div class="feature-header">
+                <h2>Fitur Daily Quest</h2>
+                <p>Ikuti tantangan harian dan kumpulkan badge serta poin loyalty setiap kali kamu aktif.</p>
+            </div>
+            <div class="badge-cards">
+                <article class="badge-card badge-gold">
+                    <div class="badge-icon">🏅</div>
+                    <h2>First Sip</h2>
+                    <p>Badge untuk pembelian pertama di Berco.</p>
+                </article>
+                <article class="badge-card badge-fire">
+                    <div class="badge-icon">🔥</div>
+                    <h2>Daily Regular</h2>
+                    <p>Beli menu setiap hari untuk menjaga streak dan naik level.</p>
+                </article>
+                <article class="badge-card badge-star">
+                    <div class="badge-icon">⭐</div>
+                    <h2>Trusted Reviewer</h2>
+                    <p>Tulis review pada menu yang dipesan untuk mendapatkan badge eksklusif.</p>
+                </article>
+            </div>
         </section>
 
         <section class="quest-list card-list">
@@ -156,6 +162,23 @@
     .summary-copy {
         color: #6b7280;
         line-height: 1.75;
+    }
+    .feature-section {
+        margin-bottom: 32px;
+    }
+    .feature-header {
+        margin-bottom: 26px;
+    }
+    .feature-header h2 {
+        margin: 0 0 10px;
+        font-size: 2rem;
+        color: #111827;
+    }
+    .feature-header p {
+        margin: 0;
+        color: #6b7280;
+        max-width: 620px;
+        line-height: 1.8;
     }
     .badge-cards {
         display: grid;
