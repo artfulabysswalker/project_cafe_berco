@@ -85,14 +85,14 @@
                             <div class="grid gap-5 sm:grid-cols-[120px_minmax(0,1fr)_auto]">
                                 <!-- Product Image -->
                                 <div class="h-32 w-full overflow-hidden rounded-[1.5rem] bg-gradient-to-br from-slate-100 to-slate-50 ring-1 ring-slate-200">
-                                    <img src="{{ $item->product->image_url ?? 'https://images.unsplash.com/photo-1495521821757-a1efb6729352?q=80&w=300' }}" alt="{{ $item->product->name }}" class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-110" />
+                                    <img src="{{ $item->menu->image_url ?? 'https://images.unsplash.com/photo-1495521821757-a1efb6729352?q=80&w=300' }}" alt="{{ $item->menu->name }}" class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-110" />
                                 </div>
 
                                 <!-- Product Details -->
                                 <div class="space-y-4">
                                     <div>
-                                        <h3 class="text-lg font-bold text-slate-900">{{ $item->product->name }}</h3>
-                                        <p class="mt-1 text-sm text-slate-600">{{ Str::limit($item->product->description ?? 'Premium coffee choice', 80) }}</p>
+                                        <h3 class="text-lg font-bold text-slate-900">{{ $item->menu->name }}</h3>
+                                        <p class="mt-1 text-sm text-slate-600">{{ Str::limit($item->menu->description ?? 'Premium coffee choice', 80) }}</p>
                                     </div>
 
                                     <div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
@@ -106,7 +106,7 @@
                                         <!-- Price Info -->
                                         <div class="flex items-baseline gap-3">
                                             <span class="text-sm text-slate-600">Harga:</span>
-                                            <p class="rounded-full bg-gradient-to-r from-orange-100 to-amber-100 px-4 py-2 text-base font-bold text-[#8B3E00]">Rp {{ number_format($item->product->harga, 0, ',', '.') }}</p>
+                                            <p class="rounded-full bg-gradient-to-r from-orange-100 to-amber-100 px-4 py-2 text-base font-bold text-[#8B3E00]">Rp {{ number_format($item->menu->harga, 0, ',', '.') }}</p>
                                         </div>
                                     </div>
                                 </div>
@@ -122,7 +122,7 @@
                             <!-- Subtotal Bar -->
                             <div class="mt-5 border-t border-slate-200 pt-4 flex items-center justify-between">
                                 <span class="text-sm font-semibold text-slate-600">Subtotal</span>
-                                <span class="text-xl font-bold text-slate-900">Rp {{ number_format($item->product->harga * $item->quantity, 0, ',', '.') }}</span>
+                                <span class="text-xl font-bold text-slate-900">Rp {{ number_format($item->menu->harga * $item->quantity, 0, ',', '.') }}</span>
                             </div>
                         </article>
                     @endforeach

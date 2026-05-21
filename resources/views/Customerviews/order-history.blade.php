@@ -25,14 +25,14 @@
                     <div class="order-card">
                         <div class="order-card-header">
                             <div class="order-info">
-                                <h3>{{ $order->order_number }}</h3>
+                                <h3>#{{ $order->id_order }}</h3>
                                 <p class="order-date">{{ $order->created_at->format('d M Y - H:i') }}</p>
                             </div>
                             <div class="order-status">
-                                <span class="status-badge status-{{ $order->status }}">
-                                    @if($order->status === 'completed')
+                                <span class="status-badge status-{{ $order->status_order }}">
+                                    @if($order->status_order === 'completed')
                                         <i class="fas fa-check-circle"></i> Selesai
-                                    @elseif($order->status === 'pending')
+                                    @elseif($order->status_order === 'pending')
                                         <i class="fas fa-clock"></i> Menunggu
                                     @else
                                         <i class="fas fa-times-circle"></i> Dibatalkan
@@ -73,7 +73,7 @@
                         <div class="order-items">
                             @foreach($order->items as $item)
                                 <div class="order-item-row">
-                                    <span class="item-name">{{ $item->product->name }} x{{ $item->quantity }}</span>
+                                    <span class="item-name">{{ $item->menu->name }} x{{ $item->quantity }}</span>
                                     <span class="item-price">Rp {{ number_format($item->subtotal, 0, ',', '.') }}</span>
                                 </div>
                             @endforeach
@@ -82,7 +82,7 @@
                         <div class="order-total">
                             <div class="total-row">
                                 <span>Total</span>
-                                <span class="total-amount">Rp {{ number_format($order->total, 0, ',', '.') }}</span>
+                                <span class="total-amount">Rp {{ number_format($order->total_harga, 0, ',', '.') }}</span>
                             </div>
                         </div>
 

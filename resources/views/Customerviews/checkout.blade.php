@@ -12,6 +12,31 @@
 
         <div class="checkout-content">
             <div class="checkout-options">
+                <section class="checkout-card">
+                    <h3>Tipe Layanan</h3>
+                    <div class="option-group">
+                        <label class="option-item">
+                            <input type="radio" name="service_type" value="dine_in" checked>
+                            <div class="option-info">
+                                <i class="fas fa-utensils" style="color: #e67e22;"></i>
+                                <div>
+                                    <strong>Makan di Tempat</strong>
+                                    <span>Nikmati di kafe kami</span>
+                                </div>
+                            </div>
+                        </label>
+                        <label class="option-item">
+                            <input type="radio" name="service_type" value="take_away">
+                            <div class="option-info">
+                                <i class="fas fa-shopping-bag" style="color: #3498db;"></i>
+                                <div>
+                                    <strong>Bawa Pulang</strong>
+                                    <span>Ambil dan bawa pulang</span>
+                                </div>
+                            </div>
+                        </label>
+                    </div>
+                </section>
                 
                 <section class="checkout-card">
                     <h3>Metode Pembayaran</h3>
@@ -62,7 +87,7 @@
                         @foreach($cartItems as $item)
                             <div class="summary-item">
                                 <div class="item-info">
-                                    <span class="item-name">{{ $item->menu->nama_menu }}</span>
+                                    <span class="item-name">{{ $item->menu->name }}</span>
                                     <span class="item-qty">x{{ $item->quantity }}</span>
                                 </div>
                                 <span class="item-total">Rp {{ number_format($item->menu->harga * $item->quantity, 0, ',', '.') }}</span>
@@ -340,9 +365,9 @@
 
 <script>
 function processPayment() {
+    const serviceType = document.querySelector('input[name="service_type"]:checked').value;
     const paymentMethod = document.querySelector('input[name="payment_method"]:checked').value;
     const notes = document.querySelector('textarea[name="notes"]').value;
-    const customerName = '{{ auth()->user()->name }}'; // Get from logged-in user
 
     const btn = document.querySelector('.btn-pay');
     btn.disabled = true;
@@ -355,7 +380,7 @@ function processPayment() {
             'X-CSRF-TOKEN': '{{ csrf_token() }}'
         },
         body: JSON.stringify({
-            customer_name: customerName,
+            service_type: serviceType,
             payment_method: paymentMethod,
             notes: notes
         })
@@ -363,7 +388,7 @@ function processPayment() {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            window.location.href = data.redirect_url;
+            window.location.href = data.redirect;
         } else {
             alert('Error: ' + data.message);
             btn.disabled = false;

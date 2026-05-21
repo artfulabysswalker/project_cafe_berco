@@ -25,9 +25,10 @@ class OrderController extends Controller
             return $item->menu->harga * $item->quantity;
         });
 
-        $total = $subtotal;
+        $tax = $subtotal * 0.1;
+        $total = $subtotal + $tax;
 
-        return view('Customerviews.checkout', compact('cartItems', 'subtotal', 'total'));
+        return view('Customerviews.checkout', compact('cartItems', 'subtotal', 'tax', 'total'));
     }
 
     /**
@@ -55,29 +56,27 @@ class OrderController extends Controller
             return $item->menu->harga * $item->quantity;
         });
 
-        $tax = 0; // tax logic can be added if needed
+        $tax = $subtotal * 0.1;
         $total = $subtotal + $tax;
 
         try {
             $order = Order::create([
-                'order_number' => uniqid('ORD'),
-                'user_id' => $user->id_user, // Menggunakan id_user sebagai primary key User
-                'status' => 'completed',
+                'tanggal' => now(),
+                'nama_pelanggan' => $user->name,
+                'total_harga' => $total,
+                'status_pembayaran' => 'pending',
                 'service_type' => $request->service_type,
                 'payment_method' => $request->payment_method,
-                'subtotal' => $subtotal,
-                'tax' => $tax,
-                'total' => $total,
                 'notes' => $request->notes,
-                'completed_at' => now(),
+                'status_order' => 'pending',
+                'id_user' => $user->id_user,
             ]);
 
             foreach ($cartItems as $cartItem) {
                 OrderItem::create([
-                    'order_id' => $order->id_order, // Menggunakan id_order sebagai primary key Order
-                    'product_id' => $cartItem->menu_id,
+                    'id_order' => $order->id_order,
+                    'id_menu' => $cartItem->menu_id,
                     'quantity' => $cartItem->quantity,
-                    'price' => $cartItem->menu->harga,
                     'subtotal' => $cartItem->menu->harga * $cartItem->quantity,
                 ]);
             }
@@ -87,7 +86,7 @@ class OrderController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Pesanan berhasil dibuat',
-                'order_id' => $order->id,
+                'order_id' => $order->id_order,
                 'redirect' => route('order.receipt', $order),
             ]);
         } catch (\Exception $e) {
@@ -119,6 +118,7 @@ class OrderController extends Controller
     public function history()
     {
         $orders = auth()->user()->orders()
+            ->with('items.menu')
             ->latest()
             ->paginate(10);
 

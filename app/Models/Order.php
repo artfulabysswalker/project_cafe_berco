@@ -22,6 +22,10 @@ class Order extends Model
         'id_user',
     ];
 
+    protected $casts = [
+        'tanggal' => 'datetime',
+    ];
+
     public function user()
     {
         return $this->belongsTo(User::class, 'id_user', 'id_user');

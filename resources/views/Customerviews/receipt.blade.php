@@ -49,6 +49,11 @@
                         <span class="badge" style="background: {{ $order->status_pembayaran === 'paid' ? '#27ae60' : '#e74c3c' }}; color: white; padding: 4px 8px; border-radius: 3px;">{{ ucfirst($order->status_pembayaran) }}</span>
                     </span>
                 </div>
+                <div class="info-row">
+                    <span class="label">Metode Pembayaran</span>
+                    <span class="value">
+                        @if($order->payment_method === 'cash')
+                            <i class="fas fa-money-bill-wave"></i> Tunai
                         @elseif($order->payment_method === 'debit')
                             <i class="fas fa-credit-card"></i> Kartu Debit
                         @else
@@ -65,7 +70,7 @@
                 @foreach($order->items as $item)
                     <div class="receipt-item">
                         <div class="item-name-qty">
-                            <span class="item-name">{{ $item->menu->nama_menu }}</span>
+                            <span class="item-name">{{ $item->menu->name }}</span>
                             <span class="item-qty">x{{ $item->quantity }}</span>
                         </div>
                         <span class="item-price">Rp {{ number_format($item->subtotal, 0, ',', '.') }}</span>
