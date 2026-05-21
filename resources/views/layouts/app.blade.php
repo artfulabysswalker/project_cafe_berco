@@ -7,10 +7,16 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @livewireStyles
 </head>
-<body class="antialiased">
-    <main class="container mx-auto py-8">
-        {{ $slot }}
-    </main>
+<body>
+    <div id="app">
+        <header>
+            <!-- simple header -->
+        </header>
+
+        <main class="container mx-auto py-6">
+            {{ $slot }}
+        </main>
+    </div>
 
     @livewireScripts
 </body>

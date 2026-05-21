@@ -11,10 +11,12 @@ return new class extends Migration {
 
             $table->id();
 
-            // 🔥 FIXED: match your custom PK (id_user)
-            $table->foreignId('user_id')
-                ->constrained('users', 'id_user')
-                ->cascadeOnDelete();
+            // user references users.id_user
+            $table->unsignedBigInteger('user_id');
+            $table->foreign('user_id')
+                ->references('id_user')
+                ->on('users')
+                ->onDelete('cascade');
 
             $table->foreignId('playlist_id')
                 ->constrained('playlists')

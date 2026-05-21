@@ -547,7 +547,7 @@
             </a>
 
             @guest
-                <a href="{{ route('login') }}" class="bg-white text-[#78350F] px-6 py-2 rounded-lg font-bold hover:bg-orange-50 transition shadow-sm">
+                <a href="{{ route('testlogin') }}" class="bg-white text-[#78350F] px-6 py-2 rounded-lg font-bold hover:bg-orange-50 transition shadow-sm">
                     Masuk
                 </a>
             @endguest

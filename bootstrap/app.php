@@ -16,6 +16,7 @@ return Application::configure(basePath: dirname(__DIR__))
         'customer' => \App\Http\Middleware\CustomerMiddleware::class,
         'admin.staff' => \App\Http\Middleware\AdminMiddleware::class,
         'guest.mode' => \App\Http\Middleware\GuestModeMiddleware::class,
+        'restore.guest' => \App\Http\Middleware\RestoreGuestMiddleware::class,
     ]);
 
 })

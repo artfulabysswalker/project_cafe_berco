@@ -72,7 +72,7 @@ class AchievementController extends Controller
             if ($isEarned) {
                 // Award achievement
                 UserAchievement::create([
-                    'user_id' => $user->id,
+                    'user_id' => $user->id_user, // Menggunakan id_user sebagai primary key User
                     'achievement_id' => $achievement->id,
                     'earned_at' => now(),
                 ]);

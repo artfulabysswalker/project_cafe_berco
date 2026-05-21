@@ -1,4 +1,4 @@
-@extends('layouts.web')
+@extends('Customerviews.layouts.web')
 
 @section('title', 'Struk Pesanan - Berco Cafe')
 

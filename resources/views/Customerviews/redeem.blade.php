@@ -1,4 +1,4 @@
-@extends('layouts.web')
+@extends('Customerviews.layouts.web')
 
 @section('title', 'Tukar Voucher - Berco Cafe')
 

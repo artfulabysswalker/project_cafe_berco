@@ -14,7 +14,7 @@ class RedeemController extends Controller
     public function index()
     {
         $rewards = Reward::where('available', true)->get();
-        return view('redeem', compact('rewards'));
+        return view('Customerviews.redeem', compact('rewards'));
     }
 
     public function redeem(Request $request, Reward $reward)
@@ -33,7 +33,7 @@ class RedeemController extends Controller
             $user->decrement('exp', $reward->exp_cost);
 
             return Redemption::create([
-                'user_id' => $user->id,
+                'user_id' => $user->id_user, // Menggunakan id_user sebagai primary key User
                 'reward_id' => $reward->id,
                 'exp_used' => $reward->exp_cost,
                 'status' => 'completed',

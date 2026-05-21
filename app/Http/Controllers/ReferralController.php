@@ -65,7 +65,7 @@ class ReferralController extends Controller
 
         // Update referral with referee info
         $referral->update([
-            'referee_id' => $user->id,
+            'referee_id' => $user->id_user, // Menggunakan id_user sebagai primary key User
         ]);
 
         return back()->with('success', 'Kode referral berhasil diterapkan!');

@@ -180,12 +180,9 @@
                     <li><a href="{{ route('home') }}"><i class="fas fa-home"></i> Beranda</a></li>
                     <li><a href="{{ route('menu.index') }}" {{ request()->routeIs('menu*') ? 'class=active' : '' }}><i class="fas fa-mug-hot"></i> Menu</a></li>
                     @auth
-<<<<<<< HEAD
                         <li><a href="{{ route('redeem.index') }}" {{ request()->routeIs('redeem*') ? 'class=active' : '' }}><i class="fas fa-gift"></i> Tukar EXP</a></li>
-=======
                         <li><a href="{{ route('daily-quest') }}" {{ request()->routeIs('daily-quest') ? 'class=active' : '' }}><i class="fas fa-trophy"></i> Daily Quest</a></li>
                         <li><a href="{{ route('rewards') }}" {{ request()->routeIs('rewards') ? 'class=active' : '' }}><i class="fas fa-gift"></i> Rewards</a></li>
->>>>>>> c1f9b47b2b32ef16af6de90aff6579bb39bed917
                         <li>
                             <a href="{{ route('cart.index') }}" {{ request()->routeIs('cart*') ? 'class=active' : '' }} style="position: relative;">
                                 <i class="fas fa-shopping-cart"></i> Keranjang
@@ -203,7 +200,7 @@
                         <button type="submit" class="btn-login">Logout</button>
                     </form>
                 @else
-                    <a href="{{ route('login') }}" class="btn-login">Login</a>
+                    <a href="{{ route('testlogin') }}" class="btn-login">Login</a>
                 @endauth
             </div>
         </div>

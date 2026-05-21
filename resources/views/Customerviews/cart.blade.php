@@ -1,294 +1,180 @@
-@extends('layouts.web')
+@extends('Customerviews.layouts.web')
 
 @section('title', 'Keranjang - Berco Cafe')
 
 @section('content')
-<div class="cart-page">
-    <main class="container cart-main-section">
-        <h1 style="margin-bottom: 30px;">Keranjang Belanja</h1>
+<style>
+    @keyframes slideInCart {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    .cart-item {
+        animation: slideInCart 0.4s ease-out;
+    }
+    
+    .hover-scale {
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    
+    .hover-scale:hover {
+        transform: translateY(-2px);
+    }
+    
+    .quantity-btn {
+        transition: all 0.2s ease;
+    }
+    
+    .quantity-btn:hover {
+        background-color: rgba(139, 62, 0, 0.1);
+    }
+</style>
 
-        @if($cartItems->isEmpty())
-            <div class="empty-cart" style="text-align: center; padding: 60px 20px; background: white; border-radius: 8px;">
-                <i class="fas fa-shopping-cart" style="font-size: 60px; color: #ccc; margin-bottom: 20px; display: block;"></i>
-                <h2>Keranjang Anda kosong</h2>
-                <p style="color: #666; margin: 10px 0 20px 0;">Mulai dengan menjelajahi menu kami</p>
-                <a href="{{ route('menu.index') }}" class="btn-add-more" style="text-decoration: none; display: inline-block;">
-                    <i class="fas fa-arrow-left"></i> Kembali ke Menu
+<div class="min-h-screen bg-gradient-to-br from-[#F7F0D9] via-[#FBF7EE] to-[#F5F0E1] py-12">
+    <main class="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+        <!-- Header -->
+        <div class="mb-10 rounded-[2.5rem] bg-gradient-to-r from-white to-orange-50 p-8 shadow-[0_25px_50px_rgba(151,85,43,0.1)] ring-1 ring-orange-200/50">
+            <div class="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
+                <div>
+                    <p class="text-sm font-bold uppercase tracking-[0.4em] text-[#8B3E00]">🛒 Keranjang Belanja</p>
+                    <h1 class="mt-4 text-4xl font-black text-slate-900">Pesananmu</h1>
+                    <p class="mt-3 text-base text-slate-600">Kelola item pilihan dan lanjutkan ke pembayaran dengan mudah.</p>
+                </div>
+                <a href="{{ route('menu.index') }}" class="inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#8B3E00] to-[#a0480f] px-6 py-4 text-sm font-bold text-white shadow-lg shadow-orange-300/40 transition-all duration-300 hover:shadow-xl hover:shadow-orange-300/60 hover:-translate-y-1">
+                    <i class="fas fa-plus-circle"></i>
+                    Tambah Menu
                 </a>
             </div>
-        @else
-            <div class="cart-content">
-                <div class="cart-items-container">
-                    @foreach($cartItems as $item)
-                        <div class="cart-item" data-item-id="{{ $item->id }}">
-                            <div class="item-image">
-                                <img src="{{ $item->product->image_url ?? 'https://images.unsplash.com/photo-1495521821757-a1efb6729352?q=80&w=200' }}" 
-                                     alt="{{ $item->product->name }}" style="width: 100px; height: 100px; object-fit: cover; border-radius: 4px;">
-                            </div>
-                            <div class="item-details">
-                                <h3>{{ $item->product->name }}</h3>
-                                <p class="item-price">Rp {{ number_format($item->product->price, 0, ',', '.') }}</p>
-                            </div>
-                            <div class="item-quantity">
-                                <button type="button" onclick="decreaseQuantity({{ $item->id }}, {{ $item->quantity }})">-</button>
-                                <input type="number" class="qty-input" value="{{ $item->quantity }}" 
-                                       data-item-id="{{ $item->id }}" 
-                                       onchange="updateQuantity({{ $item->id }}, this.value)" min="1" max="100">
-                                <button type="button" onclick="increaseQuantity({{ $item->id }}, {{ $item->quantity }})">+</button>
-                            </div>
-                            <div class="item-subtotal">
-                                <p class="subtotal-price">Rp {{ number_format($item->product->price * $item->quantity, 0, ',', '.') }}</p>
-                            </div>
-                            <div class="item-remove">
-                                <button type="button" onclick="removeFromCart({{ $item->id }})" class="btn-remove">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                            </div>
-                        </div>
-                    @endforeach
-                </div>
+        </div>
 
-                <div class="cart-summary-card">
-                    <div class="summary-row">
-                        <span>Subtotal</span>
-                        <span class="summary-val">Rp {{ number_format($total, 0, ',', '.') }}</span>
-                    </div>
-                    <div class="summary-row">
-                        <span>Pajak (10%)</span>
-                        <span class="summary-val">Rp {{ number_format($total * 0.1, 0, ',', '.') }}</span>
-                    </div>
-                    <hr class="summary-divider">
-                    <div class="summary-row total-row">
-                        <span>Total</span>
-                        <span class="total-val" id="total-price">Rp {{ number_format($total * 1.1, 0, ',', '.') }}</span>
+        @if($cartItems->isEmpty())
+            <div class="rounded-[2.5rem] bg-white p-16 text-center shadow-[0_20px_40px_rgba(15,23,42,0.08)] ring-1 ring-slate-200">
+                <div class="mx-auto flex h-28 w-28 items-center justify-center rounded-full bg-gradient-to-br from-orange-100 to-orange-50 text-5xl text-[#A16207]">
+                    <i class="fas fa-shopping-cart"></i>
+                </div>
+                <h2 class="mt-8 text-3xl font-bold text-slate-900">Keranjang Anda kosong</h2>
+                <p class="mt-4 text-base text-slate-600">Jelajahi menu spesial kami dan tambahkan item favorit ke keranjang untuk memulai pesanan.</p>
+                <div class="mt-10 flex flex-col gap-3 sm:flex-row sm:justify-center sm:gap-4">
+                    <a href="{{ route('menu.index') }}" class="inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#8B3E00] to-[#a0480f] px-8 py-4 text-base font-bold text-white transition-all duration-300 hover:shadow-lg hover:shadow-orange-300/50 hover:-translate-y-1">
+                        <i class="fas fa-arrow-right"></i>
+                        Jelajahi Menu
+                    </a>
+                    <a href="{{ route('menu.index') }}?price=low" class="inline-flex items-center justify-center gap-2 rounded-full border-2 border-orange-200 bg-white px-8 py-4 text-base font-bold text-[#8B3E00] transition-all duration-300 hover:bg-orange-50">
+                        <i class="fas fa-tag"></i>
+                        Menu Murah
+                    </a>
+                </div>
+            </div>
+        @else
+            <div class="grid gap-8 lg:grid-cols-[1fr_380px]">
+                <!-- Cart Items List -->
+                <section class="space-y-4">
+                    <div class="mb-6">
+                        <p class="text-sm font-bold uppercase tracking-[0.3em] text-slate-500">Item Pesanan</p>
+                        <h2 class="mt-2 text-2xl font-bold text-slate-900">{{ $cartItems->count() }} Item</h2>
                     </div>
                     
-                    <div class="summary-btns">
-                        <a href="{{ route('menu.index') }}" class="btn-add-more">
-                            <i class="fas fa-arrow-left"></i> Tambah Item
-                        </a>
-                        <a href="{{ route('checkout') }}" class="btn-checkout">
-                            <i class="fas fa-credit-card"></i> Lanjut ke Pembayaran
-                        </a>
+                    @foreach($cartItems as $item)
+                        <article class="cart-item group rounded-[1.75rem] border border-slate-200 bg-white p-6 shadow-sm transition-all duration-300 hover-scale hover:shadow-lg hover:border-orange-300">
+                            <div class="grid gap-5 sm:grid-cols-[120px_minmax(0,1fr)_auto]">
+                                <!-- Product Image -->
+                                <div class="h-32 w-full overflow-hidden rounded-[1.5rem] bg-gradient-to-br from-slate-100 to-slate-50 ring-1 ring-slate-200">
+                                    <img src="{{ $item->product->image_url ?? 'https://images.unsplash.com/photo-1495521821757-a1efb6729352?q=80&w=300' }}" alt="{{ $item->product->name }}" class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-110" />
+                                </div>
+
+                                <!-- Product Details -->
+                                <div class="space-y-4">
+                                    <div>
+                                        <h3 class="text-lg font-bold text-slate-900">{{ $item->product->name }}</h3>
+                                        <p class="mt-1 text-sm text-slate-600">{{ Str::limit($item->product->description ?? 'Premium coffee choice', 80) }}</p>
+                                    </div>
+
+                                    <div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+                                        <!-- Quantity Control -->
+                                        <div class="inline-flex items-center rounded-full border-2 border-slate-200 bg-slate-50">
+                                            <button type="button" onclick="decreaseQuantity({{ $item->id }}, {{ $item->quantity }})" class="quantity-btn h-11 w-11 text-base font-bold text-slate-900">−</button>
+                                            <input type="number" class="w-14 bg-transparent text-center text-base font-bold text-slate-900 outline-none" value="{{ $item->quantity }}" data-item-id="{{ $item->id }}" onchange="updateQuantity({{ $item->id }}, this.value)" min="1" max="100" />
+                                            <button type="button" onclick="increaseQuantity({{ $item->id }}, {{ $item->quantity }})" class="quantity-btn h-11 w-11 text-base font-bold text-slate-900">+</button>
+                                        </div>
+
+                                        <!-- Price Info -->
+                                        <div class="flex items-baseline gap-3">
+                                            <span class="text-sm text-slate-600">Harga:</span>
+                                            <p class="rounded-full bg-gradient-to-r from-orange-100 to-amber-100 px-4 py-2 text-base font-bold text-[#8B3E00]">Rp {{ number_format($item->product->harga, 0, ',', '.') }}</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Delete Button -->
+                                <div class="flex items-start justify-end">
+                                    <button type="button" onclick="removeFromCart({{ $item->id }})" class="group/btn inline-flex h-12 w-12 items-center justify-center rounded-full bg-red-50 text-red-600 transition-all duration-300 hover:bg-red-500 hover:text-white hover:shadow-lg hover:shadow-red-300/50">
+                                        <i class="fas fa-trash text-base"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Subtotal Bar -->
+                            <div class="mt-5 border-t border-slate-200 pt-4 flex items-center justify-between">
+                                <span class="text-sm font-semibold text-slate-600">Subtotal</span>
+                                <span class="text-xl font-bold text-slate-900">Rp {{ number_format($item->product->harga * $item->quantity, 0, ',', '.') }}</span>
+                            </div>
+                        </article>
+                    @endforeach
+                </section>
+
+                <!-- Summary Sidebar -->
+                <aside class="h-fit rounded-[1.75rem] border border-slate-200 bg-gradient-to-b from-white to-orange-50 p-7 shadow-[0_10px_30px_rgba(15,23,42,0.08)] ring-1 ring-orange-100/50 lg:sticky lg:top-24">
+                    <div class="space-y-6">
+                        <!-- Header -->
+                        <div>
+                            <p class="text-xs font-bold uppercase tracking-[0.3em] text-slate-500">📋 Ringkasan</p>
+                            <h2 class="mt-3 text-2xl font-black text-slate-900">Total Belanja</h2>
+                        </div>
+
+                        <!-- Price Breakdown -->
+                        <div class="space-y-3 rounded-[1.25rem] bg-white p-5 ring-1 ring-slate-200">
+                            <div class="flex items-center justify-between">
+                                <span class="text-sm text-slate-600">Subtotal</span>
+                                <span class="font-semibold text-slate-900">Rp {{ number_format($total, 0, ',', '.') }}</span>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <span class="text-sm text-slate-600">Pajak (10%)</span>
+                                <span class="font-semibold text-slate-900">Rp {{ number_format($total * 0.1, 0, ',', '.') }}</span>
+                            </div>
+                            <div class="border-t border-slate-200 pt-4 flex items-center justify-between">
+                                <span class="font-bold text-slate-900">Total</span>
+                                <span class="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[#8B3E00] to-[#d97706]">Rp {{ number_format($total * 1.1, 0, ',', '.') }}</span>
+                            </div>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="space-y-3 pt-2">
+                            <a href="{{ route('checkout') }}" class="inline-flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#8B3E00] to-[#a0480f] px-5 py-4 text-base font-bold text-white shadow-lg shadow-orange-300/40 transition-all duration-300 hover:shadow-xl hover:shadow-orange-300/60 hover:-translate-y-1">
+                                <i class="fas fa-credit-card"></i>
+                                Lanjut Pembayaran
+                            </a>
+                            <a href="{{ route('menu.index') }}" class="inline-flex w-full items-center justify-center gap-2 rounded-full border-2 border-slate-200 bg-white px-5 py-4 text-base font-bold text-slate-900 transition-all duration-300 hover:bg-slate-50 hover:border-slate-300">
+                                <i class="fas fa-plus"></i>
+                                Tambah Menu
+                            </a>
+                        </div>
+
+                        <!-- Info Box -->
+                        <div class="rounded-lg bg-amber-50 p-4 ring-1 ring-amber-200">
+                            <p class="text-xs font-semibold text-amber-900">✨ Free ongkir untuk pembelian di atas Rp 100.000</p>
+                        </div>
                     </div>
-                </div>
+                </aside>
             </div>
         @endif
     </main>
 </div>
-
-<style>
-    .cart-page {
-        background: #f5f5f5;
-        padding: 20px 0;
-        min-height: calc(100vh - 100px);
-    }
-
-    .cart-main-section {
-        max-width: 1200px;
-        margin: 0 auto;
-    }
-
-    .cart-content {
-        display: grid;
-        grid-template-columns: 1fr 350px;
-        gap: 20px;
-        margin-bottom: 40px;
-    }
-
-    @media (max-width: 768px) {
-        .cart-content {
-            grid-template-columns: 1fr;
-        }
-    }
-
-    .cart-items-container {
-        background: white;
-        border-radius: 8px;
-        overflow: hidden;
-    }
-
-    .cart-item {
-        display: grid;
-        grid-template-columns: 100px 1fr 120px 120px 50px;
-        gap: 15px;
-        align-items: center;
-        padding: 15px;
-        border-bottom: 1px solid #eee;
-        transition: background 0.3s;
-    }
-
-    .cart-item:hover {
-        background: #f9f9f9;
-    }
-
-    .cart-item:last-child {
-        border-bottom: none;
-    }
-
-    .item-details h3 {
-        margin: 0;
-        font-size: 16px;
-        color: #333;
-    }
-
-    .item-price {
-        margin: 5px 0 0 0;
-        color: #bf4f08;
-        font-weight: bold;
-    }
-
-    .item-quantity {
-        display: flex;
-        align-items: center;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-        overflow: hidden;
-    }
-
-    .item-quantity button {
-        background: #f0f0f0;
-        border: none;
-        width: 30px;
-        height: 30px;
-        cursor: pointer;
-        font-size: 14px;
-    }
-
-    .item-quantity button:hover {
-        background: #e0e0e0;
-    }
-
-    .qty-input {
-        border: none;
-        width: 50px;
-        text-align: center;
-        font-size: 14px;
-    }
-
-    .item-subtotal {
-        text-align: right;
-    }
-
-    .subtotal-price {
-        margin: 0;
-        font-size: 16px;
-        font-weight: bold;
-        color: #333;
-    }
-
-    .btn-remove {
-        background: #ff4444;
-        color: white;
-        border: none;
-        width: 35px;
-        height: 35px;
-        border-radius: 4px;
-        cursor: pointer;
-        font-size: 14px;
-    }
-
-    .btn-remove:hover {
-        background: #dd2222;
-    }
-
-    .cart-summary-card {
-        background: white;
-        border-radius: 8px;
-        padding: 20px;
-        height: fit-content;
-        position: sticky;
-        top: 20px;
-    }
-
-    .summary-row {
-        display: flex;
-        justify-content: space-between;
-        margin-bottom: 12px;
-        font-size: 14px;
-    }
-
-    .summary-row span {
-        color: #666;
-    }
-
-    .summary-val {
-        font-weight: bold;
-        color: #333;
-    }
-
-    .summary-divider {
-        border: none;
-        border-top: 2px solid #eee;
-        margin: 12px 0;
-    }
-
-    .total-row {
-        font-size: 16px !important;
-        margin-top: 12px !important;
-        margin-bottom: 20px !important;
-    }
-
-    .total-row span {
-        color: #333;
-    }
-
-    .total-val {
-        font-size: 18px !important;
-        font-weight: bold !important;
-        color: #bf4f08 !important;
-    }
-
-    .summary-btns {
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
-    }
-
-    .btn-add-more, .btn-checkout {
-        padding: 12px;
-        border-radius: 4px;
-        text-align: center;
-        font-size: 14px;
-        text-decoration: none;
-        display: block;
-        transition: all 0.3s;
-    }
-
-    .btn-add-more {
-        background: #f0f0f0;
-        color: #333;
-        border: 1px solid #ddd;
-    }
-
-    .btn-add-more:hover {
-        background: #e0e0e0;
-    }
-
-    .btn-checkout {
-        background: #bf4f08;
-        color: white;
-    }
-
-    .btn-checkout:hover {
-        background: #a23f06;
-    }
-
-    @media (max-width: 600px) {
-        .cart-item {
-            grid-template-columns: 80px 1fr;
-            gap: 10px;
-        }
-
-        .item-quantity, .item-subtotal, .item-remove {
-            grid-column: 2;
-        }
-
-        .item-quantity {
-            width: 80px;
-        }
-    }
-</style>
 
 <script>
 function removeFromCart(itemId) {

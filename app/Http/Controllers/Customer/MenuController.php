@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Customer;
 
 use App\Http\Controllers\Controller;
 use App\Models\Menu;
+use App\Models\Review;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
@@ -157,11 +158,21 @@ class MenuController extends Controller
             }
         }
 
-        $menus = $query
+        $products = $query
             ->latest()
             ->paginate(12);
 
-        return view('CustomerViews.menu', compact('menus'));
+        $favoriteIds = auth()->check()
+            ? auth()->user()->favorites()->pluck('menu_id')->toArray()
+            : [];
+
+        $totalReviews = Review::count();
+        $recentReviews = Review::with(['user', 'product'])
+            ->latest()
+            ->take(4)
+            ->get();
+
+        return view('Customerviews.menu', compact('products', 'favoriteIds', 'totalReviews', 'recentReviews'));
     }
 
     // Customer AJAX Detail

@@ -15,12 +15,17 @@ use App\Http\Controllers\ReceiptController;
 use App\Http\Controllers\StatsController;
 use App\Http\Controllers\RedeemController;
 use App\Http\Controllers\Customer\CartController;
+use App\Http\Controllers\Customer\FavoriteController;
 use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\CostumerController;
 use App\Http\Controllers\VoucherController;
 use App\Http\Controllers\PlaylistController;
 use App\Http\Controllers\ReferralController;
 use App\Http\Controllers\AchievementController;
+use App\Models\User;
+use App\Models\Role;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 
 /*
 |--------------------------------------------------------------------------
@@ -29,21 +34,57 @@ use App\Http\Controllers\AchievementController;
 */
 
 Route::get('/', function () {
-    return view('customerviews.welcome');
+    if (Auth::check()) {
+        return redirect()->route('home');
+    }
+
+    return view('Customerviews.welcome');
 });
 
-Route::get('/menu', [MenuController::class, 'customerIndex'])
-    ->name('menu.index');
+Route::middleware(['restore.guest'])->group(function () {
 
-Route::get('/menu/{menu}', [MenuController::class, 'showProduct'])
-    ->name('menu.show');
+    Route::get('/menu', [MenuController::class, 'customerIndex'])
+        ->name('menu.index');
+
+    Route::get('/menu/{menu}', [MenuController::class, 'showProduct'])
+        ->name('menu.show');
 
 
-/*
-|--------------------------------------------------------------------------
-| GUEST ONLY
-|--------------------------------------------------------------------------
-*/
+    /*
+    |--------------------------------------------------------------------------
+    | GUEST ONLY
+    |--------------------------------------------------------------------------
+    */
+
+Route::post('/guest-login', function () {
+    // Ensure a guest role exists and use its id to satisfy FK
+    $role = Role::firstOrCreate([
+        'role_name' => 'Guest',
+    ]);
+
+    $guest = User::firstOrCreate(
+        ['is_guest' => true],
+        [
+            'name' => 'Guest User',
+            'username' => 'guest',
+            'email' => 'guest@local.test',
+            'password' => Hash::make(Str::random(16)),
+            'id_role' => $role->id_role,
+            'is_guest' => true,
+        ]
+    );
+
+    Auth::login($guest);
+
+    session([
+        'is_guest' => true,
+        'guest_name' => 'Guest',
+    ]);
+
+    return redirect()->route('menu.index');
+})->name('guest.login');
+
+});
 
 Route::middleware(['guest'])->group(function () {
 
@@ -106,7 +147,7 @@ Route::middleware(['auth'])->group(function () {
 Route::middleware(['customer'])->group(function () {
 
     Route::get('/home', function () {
-        return view('customerviews.home');
+        return view('Customerviews.home');
     })->name('home');
 
     // Loyalty
@@ -148,6 +189,9 @@ Route::middleware(['customer'])->group(function () {
     // Reviews
     Route::post('/menu/{menu}/reviews', [ReviewController::class, 'store'])
         ->name('reviews.store');
+
+    Route::post('/favorites/toggle', [FavoriteController::class, 'toggle'])
+        ->name('favorites.toggle');
 
     // Achievements
     Route::get('/achievements', [AchievementController::class, 'index'])
@@ -216,19 +260,8 @@ Route::middleware(['customer'])->group(function () {
 |--------------------------------------------------------------------------
 */
 
-Route::middleware(['guest.mode'])->group(function () {
+Route::middleware(['auth'])->group(function () {
 
-
-    Route::post('/guest-login', function () {
-
-        session([
-            'is_guest' => true,
-            'guest_name' => 'Guest'
-        ]);
-
-        return redirect()->route('home');
-
-    })->name('guest.login');
     // Cart
     Route::get('/cart', [CartController::class, 'index'])
         ->name('cart.index');
@@ -383,7 +416,6 @@ Route::middleware(['admin.staff'])->prefix('admin')->group(function () {
         ->name('admin.requests.reset');
 
 });
-
 
 require __DIR__ . '/settings.php';
 require __DIR__ . '/auth.php';

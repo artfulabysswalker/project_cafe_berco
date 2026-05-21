@@ -13,15 +13,18 @@ return new class extends Migration {
 
             $table->string('referral_code');
 
-            // 🔥 FIXED: match users.id_user
-            $table->foreignId('referrer_id')
-                ->constrained('users', 'id_user')
-                ->cascadeOnDelete();
+            // referrer/referee reference users.id_user
+            $table->unsignedBigInteger('referrer_id');
+            $table->foreign('referrer_id')
+                ->references('id_user')
+                ->on('users')
+                ->onDelete('cascade');
 
-            $table->foreignId('referee_id')
-                ->nullable()
-                ->constrained('users', 'id_user')
-                ->nullOnDelete();
+            $table->unsignedBigInteger('referee_id')->nullable();
+            $table->foreign('referee_id')
+                ->references('id_user')
+                ->on('users')
+                ->onDelete('set null');
 
             $table->enum('status', ['pending', 'completed', 'active'])
     ->default('pending');

@@ -1,4 +1,4 @@
-@extends('layouts.web')
+@extends('Customerviews.layouts.web')
 
 @section('title', 'Menu - Berco Cafe')
 
@@ -10,9 +10,25 @@
                 <h1>Menu Berco Cafe</h1>
                 <p>Jelajahi menu kami</p>
             </div>
-            <div class="cart-floating" onclick="window.location.href='{{ route('cart.index') }}'" style="position: relative; cursor: pointer;">
-                <i class="fas fa-shopping-cart"></i>
-                <span id="floating-badge" class="badge" style="display: none; top: -5px; right: -5px;">0</span>
+            <div class="menu-header-actions" style="display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
+                <a href="{{ url('/') }}" class="inline-flex items-center gap-2 rounded-full bg-white/10 px-5 py-3 text-sm font-semibold text-white transition hover:bg-white/20">
+                    <i class="fas fa-home"></i>
+                    Beranda
+                </a>
+                @auth
+                    <a href="{{ route('redeem.index') }}" class="inline-flex items-center gap-2 rounded-full bg-[#f59e0b] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#d97706]">
+                        <i class="fas fa-gift"></i>
+                        Tukar EXP
+                    </a>
+                    <a href="{{ route('daily-quest') }}" class="inline-flex items-center gap-2 rounded-full bg-[#10b981] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#0f766e]">
+                        <i class="fas fa-trophy"></i>
+                        Daily Quest
+                    </a>
+                @endauth
+                <div class="cart-floating" onclick="window.location.href='{{ route('cart.index') }}'" style="position: relative; cursor: pointer;">
+                    <i class="fas fa-shopping-cart"></i>
+                    <span id="floating-badge" class="badge" style="display: none; top: -5px; right: -5px;">0</span>
+                </div>
             </div>
         </div>
 
@@ -41,18 +57,20 @@
 
         <div class="menu-grid">
             @forelse($products as $product)
-                <div class="menu-card" data-category="{{ $product->category }}" data-id="{{ $product->slug }}">
+                <div class="menu-card" data-category="menu" data-id="{{ $product->id }}">
                     <div class="card-img">
                         <img src="{{ $product->image_url ?? 'https://images.unsplash.com/photo-1495521821757-a1efb6729352?q=80&w=400' }}" 
                              alt="{{ $product->name }}">
                         <div class="image-overlay"></div>
                         @auth
-                            <button class="wishlist-btn" onclick="toggleFavorite('{{ $product->slug }}', this)" type="button">
+                            <button class="wishlist-btn {{ in_array($product->id, $favoriteIds ?? []) ? 'liked' : '' }}"
+                                    onclick="toggleFavorite({{ $product->id }}, this)"
+                                    type="button">
                                 <i class="far fa-heart"></i>
                             </button>
                         @endauth
                         <div class="card-category">
-                            <span class="category-badge">{{ ucfirst($product->category) }}</span>
+                            <span class="category-badge">Menu</span>
                         </div>
                     </div>
                     <div class="card-body">
@@ -68,7 +86,7 @@
                                 <i class="fas fa-shopping-cart"></i> Tambah ke Keranjang
                             </button>
                         @else
-                            <a href="{{ route('login') }}" class="btn-add-cart" style="text-decoration: none; display: block; text-align: center;">
+                            <a href="{{ route('testlogin') }}" class="btn-add-cart" style="text-decoration: none; display: block; text-align: center;">
                                 <i class="fas fa-shopping-cart"></i> Masuk untuk Pesan
                             </a>
                         @endauth
@@ -161,7 +179,7 @@
             @endif
         @else
             <div class="review-submit-section">
-                <div class="review-empty">Silakan <a href="{{ route('login') }}">masuk</a> terlebih dahulu untuk memberi rating dan review.</div>
+                <div class="review-empty">Silakan <a href="{{ route('testlogin') }}">masuk</a> terlebih dahulu untuk memberi rating dan review.</div>
             </div>
         @endauth
 
@@ -742,9 +760,29 @@ function addToCart(productId, productName) {
     });
 }
 
-function toggleFavorite(productSlug, button) {
-    // You can implement favorite functionality later
-    button.classList.toggle('liked');
+function toggleFavorite(productId, button) {
+    fetch('{{ route('favorites.toggle') }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+        },
+        body: JSON.stringify({
+            product_id: productId
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            button.classList.toggle('liked', data.favorited);
+        } else {
+            alert(data.message || 'Gagal menyimpan favorit');
+        }
+    })
+    .catch(error => {
+        console.error(error);
+        alert('Terjadi kesalahan saat menyimpan favorit');
+    });
 }
 
 function updateCartBadge() {
@@ -761,7 +799,6 @@ function updateCartBadge() {
         });
 }
 
-<<<<<<< HEAD
 function attachCartButtons() {
     document.querySelectorAll('.add-to-cart-btn').forEach(btn => {
         btn.addEventListener('click', function() {
@@ -779,10 +816,7 @@ function attachCartButtons() {
 document.addEventListener('DOMContentLoaded', function() {
     attachCartButtons();
     updateCartBadge();
-=======
-// Update badge on page load
-document.addEventListener('DOMContentLoaded', () => {
-    updateCartBadge();
+
     const reviewSelector = document.getElementById('review-product-select');
     const reviewForm = document.getElementById('menu-review-form');
 
@@ -791,7 +825,6 @@ document.addEventListener('DOMContentLoaded', () => {
             reviewForm.action = this.value;
         });
     }
->>>>>>> c1f9b47b2b32ef16af6de90aff6579bb39bed917
 });
 </script>
 @endauth

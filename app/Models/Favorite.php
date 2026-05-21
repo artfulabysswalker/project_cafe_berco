@@ -4,13 +4,13 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class Review extends Model
+class Favorite extends Model
 {
+    protected $table = 'favorites';
+
     protected $fillable = [
         'user_id',
         'menu_id',
-        'rating',
-        'comment',
     ];
 
     public function user()

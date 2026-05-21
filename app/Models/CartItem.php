@@ -27,4 +27,15 @@ class CartItem extends Model
     {
         return $this->belongsTo(Menu::class, 'menu_id', 'id_menu');
     }
+
+    // compatibility accessor: some controllers expect ->menu_id
+    public function getMenuIdAttribute()
+    {
+        return $this->attributes['menu_id'] ?? null;
+    }
+
+    public function getProductIdAttribute()
+    {
+        return $this->attributes['menu_id'] ?? null;
+    }
 }

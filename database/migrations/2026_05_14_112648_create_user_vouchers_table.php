@@ -12,9 +12,11 @@ return new class extends Migration
 
             $table->id();
 
-            // 🔥 IMPORTANT FIX: point to id_user
-            $table->foreignId('user_id')
-                ->constrained('users', 'id_user')
+            // user references users.id_user
+            $table->unsignedBigInteger('user_id');
+            $table->foreign('user_id')
+                ->references('id_user')
+                ->on('users')
                 ->onDelete('cascade');
 
             // vouchers still uses default id → OK

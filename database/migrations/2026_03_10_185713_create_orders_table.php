@@ -20,7 +20,10 @@ return new class extends Migration {
 
             $table->integer('total_harga');
 
-          $table->enum('status_pembayaran', ['pending', 'paid'])->default('pending');
+            $table->enum('status_pembayaran', ['pending', 'paid'])->default('pending');
+            $table->enum('service_type', ['dine_in', 'take_away'])->default('dine_in');
+            $table->enum('payment_method', ['cash', 'debit', 'credit'])->default('cash');
+            $table->text('notes')->nullable();
 
             $table->enum('status_order', [
                 'pending',

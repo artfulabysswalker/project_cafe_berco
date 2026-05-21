@@ -24,7 +24,7 @@ class CartController extends Controller
             return $item->menu->harga * $item->quantity;
         });
 
-        return view('CustomerViews.cart', compact('cartItems', 'total'));
+        return view('Customerviews.cart', compact('cartItems', 'total'));
     }
 
     /**
@@ -33,28 +33,23 @@ class CartController extends Controller
     public function add(Request $request)
     {
         $request->validate([
-            'menu_id' => 'required|exists:menus,id_menu',
+            'product_id' => 'required|exists:menus,id_menu',
             'quantity' => 'required|integer|min:1',
         ]);
 
         $user = auth()->user();
 
         $cartItem = $user->cartItems()
-            ->where('menu_id', $request->menu_id)
+            ->where('menu_id', $request->product_id)
             ->first();
 
         if ($cartItem) {
-
-            // Update quantity
             $cartItem->quantity += $request->quantity;
             $cartItem->save();
-
         } else {
-
-            // Create new cart item
             CartItem::create([
-                'user_id' => $user->id,
-                'menu_id' => $request->menu_id,
+                'user_id' => $user->id_user,
+                'menu_id' => $request->product_id,
                 'quantity' => $request->quantity,
             ]);
         }
