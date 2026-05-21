@@ -14,7 +14,7 @@
         </header>
 
         <main class="container mx-auto py-6">
-            {{ $slot }}
+            @yield('content')
         </main>
     </div>
 
