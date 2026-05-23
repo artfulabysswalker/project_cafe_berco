@@ -66,13 +66,30 @@ class CartController extends Controller
      */
     public function update(Request $request, CartItem $cartItem)
     {
-        $request->validate([
-            'quantity' => 'required|integer|min:1|max:100',
-        ]);
+        // Handle form submission with action parameter (increase/decrease)
+        if ($request->has('action')) {
+            $action = $request->input('action');
+            $newQuantity = $cartItem->quantity;
+            
+            if ($action === 'increase') {
+                $newQuantity++;
+            } elseif ($action === 'decrease' && $newQuantity > 1) {
+                $newQuantity--;
+            }
+            
+            $cartItem->update([
+                'quantity' => $newQuantity
+            ]);
+        } else {
+            // Handle JSON request with quantity parameter
+            $request->validate([
+                'quantity' => 'required|integer|min:1|max:100',
+            ]);
 
-        $cartItem->update([
-            'quantity' => $request->quantity
-        ]);
+            $cartItem->update([
+                'quantity' => $request->quantity
+            ]);
+        }
 
         return response()->json([
             'success' => true,

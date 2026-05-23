@@ -8,27 +8,7 @@
         <div class="menu-header">
             <div class="header-info">
                 <h1>Menu Berco Cafe</h1>
-                <p>Jelajahi menu kami</p>
-            </div>
-            <div class="menu-header-actions" style="display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
-                <a href="{{ url('/') }}" class="inline-flex items-center gap-2 rounded-full bg-white/10 px-5 py-3 text-sm font-semibold text-white transition hover:bg-white/20">
-                    <i class="fas fa-home"></i>
-                    Beranda
-                </a>
-                @auth
-                    <a href="{{ route('redeem.index') }}" class="inline-flex items-center gap-2 rounded-full bg-[#f59e0b] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#d97706]">
-                        <i class="fas fa-gift"></i>
-                        Tukar EXP
-                    </a>
-                    <a href="{{ route('daily-quest') }}" class="inline-flex items-center gap-2 rounded-full bg-[#10b981] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#0f766e]">
-                        <i class="fas fa-trophy"></i>
-                        Daily Quest
-                    </a>
-                @endauth
-                <div class="cart-floating" onclick="window.location.href='{{ route('cart.index') }}'" style="position: relative; cursor: pointer;">
-                    <i class="fas fa-shopping-cart"></i>
-                    <span id="floating-badge" class="badge" style="display: none; top: -5px; right: -5px;">0</span>
-                </div>
+                <p>Jelajahi menu kami & nikmati setiap tegukan kopi spesial</p>
             </div>
         </div>
 
@@ -86,7 +66,7 @@
                                 <i class="fas fa-shopping-cart"></i> Tambah ke Keranjang
                             </button>
                         @else
-                            <a href="{{ route('testlogin') }}" class="btn-add-cart" style="text-decoration: none; display: block; text-align: center;">
+                            <a href="{{ route('login') }}" class="btn-add-cart" style="text-decoration: none; display: block; text-align: center;">
                                 <i class="fas fa-shopping-cart"></i> Masuk untuk Pesan
                             </a>
                         @endauth
@@ -179,7 +159,7 @@
             @endif
         @else
             <div class="review-submit-section">
-                <div class="review-empty">Silakan <a href="{{ route('testlogin') }}">masuk</a> terlebih dahulu untuk memberi rating dan review.</div>
+                <div class="review-empty">Silakan <a href="{{ route('login') }}">masuk</a> terlebih dahulu untuk memberi rating dan review.</div>
             </div>
         @endauth
 
@@ -205,39 +185,28 @@
 
     .menu-header {
         display: flex;
-        justify-content: space-between;
-        align-items: center;
+        justify-content: flex-start;
+        align-items: flex-start;
         margin-bottom: 30px;
         background: linear-gradient(135deg, #8b5e34 0%, #c78c4e 100%);
-        padding: 30px;
+        padding: 40px 30px;
         border-radius: 20px;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.12);
+        box-shadow: 0 10px 30px rgba(0,0,0,0.15);
         color: white;
     }
 
     .header-info h1 {
-        font-size: 2.5rem;
+        font-size: 2.8rem;
         font-weight: 700;
-        margin-bottom: 5px;
-        background: linear-gradient(45deg, #ffffff, #f0f0f0);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
+        margin-bottom: 8px;
+        color: white;
     }
 
     .header-info p {
         font-size: 1.1rem;
-        opacity: 0.9;
+        opacity: 0.95;
+        color: rgba(255,255,255,0.95);
     }
-
-    .cart-floating i {
-        font-size: 1.5rem;
-        color: white;
-    }
-
-    .badge {
-        position: absolute;
-        top: -5px;
         right: -5px;
         background: linear-gradient(45deg, #ff6b6b, #ee5a24);
         color: white;

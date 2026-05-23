@@ -74,7 +74,7 @@
                 <a href="#login" class="w-1/2 text-center bg-white text-[#78350F] py-2.5 rounded-full font-bold shadow-sm transition">
                     <i class="fas fa-sign-in-alt mr-2"></i>Login
                 </a>
-                <a href="{{ route('testregister') }}" class="w-1/2 text-center text-zinc-500 py-2.5 rounded-full font-medium hover:text-zinc-800 transition">
+                <a href="{{ route('register') }}" class="w-1/2 text-center text-zinc-500 py-2.5 rounded-full font-medium hover:text-zinc-800 transition">
                     <i class="fas fa-user-plus mr-2"></i>Daftar
                 </a>
             </div>
@@ -83,7 +83,7 @@
             <p class="text-zinc-500 mb-8 text-sm">Login dengan akun Anda untuk memesan kopi favorit</p>
 
             {{-- Login Form --}}
-            <form action="{{ route('login.user') }}" method="POST" class="space-y-5">
+            <form action="{{ route('login') }}" method="POST" class="space-y-5">
                 @csrf
                 
                 {{-- Email Input --}}
@@ -107,7 +107,7 @@
                             <i class="fas fa-lock text-[#78350F]"></i>
                             Password
                         </label>
-                        <a href="#" class="text-xs text-zinc-400 hover:text-orange-700 font-medium transition">
+                        <a href="{{ route('password.request') }}" class="text-xs text-zinc-400 hover:text-orange-700 font-medium transition">
                             <i class="fas fa-question-circle mr-1"></i>Lupa?
                         </a>
                     </div>
@@ -175,7 +175,7 @@
             <div class="mt-8 pt-6 border-t border-zinc-100 text-center">
                 <p class="text-zinc-600 text-sm">
                     Belum punya akun? 
-                    <a href="{{ route('testregister') }}" class="font-bold text-[#78350F] hover:text-orange-700 transition">
+                    <a href="{{ route('register') }}" class="font-bold text-[#78350F] hover:text-orange-700 transition">
                         Daftar sekarang
                     </a>
                 </p>

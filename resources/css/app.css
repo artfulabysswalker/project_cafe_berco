@@ -1,9 +1,9 @@
 /* Tailwind entry (Vite style) */
+@import "../../vendor/livewire/flux/dist/flux.css";
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
-@import "../../vendor/livewire/flux/dist/flux.css";
 
 /* Base styles */
 @layer base {

@@ -77,7 +77,7 @@
             
             {{-- Tabs --}}
             <div class="flex gap-2 bg-zinc-100 rounded-full p-1.5 mb-8">
-                <a href="{{ route('testlogin') }}" class="w-1/2 text-center text-zinc-500 py-2.5 rounded-full font-medium hover:text-zinc-800 transition">
+                <a href="{{ route('login') }}" class="w-1/2 text-center text-zinc-500 py-2.5 rounded-full font-medium hover:text-zinc-800 transition">
                     <i class="fas fa-sign-in-alt mr-2"></i>Login
                 </a>
                 <a href="#register" class="w-1/2 text-center bg-white text-[#78350F] py-2.5 rounded-full font-bold shadow-sm transition">
@@ -89,7 +89,7 @@
             <p class="text-zinc-500 mb-8 text-sm">Bergabunglah dengan komunitas pecinta kopi kami dan mulai kumpulkan poin reward!</p>
 
             {{-- Register Form --}}
-            <form action="{{ route('register.user') }}" method="POST" class="space-y-5">
+            <form action="{{ route('register') }}" method="POST" class="space-y-5">
                 @csrf
                 
                 {{-- Full Name Input --}}
@@ -211,7 +211,7 @@
             <div class="mt-8 pt-6 border-t border-zinc-100 text-center">
                 <p class="text-zinc-600 text-sm">
                     Sudah punya akun? 
-                    <a href="{{ route('testlogin') }}" class="font-bold text-[#78350F] hover:text-orange-700 transition">
+                    <a href="{{ route('login') }}" class="font-bold text-[#78350F] hover:text-orange-700 transition">
                         Masuk di sini
                     </a>
                 </p>

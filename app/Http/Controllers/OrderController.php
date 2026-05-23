@@ -102,7 +102,7 @@ class OrderController extends Controller
      */
     public function receipt(Order $order)
     {
-        if ($order->id_user !== auth()->id()) {
+        if ($order->id_user !== auth()->user()->id_user) {
             return redirect()->route('home')
                 ->with('error', 'Anda tidak memiliki akses ke pesanan ini');
         }
@@ -130,7 +130,7 @@ class OrderController extends Controller
      */
     public function show(Order $order)
     {
-        if ($order->id_user !== auth()->id()) {
+        if ($order->id_user !== auth()->user()->id_user) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 

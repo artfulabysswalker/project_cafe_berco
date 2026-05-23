@@ -1,4 +1,4 @@
-function filterHistory() {
+export function filterHistory() {
     let from = document.getElementById('fromDate').value;
     let to = document.getElementById('toDate').value;
 
@@ -14,15 +14,16 @@ function filterHistory() {
     });
 }
 
-function resetFilter() {
+export function resetFilter() {
     document.getElementById('fromDate').value = '';
     document.getElementById('toDate').value = '';
 
     document.querySelectorAll('.history-row').forEach(row => {
         row.style.display = '';
     });
+}
 
-    function searchByName() {
+export function searchByName() {
     const input = document.getElementById('searchName').value.toLowerCase();
     const rows = document.querySelectorAll('.history-row');
 
@@ -34,5 +35,4 @@ function resetFilter() {
             row.style.display = 'none';
         }
     });
-}
 }

@@ -12,12 +12,21 @@ class CostumerController extends Controller
 {
     public function register(Request $request)
     {
-   $request->validate([
-    'name' => 'required',
-    'username' => 'required|unique:users,username',
-    'email' => 'required|email|unique:users,email',
-    'password' => 'required|confirmed|min:6',
-]);
+        $request->validate([
+            'name' => 'required',
+            'email' => 'required|email|unique:users,email',
+            'password' => 'required|confirmed|min:6',
+        ]);
+
+        // Generate username from email (before @)
+        $username = explode('@', $request->email)[0];
+        // Ensure username is unique by adding suffix if needed
+        $counter = 1;
+        $originalUsername = $username;
+        while (User::where('username', $username)->exists()) {
+            $username = $originalUsername . $counter;
+            $counter++;
+        }
 
         // Get customer role
         $customerRole = Role::where('role_name', 'customer')->first();
@@ -25,15 +34,17 @@ class CostumerController extends Controller
         // Create user
         User::create([
             'name' => $request->name,
-            'username' => $request->username,
+            'username' => $username,
             'email' => $request->email,
             'password' => Hash::make($request->password),
             'id_role' => $customerRole->id_role,
             'is_guest' => false,
         ]);
 
-        return redirect()->route('home')
-    ->with('success', 'Account created successfully');
+        Auth::login(User::where('email', $request->email)->first());
+
+        return redirect()->route('menu.index')
+            ->with('success', 'Account created successfully');
     }
 
 

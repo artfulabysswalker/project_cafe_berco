@@ -17,7 +17,6 @@ use App\Http\Controllers\RedeemController;
 use App\Http\Controllers\Customer\CartController;
 use App\Http\Controllers\Customer\FavoriteController;
 use App\Http\Controllers\ReviewController;
-use App\Http\Controllers\CostumerController;
 use App\Http\Controllers\VoucherController;
 use App\Http\Controllers\PlaylistController;
 use App\Http\Controllers\ReferralController;
@@ -88,22 +87,6 @@ Route::post('/guest-login', function () {
 
 Route::middleware(['guest'])->group(function () {
 
-    // Customer Login
-    Route::get('/testlogin', function () {
-        return view('Customerviews.pages.auth.login');
-    })->name('testlogin');
-
-    Route::post('/login-user', [CostumerController::class, 'login'])
-        ->name('login.user');
-
-    // Customer Register
-    Route::get('/testregister', function () {
-        return view('Customerviews.pages.auth.register');
-    })->name('testregister');
-
-    Route::post('/register-user', [CostumerController::class, 'register'])
-        ->name('register.user');
-
     // Staff Login
     Route::get('/staff-login', function () {
         return view('admin.login');
@@ -131,7 +114,7 @@ Route::middleware(['auth'])->group(function () {
 
         $request->session()->regenerateToken();
 
-        return redirect('/testlogin');
+        return redirect('/login');
 
     })->name('logout');
 
@@ -275,10 +258,10 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/cart/count', [CartController::class, 'count'])
         ->name('cart.count');
 
-    Route::post('/cart/{cartItem}/update', [CartController::class, 'update'])
+    Route::patch('/cart/{cartItem}/update', [CartController::class, 'update'])
         ->name('cart.update');
 
-    Route::post('/cart/{cartItem}/remove', [CartController::class, 'remove'])
+    Route::delete('/cart/{cartItem}/remove', [CartController::class, 'remove'])
         ->name('cart.remove');
 
     // Checkout

@@ -19,8 +19,8 @@
         }
 
         .header {
-            background: white;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            background: linear-gradient(135deg, #8b5e34 0%, #c78c4e 100%);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.15);
             position: sticky;
             top: 0;
             z-index: 100;
@@ -32,7 +32,8 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 15px 20px;
+            padding: 12px 20px;
+            gap: 20px;
         }
 
         .logo-area {
@@ -40,83 +41,97 @@
             align-items: center;
             gap: 10px;
             text-decoration: none;
-            color: #333;
+            color: white;
+            flex-shrink: 0;
         }
 
         .logo-area .cup-icon {
-            font-size: 24px;
-            color: #bf4f08;
+            font-size: 28px;
+            color: white;
         }
 
         .logo-text h1 {
             margin: 0;
-            font-size: 20px;
-            color: #bf4f08;
+            font-size: 18px;
+            color: white;
+            font-weight: 700;
+            letter-spacing: 1px;
         }
 
         .nav {
             display: flex;
-            gap: 30px;
+            gap: 5px;
             flex: 1;
-            margin-left: 40px;
         }
 
         .nav ul {
             display: flex;
-            gap: 30px;
+            gap: 8px;
             list-style: none;
+            flex-wrap: wrap;
         }
 
         .nav a {
             text-decoration: none;
-            color: #666;
-            font-size: 14px;
-            transition: color 0.3s;
+            color: rgba(255,255,255,0.9);
+            font-size: 13px;
+            font-weight: 500;
+            transition: all 0.3s;
             display: flex;
             align-items: center;
-            gap: 5px;
+            gap: 6px;
             position: relative;
+            padding: 8px 12px;
+            border-radius: 6px;
+            white-space: nowrap;
         }
 
         .nav a:hover,
         .nav a.active {
-            color: #bf4f08;
+            color: white;
+            background: rgba(255,255,255,0.2);
         }
 
         .badge {
             background: #ff4444;
             color: white;
             border-radius: 50%;
-            width: 20px;
-            height: 20px;
+            width: 18px;
+            height: 18px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 11px;
+            font-size: 10px;
             font-weight: bold;
             position: absolute;
-            top: -8px;
-            right: -8px;
+            top: 2px;
+            right: 2px;
         }
 
         .user-action {
             display: flex;
             align-items: center;
-            gap: 15px;
+            gap: 12px;
+            flex-shrink: 0;
         }
 
         .btn-login {
-            background: #bf4f08;
+            background: rgba(255,255,255,0.25);
             color: white;
-            padding: 8px 16px;
-            border-radius: 4px;
+            padding: 8px 14px;
+            border-radius: 6px;
             text-decoration: none;
-            font-size: 14px;
-            transition: background 0.3s;
+            font-size: 13px;
+            font-weight: 600;
+            transition: all 0.3s;
+            border: 1px solid rgba(255,255,255,0.4);
+            cursor: pointer;
+            border: none;
         }
 
         .btn-login:hover {
-            background: #a23f06;
+            background: rgba(255,255,255,0.35);
+            transform: translateY(-1px);
         }
 
         .status-badge {
@@ -156,11 +171,30 @@
 
             .header-container {
                 flex-wrap: wrap;
+                padding: 10px 15px;
+                gap: 10px;
             }
 
             .nav ul {
                 flex-direction: column;
                 gap: 10px;
+            }
+
+            .logo-text h1 {
+                font-size: 16px;
+            }
+
+            .logo-area .cup-icon {
+                font-size: 22px;
+            }
+
+            .user-action {
+                width: 100%;
+            }
+
+            .btn-login {
+                flex: 1;
+                text-align: center;
             }
         }
     </style>
@@ -200,7 +234,7 @@
                         <button type="submit" class="btn-login">Logout</button>
                     </form>
                 @else
-                    <a href="{{ route('testlogin') }}" class="btn-login">Login</a>
+                    <a href="{{ route('login') }}" class="btn-login">Login</a>
                 @endauth
             </div>
         </div>

@@ -64,7 +64,7 @@
                         </button>
                     </div>
                 @else
-                    <a href="{{ route('testlogin') }}" class="w-full block text-center py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition font-semibold mb-6">
+                    <a href="{{ route('login') }}" class="w-full block text-center py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition font-semibold mb-6">
                         🔐 Login untuk Vote
                     </a>
                 @endif
@@ -114,7 +114,7 @@
 <script>
 async function vote(playlistId, voteType, button) {
     @if(!auth()->check())
-        window.location.href = '{{ route('testlogin') }}';
+        window.location.href = '{{ route('login') }}';
         return;
     @endif
 
