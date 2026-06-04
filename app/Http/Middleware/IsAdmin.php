@@ -10,12 +10,16 @@ class IsAdmin
 {
     public function handle(Request $request, Closure $next)
     {
+        if (!Auth::check()) {
+            return redirect('/');
+        }
+
         $user = Auth::user();
 
-        if ($user && $user->role && $user->role->role === 'admin') {
+        if ($user && $user->role && $user->role->role_name === 'Admin') {
             return $next($request);
         }
 
-        abort(403, 'Unauthorized');
+        abort(403, 'Hanya Admin yang dapat mengakses resource ini');
     }
 }

@@ -96,8 +96,9 @@ class StatsController extends Controller
             ->get();
 
         return [
-            'total_sales' => $totalSales,
+            'total_revenue' => $totalSales,
             'total_orders' => $totalOrders,
+            'completed_orders' => $totalOrders,
             'avg_order' => round($avgOrder),
 
             'best_selling' => $bestSelling,

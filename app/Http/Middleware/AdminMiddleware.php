@@ -16,8 +16,8 @@ class AdminMiddleware
 
         $user = Auth::user();
 
-        // admin or staff
-        if ($user->id_role == 1 || $user->id_role == 3) {
+        // Check if user is Admin or Staff (based on role_name)
+        if ($user->role && in_array($user->role->role_name, ['Admin', 'Staff'])) {
             return $next($request);
         }
 

@@ -198,4 +198,36 @@ public function playlistVotes()
 {
     return $this->hasMany(PlaylistVote::class, 'user_id', 'id_user');
 }
+
+/**
+ * Check if user is admin
+ */
+public function isAdmin(): bool
+{
+    return $this->role && $this->role->role_name === 'Admin';
+}
+
+/**
+ * Check if user is staff/kasir
+ */
+public function isStaff(): bool
+{
+    return $this->role && $this->role->role_name === 'Staff';
+}
+
+/**
+ * Check if user is customer
+ */
+public function isCustomer(): bool
+{
+    return $this->role && $this->role->role_name === 'Customer';
+}
+
+/**
+ * Check if user is guest
+ */
+public function isGuest(): bool
+{
+    return $this->role && $this->role->role_name === 'Guest';
+}
 }

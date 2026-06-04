@@ -16,8 +16,8 @@ class CustomerMiddleware
 
         $user = Auth::user();
 
-        // customer role or guest customer
-        if (($user->id_role == 2 && !$user->is_guest) || $user->is_guest) {
+        // customer role (id_role 4) or guest customer
+        if (($user->id_role == 4 && !$user->is_guest) || $user->is_guest) {
             return $next($request);
         }
 

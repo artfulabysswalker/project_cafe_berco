@@ -21,9 +21,12 @@
         .header {
             background: linear-gradient(135deg, #8b5e34 0%, #c78c4e 100%);
             box-shadow: 0 4px 15px rgba(0,0,0,0.15);
-            position: sticky;
+            position: fixed;
             top: 0;
+            left: 0;
+            right: 0;
             z-index: 100;
+            width: 100%;
         }
 
         .header-container {
@@ -153,7 +156,8 @@
 
         main {
             min-height: calc(100vh - 200px);
-            padding: 20px 0;
+            padding: 100px 0 20px 0;
+            margin-top: 0;
         }
 
         footer {
@@ -214,9 +218,9 @@
                     <li><a href="{{ route('home') }}"><i class="fas fa-home"></i> Beranda</a></li>
                     <li><a href="{{ route('menu.index') }}" {{ request()->routeIs('menu*') ? 'class=active' : '' }}><i class="fas fa-mug-hot"></i> Menu</a></li>
                     @auth
-                        <li><a href="{{ route('redeem.index') }}" {{ request()->routeIs('redeem*') ? 'class=active' : '' }}><i class="fas fa-gift"></i> Tukar EXP</a></li>
                         <li><a href="{{ route('daily-quest') }}" {{ request()->routeIs('daily-quest') ? 'class=active' : '' }}><i class="fas fa-trophy"></i> Daily Quest</a></li>
-                        <li><a href="{{ route('rewards') }}" {{ request()->routeIs('rewards') ? 'class=active' : '' }}><i class="fas fa-gift"></i> Rewards</a></li>
+                        <li><a href="{{ route('redeem.index') }}" {{ request()->routeIs('redeem*') ? 'class=active' : '' }}><i class="fas fa-gift"></i> Tukar EXP</a></li>
+                        <li><a href="{{ route('rewards') }}" {{ request()->routeIs('rewards') ? 'class=active' : '' }}><i class="fas fa-star"></i> Rewards</a></li>
                         <li>
                             <a href="{{ route('cart.index') }}" {{ request()->routeIs('cart*') ? 'class=active' : '' }} style="position: relative;">
                                 <i class="fas fa-shopping-cart"></i> Keranjang

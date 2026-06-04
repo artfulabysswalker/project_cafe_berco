@@ -14,8 +14,8 @@ class AdminDashboardController extends Controller
         // Total orders
         $totalOrders = Order::count();
 
-        // Total revenue
-        $totalRevenue = Order::sum('total');
+        // Total revenue (only from paid orders)
+        $totalRevenue = Order::where('status_pembayaran', 'Paid')->sum('total_harga');
 
         // Total products sold
         $totalProductsSold = OrderItem::sum('quantity');

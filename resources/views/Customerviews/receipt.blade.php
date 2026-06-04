@@ -54,10 +54,14 @@
                     <span class="value">
                         @if($order->payment_method === 'cash')
                             <i class="fas fa-money-bill-wave"></i> Tunai
-                        @elseif($order->payment_method === 'debit')
-                            <i class="fas fa-credit-card"></i> Kartu Debit
+                        @elseif($order->payment_method === 'card')
+                            <i class="fas fa-credit-card"></i> Kartu Debit/Kredit
+                        @elseif($order->payment_method === 'e_wallet')
+                            <i class="fas fa-wallet"></i> E-Wallet (DANA/OVO/LinkAja)
+                        @elseif($order->payment_method === 'bank_transfer')
+                            <i class="fas fa-university"></i> Transfer Bank
                         @else
-                            <i class="fas fa-credit-card"></i> Kartu Kredit
+                            <i class="fas fa-credit-card"></i> {{ ucfirst($order->payment_method) }}
                         @endif
                     </span>
                 </div>

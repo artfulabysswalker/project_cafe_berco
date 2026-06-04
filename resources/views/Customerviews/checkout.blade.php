@@ -47,27 +47,47 @@
                                 <i class="fas fa-money-bill-wave" style="color: #27ae60;"></i>
                                 <div>
                                     <strong>Tunai</strong>
-                                    <span>Bayar dengan uang tunai</span>
+                                    <span>Bayar dengan uang tunai di tempat</span>
                                 </div>
                             </div>
                         </label>
                         <label class="option-item">
-                            <input type="radio" name="payment_method" value="debit">
+                            <input type="radio" name="payment_method" value="card">
                             <div class="option-info">
                                 <i class="fas fa-credit-card" style="color: #2980b9;"></i>
                                 <div>
-                                    <strong>Kartu Debit</strong>
-                                    <span>Bayar dengan kartu debit</span>
+                                    <strong>Kartu Debit/Kredit</strong>
+                                    <span>Bayar dengan kartu debit atau kredit</span>
                                 </div>
                             </div>
                         </label>
                         <label class="option-item">
-                            <input type="radio" name="payment_method" value="credit">
+                            <input type="radio" name="payment_method" value="e_wallet">
                             <div class="option-info">
-                                <i class="fas fa-credit-card" style="color: #8e44ad;"></i>
+                                <i class="fas fa-mobile-alt" style="color: #e74c3c;"></i>
                                 <div>
-                                    <strong>Kartu Kredit</strong>
-                                    <span>Bayar dengan kartu kredit</span>
+                                    <strong>E-Wallet</strong>
+                                    <span>GCash, OVO, Dana, LinkAja, dll</span>
+                                </div>
+                            </div>
+                        </label>
+                        <label class="option-item">
+                            <input type="radio" name="payment_method" value="bank_transfer">
+                            <div class="option-info">
+                                <i class="fas fa-university" style="color: #f39c12;"></i>
+                                <div>
+                                    <strong>Transfer Bank</strong>
+                                    <span>Transfer dari rekening bank Anda</span>
+                                </div>
+                            </div>
+                        </label>
+                        <label class="option-item">
+                            <input type="radio" name="payment_method" value="qris">
+                            <div class="option-info">
+                                <i class="fas fa-qrcode" style="color: #16a34a;"></i>
+                                <div>
+                                    <strong>QRIS</strong>
+                                    <span>Scan kode QRIS dengan aplikasi mobile banking</span>
                                 </div>
                             </div>
                         </label>

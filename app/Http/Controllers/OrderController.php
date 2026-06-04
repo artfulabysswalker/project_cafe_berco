@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\Order;
 use App\Models\OrderItem;
+use App\Models\Payment;
+use App\Services\QrisPaymentService;
 use Illuminate\Http\Request;
 
 class OrderController extends Controller
@@ -38,7 +40,7 @@ class OrderController extends Controller
     {
         $request->validate([
             'service_type' => 'required|in:dine_in,take_away',
-            'payment_method' => 'required|in:cash,debit,credit',
+            'payment_method' => 'required|in:cash,card,e_wallet,bank_transfer,qris',
             'notes' => 'nullable|string|max:500',
         ]);
 
@@ -83,12 +85,93 @@ class OrderController extends Controller
 
             $user->cartItems()->delete();
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Pesanan berhasil dibuat',
-                'order_id' => $order->id_order,
-                'redirect' => route('order.receipt', $order),
-            ]);
+            // Handle different payment methods
+            if ($request->payment_method === 'qris') {
+                // Auto-generate QRIS invoice and redirect directly to Xendit
+                try {
+                    $qrisService = new QrisPaymentService();
+                    $invoiceResult = $qrisService->createQrisInvoice($order);
+
+                    // Redirect directly to Xendit checkout page (no intermediate QRIS page)
+                    $redirectRoute = $invoiceResult['invoice_url'];
+
+                    \Log::info('OrderController Auto-Generate QRIS Invoice & Redirect to Xendit', [
+                        'order_id' => $order->id_order,
+                        'invoice_id' => $invoiceResult['invoice_id'],
+                        'amount' => $invoiceResult['amount'],
+                        'xendit_url' => $redirectRoute,
+                    ]);
+
+                    return response()->json([
+                        'success' => true,
+                        'message' => 'Pesanan berhasil dibuat, redirecting ke Xendit...',
+                        'order_id' => $order->id_order,
+                        'redirect' => $redirectRoute,
+                        'invoice' => $invoiceResult,
+                    ]);
+                } catch (\Exception $e) {
+                    \Log::error('OrderController QRIS Invoice Creation Failed', [
+                        'order_id' => $order->id_order,
+                        'error' => $e->getMessage(),
+                    ]);
+
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Gagal membuat QRIS invoice: ' . $e->getMessage(),
+                    ], 500);
+                }
+            } elseif (in_array($request->payment_method, ['card', 'e_wallet', 'bank_transfer'])) {
+                // Auto-generate Xendit invoice and redirect directly to Xendit for all payment methods
+                try {
+                    $xenditController = new XenditPaymentController();
+                    $invoiceResponse = $xenditController->createInvoice($order);
+                    $invoiceData = json_decode($invoiceResponse->content(), true);
+
+                    if (!$invoiceData['success']) {
+                        return response()->json([
+                            'success' => false,
+                            'message' => $invoiceData['message'],
+                        ], 500);
+                    }
+
+                    // Redirect directly to Xendit checkout page
+                    $redirectRoute = $invoiceData['invoice_url'];
+
+                    \Log::info('OrderController Payment Route (Xendit Direct)', [
+                        'payment_method' => $request->payment_method,
+                        'invoice_id' => $invoiceData['invoice_id'],
+                        'order_id' => $order->id_order,
+                        'xendit_url' => $redirectRoute,
+                    ]);
+
+                    return response()->json([
+                        'success' => true,
+                        'message' => 'Pesanan berhasil dibuat, redirecting ke Xendit...',
+                        'order_id' => $order->id_order,
+                        'redirect' => $redirectRoute,
+                        'invoice' => $invoiceData,
+                    ]);
+                } catch (\Exception $e) {
+                    \Log::error('OrderController Xendit Invoice Creation Failed', [
+                        'order_id' => $order->id_order,
+                        'payment_method' => $request->payment_method,
+                        'error' => $e->getMessage(),
+                    ]);
+
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Gagal membuat invoice: ' . $e->getMessage(),
+                    ], 500);
+                }
+            } else {
+                // For cash payment, go directly to receipt/pending
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Pesanan berhasil dibuat',
+                    'order_id' => $order->id_order,
+                    'redirect' => route('order.receipt', $order),
+                ]);
+            }
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
@@ -137,5 +220,61 @@ class OrderController extends Controller
         $order->load('items.menu');
 
         return response()->json($order);
+    }
+
+    /**
+     * Admin: Get all orders (pending)
+     */
+    public function index()
+    {
+        $orders = Order::where('status_pembayaran', 'pending')
+            ->with('user')
+            ->latest()
+            ->paginate(10);
+
+        return view('admin.orders.index', compact('orders'));
+    }
+
+    /**
+     * Admin: Get order history (completed)
+     */
+    public function historyAdmin()
+    {
+        $orders = Order::where('status_pembayaran', 'paid')
+            ->with('user')
+            ->latest()
+            ->paginate(10);
+
+        return view('admin.orders.history', compact('orders'));
+    }
+
+    /**
+     * Admin: Mark order as completed
+     */
+    public function complete($id_order)
+    {
+        $order = Order::where('id_order', $id_order)->firstOrFail();
+        
+        $order->update([
+            'status_pembayaran' => 'paid',
+            'status_order' => 'completed',
+        ]);
+
+        return back()->with('success', 'Pesanan berhasil ditandai sebagai selesai');
+    }
+
+    /**
+     * Admin: Cancel order
+     */
+    public function cancel($id_order)
+    {
+        $order = Order::where('id_order', $id_order)->firstOrFail();
+        
+        $order->update([
+            'status_pembayaran' => 'pending',
+            'status_order' => 'cancelled',
+        ]);
+
+        return back()->with('success', 'Pesanan berhasil dibatalkan');
     }
 }

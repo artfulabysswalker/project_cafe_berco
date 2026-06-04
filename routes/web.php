@@ -32,9 +32,39 @@ use Illuminate\Support\Str;
 |--------------------------------------------------------------------------
 */
 
+// Xendit Test Endpoint (no session/db required)
+Route::get('/xendit/test', function () {
+    try {
+        \Xendit\Configuration::setXenditKey(config('services.xendit.secret_key'));
+        
+        return response()->json([
+            'status' => 'success',
+            'message' => '✅ Xendit SDK berhasil diinisialisasi!',
+            'config' => [
+                'api_key_set' => !empty(config('services.xendit.secret_key')),
+                'public_key_set' => !empty(config('services.xendit.public_key')),
+                'environment' => config('services.xendit.environment', 'development'),
+            ],
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'status' => 'error',
+            'message' => '❌ Error: ' . $e->getMessage(),
+        ], 500);
+    }
+})->name('xendit.test')->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class]);
+
 Route::get('/', function () {
     if (Auth::check()) {
-        return redirect()->route('home');
+        $user = Auth::user();
+        
+        // If admin or staff, redirect to admin dashboard
+        if ($user->isAdmin() || $user->isStaff()) {
+            return redirect()->route('control.dashboard');
+        }
+        
+        // Otherwise redirect to menu
+        return redirect()->route('menu.index');
     }
 
     return view('Customerviews.welcome');
@@ -271,6 +301,57 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/order', [OrderController::class, 'store'])
         ->name('order.store');
 
+    // Xendit Payment Routes
+    Route::prefix('xendit')->group(function () {
+        Route::get('/payment/{order}/redirect', [\App\Http\Controllers\XenditPaymentController::class, 'redirectToPayment'])
+            ->name('xendit.payment.redirect');
+
+        Route::post('/payment/{order}/invoice', [\App\Http\Controllers\XenditPaymentController::class, 'createInvoice'])
+            ->name('xendit.payment.create');
+
+        Route::get('/payment/{order}/status', [\App\Http\Controllers\XenditPaymentController::class, 'checkStatus'])
+            ->name('xendit.payment.status');
+
+        // Success and Failed redirect from Xendit
+        Route::get('/payment/success/{order}', [\App\Http\Controllers\XenditPaymentController::class, 'success'])
+            ->name('payment.success');
+
+        Route::get('/payment/failed/{order}', [\App\Http\Controllers\XenditPaymentController::class, 'failed'])
+            ->name('payment.failed');
+
+        // Xendit Callback
+        Route::post('/payment/callback', [\App\Http\Controllers\XenditPaymentController::class, 'callback'])
+            ->name('xendit.payment.callback')
+            ->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class]);
+
+        // QRIS Payment Routes
+        Route::prefix('qris')->group(function () {
+            Route::get('/payment/{order}', [\App\Http\Controllers\QrisPaymentController::class, 'show'])
+                ->name('xendit.qris.show');
+
+            Route::get('/payment/{order}/redirect', [\App\Http\Controllers\QrisPaymentController::class, 'redirectToPayment'])
+                ->name('xendit.qris.redirect');
+
+            Route::post('/payment/{order}/invoice', [\App\Http\Controllers\QrisPaymentController::class, 'createInvoice'])
+                ->name('xendit.qris.create');
+
+            Route::get('/payment/{order}/status', [\App\Http\Controllers\QrisPaymentController::class, 'checkStatus'])
+                ->name('xendit.qris.status');
+
+            // Success and Failed redirect from Xendit
+            Route::get('/payment/success/{order}', [\App\Http\Controllers\QrisPaymentController::class, 'success'])
+                ->name('xendit.qris.success');
+
+            Route::get('/payment/failed/{order}', [\App\Http\Controllers\QrisPaymentController::class, 'failed'])
+                ->name('xendit.qris.failed');
+
+            // QRIS Callback
+            Route::post('/payment/callback', [\App\Http\Controllers\QrisPaymentController::class, 'callback'])
+                ->name('xendit.qris.callback')
+                ->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class]);
+        });
+    });
+
 });
 
 
@@ -286,15 +367,29 @@ Route::middleware(['admin.staff'])->prefix('admin')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])
         ->name('control.dashboard');
 
-    // Staff
-    Route::get('/staff', [StaffController::class, 'index'])
-        ->name('admin.staffoption.index');
+    // Staff (Admin only)
+    Route::middleware(['is_admin'])->group(function () {
+        Route::get('/staff', [StaffController::class, 'index'])
+            ->name('admin.staffoption.index');
 
-    Route::delete('/staff/{id}', [StaffController::class, 'destroy'])
-        ->name('admin.staff.destroy');
+        Route::get('/staff/create', [StaffController::class, 'create'])
+            ->name('admin.staffoption.create');
 
-    Route::put('/staff/{id_user}/role', [StaffController::class, 'updateRole'])
-        ->name('admin.staff.role');
+        Route::post('/staff', [StaffController::class, 'store'])
+            ->name('admin.staff.store');
+
+        Route::get('/staff/{id_user}/edit', [StaffController::class, 'edit'])
+            ->name('admin.staffoption.edit');
+
+        Route::put('/staff/{id_user}', [StaffController::class, 'update'])
+            ->name('admin.staff.update');
+
+        Route::delete('/staff/{id}', [StaffController::class, 'destroy'])
+            ->name('admin.staff.destroy');
+
+        Route::put('/staff/{id_user}/role', [StaffController::class, 'updateRole'])
+            ->name('admin.staff.role');
+    });
 
     // Orders
     Route::get('/orders', [OrderController::class, 'index'])
@@ -307,7 +402,7 @@ Route::middleware(['admin.staff'])->prefix('admin')->group(function () {
         ->name('admin.orders.cancel');
 
     // History
-    Route::get('/history', [OrderController::class, 'history'])
+    Route::get('/history', [OrderController::class, 'historyAdmin'])
         ->name('admin.history');
 
     // Menu CRUD

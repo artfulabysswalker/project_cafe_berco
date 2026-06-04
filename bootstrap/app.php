@@ -15,6 +15,7 @@ return Application::configure(basePath: dirname(__DIR__))
     $middleware->alias([
         'customer' => \App\Http\Middleware\CustomerMiddleware::class,
         'admin.staff' => \App\Http\Middleware\AdminMiddleware::class,
+        'is_admin' => \App\Http\Middleware\IsAdmin::class,
         'guest.mode' => \App\Http\Middleware\GuestModeMiddleware::class,
         'restore.guest' => \App\Http\Middleware\RestoreGuestMiddleware::class,
     ]);

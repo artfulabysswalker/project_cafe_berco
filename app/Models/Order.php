@@ -10,6 +10,11 @@ class Order extends Model
     protected $primaryKey = 'id_order';
     protected $keyType = 'int';
 
+    public function getRouteKeyName()
+    {
+        return 'id_order';
+    }
+
     protected $fillable = [
         'tanggal',
         'nama_pelanggan',
@@ -36,4 +41,13 @@ class Order extends Model
         return $this->hasMany(OrderItem::class, 'id_order', 'id_order');
     }
 
+    public function orderItems()
+    {
+        return $this->hasMany(OrderItem::class, 'id_order', 'id_order');
+    }
+
+    public function payment()
+    {
+        return $this->hasOne(Payment::class, 'id_order', 'id_order');
+    }
 }

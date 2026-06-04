@@ -5,25 +5,29 @@
 @section('content')
 <div class="daily-quest-page">
     <main class="container">
+        <!-- Hero Section -->
         <section class="quest-hero card-hero">
             <div class="hero-grid">
                 <div>
-                    <span class="section-label">Daily Quest</span>
-                    <h1 class="section-title">Dapatkan badge setiap hari untuk jadi pelanggan setia Berco.</h1>
-                    <p class="section-copy">Selesaikan aktivitas pembelian, review, dan menu spesial untuk membuka badge baru serta reward loyalty point.</p>
+                    <span class="section-label">Daily Quest Center</span>
+                    <h1 class="section-title">Selesaikan quest harian dan raih reward menarik.</h1>
+                    <p class="section-copy">Kumpulkan badge eksklusif, unlock achievement, dan dapatkan poin loyalty setiap kali kamu menyelesaikan tantangan harian di Berco.</p>
                 </div>
                 <div class="hero-summary card-summary">
                     <span class="summary-label">Poin Hari Ini</span>
                     <strong class="summary-value">120</strong>
-                    <p class="summary-copy">Total poin yang terkumpul dari pembelian, login, dan review menu.</p>
+                    <p class="summary-copy">Poin yang telah kamu kumpulkan hari ini dari berbagai aktivitas.</p>
                 </div>
             </div>
         </section>
 
-        <section class="feature-section">
-            <div class="feature-header">
-                <h2>Fitur Daily Quest</h2>
-                <p>Ikuti tantangan harian dan kumpulkan badge serta poin loyalty setiap kali kamu aktif.</p>
+        <!-- Features Section -->
+        <section class="feature-section card-list">
+            <div class="list-header">
+                <div>
+                    <h2>Fitur Daily Quest</h2>
+                    <p>Ikuti tantangan harian dan kumpulkan badge serta poin loyalty setiap kali kamu aktif.</p>
+                </div>
             </div>
             <div class="badge-cards">
                 <article class="badge-card badge-gold">
@@ -44,7 +48,8 @@
             </div>
         </section>
 
-        <section class="quest-list card-list">
+        <!-- Challenges Section -->
+        <section class="quest-section card-list">
             <div class="list-header">
                 <div>
                     <h2>Tantangan Hari Ini</h2>
@@ -87,10 +92,12 @@
 </div>
 
 <style>
+    /* ===== BASE LAYOUT ===== */
     .daily-quest-page {
         padding: 40px 0;
         animation: fadeInUp 0.8s ease-out;
     }
+
     @keyframes fadeInUp {
         from {
             opacity: 0;
@@ -101,23 +108,29 @@
             transform: translateY(0);
         }
     }
+
     .container {
         max-width: 1100px;
         margin: 0 auto;
+        padding: 0 20px;
     }
+
+    /* ===== HERO SECTION ===== */
     .card-hero {
         border-radius: 30px;
-        padding: 36px;
-        background: linear-gradient(135deg, #fef3c7 0%, #fee2e2 100%);
+        padding: 48px;
+        background: linear-gradient(135deg, #fef3e8 0%, #fee2e2 100%);
         box-shadow: 0 24px 70px rgba(203, 81, 0, 0.1);
         margin-bottom: 32px;
     }
+
     .hero-grid {
         display: grid;
-        gap: 28px;
+        gap: 48px;
         grid-template-columns: 1.5fr 1fr;
         align-items: center;
     }
+
     .section-label {
         display: inline-flex;
         padding: 10px 18px;
@@ -128,68 +141,132 @@
         font-weight: 700;
         letter-spacing: 0.08em;
         text-transform: uppercase;
+        margin-bottom: 12px;
     }
+
     .section-title {
-        margin: 24px 0 16px;
-        font-size: clamp(2rem, 2.5vw, 3rem);
-        line-height: 1.05;
+        margin: 0 0 16px 0;
+        font-size: clamp(2rem, 3vw, 3rem);
+        line-height: 1.1;
         color: #341a0c;
+        font-weight: 700;
     }
+
     .section-copy {
         color: #5b4636;
         line-height: 1.8;
         max-width: 640px;
+        margin: 0;
+        font-size: 0.95rem;
     }
+
     .card-summary {
         border-radius: 28px;
         background: white;
-        padding: 28px;
+        padding: 32px;
         box-shadow: 0 18px 40px rgba(126, 45, 0, 0.08);
+        text-align: center;
     }
+
     .summary-label {
         color: #92400e;
         text-transform: uppercase;
         letter-spacing: 0.08em;
         font-size: 0.85rem;
         font-weight: 700;
+        display: block;
+        margin-bottom: 12px;
     }
+
     .summary-value {
-        margin: 18px 0 12px;
+        margin: 0 0 12px 0;
         font-size: 4rem;
         display: block;
         color: #b45309;
+        font-weight: 700;
+        line-height: 1;
     }
+
     .summary-copy {
         color: #6b7280;
         line-height: 1.75;
+        margin: 0;
+        font-size: 0.95rem;
     }
+
+    /* ===== FEATURE SECTION ===== */
     .feature-section {
         margin-bottom: 32px;
     }
-    .feature-header {
-        margin-bottom: 26px;
+
+    .list-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        flex-wrap: wrap;
+        gap: 18px;
+        margin-bottom: 28px;
     }
-    .feature-header h2 {
-        margin: 0 0 10px;
+
+    .list-header h2 {
+        margin: 0;
         font-size: 2rem;
         color: #111827;
     }
-    .feature-header p {
+
+    .list-header p {
         margin: 0;
         color: #6b7280;
-        max-width: 620px;
-        line-height: 1.8;
+        max-width: 560px;
     }
+
+    .cta-link {
+        color: #ffffff;
+        background: linear-gradient(135deg, #bf4f08 0%, #d97706 100%);
+        padding: 14px 22px;
+        border-radius: 999px;
+        text-decoration: none;
+        font-weight: 700;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 4px 15px rgba(191, 79, 8, 0.3);
+        display: inline-block;
+    }
+
+    .cta-link::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+        transition: left 0.5s ease;
+    }
+
+    .cta-link:hover::before {
+        left: 100%;
+    }
+
+    .cta-link:hover {
+        background: linear-gradient(135deg, #9a3412 0%, #b45309 100%);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(191, 79, 8, 0.4);
+    }
+
+    /* ===== BADGE CARDS ===== */
     .badge-cards {
         display: grid;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: 20px;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 24px;
         margin-bottom: 32px;
     }
+
     .badge-card {
         border-radius: 24px;
         padding: 28px;
-        min-height: 230px;
+        min-height: 240px;
         display: flex;
         flex-direction: column;
         justify-content: flex-start;
@@ -197,7 +274,10 @@
         transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
         position: relative;
         overflow: hidden;
+        box-shadow: 0 8px 20px rgba(112, 84, 52, 0.08);
+        border: 1px solid rgba(255, 255, 255, 0.6);
     }
+
     .badge-card::before {
         content: '';
         position: absolute;
@@ -208,14 +288,18 @@
         background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%);
         opacity: 0;
         transition: opacity 0.3s ease;
+        pointer-events: none;
     }
+
     .badge-card:hover {
-        transform: translateY(-8px) scale(1.02);
-        box-shadow: 0 32px 80px rgba(0, 0, 0, 0.15);
+        transform: translateY(-8px);
+        box-shadow: 0 16px 32px rgba(112, 84, 52, 0.15);
     }
+
     .badge-card:hover::before {
         opacity: 1;
     }
+
     .badge-icon {
         width: 62px;
         height: 62px;
@@ -228,85 +312,56 @@
         position: relative;
         z-index: 2;
     }
+
     .badge-card:hover .badge-icon {
         transform: scale(1.1) rotate(5deg);
         background: rgba(255, 255, 255, 0.95);
         box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
     }
+
     .badge-card h2 {
         margin: 0;
         font-size: 1.4rem;
         color: #111827;
+        position: relative;
+        z-index: 1;
     }
+
     .badge-card p {
         margin: 0;
         font-size: 0.95rem;
         color: #4b5563;
         line-height: 1.75;
-    }
-    .badge-gold { background: #fff7ed; border: 1px solid #fed7aa; }
-    .badge-fire { background: #fffbeb; border: 1px solid #fde68a; }
-    .badge-star { background: #eff6ff; border: 1px solid #bfdbfe; }
-    .card-list {
-        border-radius: 30px;
-        padding: 32px;
-        background: white;
-        box-shadow: 0 24px 70px rgba(112, 84, 52, 0.08);
-        border: 1px solid rgba(203, 154, 90, 0.2);
-    }
-    .list-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        flex-wrap: wrap;
-        gap: 18px;
-        margin-bottom: 28px;
-    }
-    .list-header h2 {
-        margin: 0;
-        font-size: 2rem;
-        color: #111827;
-    }
-    .list-header p {
-        margin: 0;
-        color: #6b7280;
-        max-width: 560px;
-    }
-    .cta-link {
-        color: #ffffff;
-        background: linear-gradient(135deg, #bf4f08 0%, #d97706 100%);
-        padding: 14px 22px;
-        border-radius: 999px;
-        text-decoration: none;
-        font-weight: 700;
-        transition: all 0.3s ease;
         position: relative;
-        overflow: hidden;
-        box-shadow: 0 4px 15px rgba(191, 79, 8, 0.3);
+        z-index: 1;
     }
-    .cta-link::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: -100%;
-        width: 100%;
-        height: 100%;
-        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
-        transition: left 0.5s ease;
+
+    .badge-gold {
+        background: #fff7ed;
+        border: 1px solid #fed7aa;
     }
-    .cta-link:hover::before {
-        left: 100%;
+
+    .badge-fire {
+        background: #fffbeb;
+        border: 1px solid #fde68a;
     }
-    .cta-link:hover {
-        background: linear-gradient(135deg, #9a3412 0%, #b45309 100%);
-        transform: translateY(-2px);
-        box-shadow: 0 8px 25px rgba(191, 79, 8, 0.4);
+
+    .badge-star {
+        background: #eff6ff;
+        border: 1px solid #bfdbfe;
     }
+
+    /* ===== QUEST GRID ===== */
+    .quest-section {
+        margin-bottom: 32px;
+    }
+
     .quests-grid {
         display: grid;
         gap: 20px;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
     }
+
     .quest-box {
         border-radius: 24px;
         padding: 26px;
@@ -320,6 +375,7 @@
         overflow: hidden;
         cursor: pointer;
     }
+
     .quest-box::before {
         content: '';
         position: absolute;
@@ -330,14 +386,17 @@
         background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
         transition: left 0.6s ease;
     }
+
     .quest-box:hover::before {
         left: 100%;
     }
+
     .quest-box:hover {
         transform: translateY(-4px);
         box-shadow: 0 20px 50px rgba(0, 0, 0, 0.1);
         border-color: #d1d5db;
     }
+
     .quest-meta {
         display: flex;
         justify-content: space-between;
@@ -345,6 +404,7 @@
         gap: 12px;
         flex-wrap: wrap;
     }
+
     .quest-tag {
         padding: 8px 14px;
         border-radius: 999px;
@@ -353,21 +413,27 @@
         font-size: 0.85rem;
         font-weight: 700;
     }
+
     .quest-progress {
         font-size: 0.95rem;
         font-weight: 700;
         color: #111827;
     }
+
     .quest-box h3 {
         margin: 0;
         font-size: 1.25rem;
         line-height: 1.4;
+        color: #111827;
     }
+
     .quest-box p {
         margin: 0;
         color: #4b5563;
         line-height: 1.75;
     }
+
+    /* ===== PROGRESS BAR ===== */
     .progress-track {
         height: 9px;
         border-radius: 999px;
@@ -376,6 +442,7 @@
         margin-top: 10px;
         position: relative;
     }
+
     .progress-fill {
         height: 100%;
         border-radius: 999px;
@@ -383,6 +450,7 @@
         transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
         position: relative;
     }
+
     .progress-fill::after {
         content: '';
         position: absolute;
@@ -393,13 +461,88 @@
         background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
         animation: shimmer 2s infinite;
     }
+
     @keyframes shimmer {
         0% { transform: translateX(-100%); }
         100% { transform: translateX(100%); }
     }
-    .fill-blue { background: #3b82f6; }
-    .fill-green { background: #22c55e; }
-    @media (max-width: 1024px) {
-        .hero-grid, .badge-cards, .quests-grid { grid-template-columns: 1fr; }
+
+    .fill-blue {
+        background: #3b82f6 !important;
+    }
+
+    .fill-green {
+        background: #22c55e !important;
+    }
+
+    /* ===== RESPONSIVE ===== */
+    @media (max-width: 900px) {
+        .hero-grid {
+            grid-template-columns: 1fr;
+            gap: 24px;
+        }
+
+        .badge-cards,
+        .quests-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .section-title {
+            font-size: 2rem;
+        }
+
+        .list-header h2 {
+            font-size: 1.75rem;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .daily-quest-page {
+            padding: 20px 0;
+        }
+
+        .container {
+            padding: 0 15px;
+        }
+
+        .card-hero {
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+
+        .hero-grid {
+            gap: 20px;
+        }
+
+        .section-title {
+            font-size: 1.75rem;
+        }
+
+        .section-copy {
+            font-size: 0.9rem;
+        }
+
+        .card-summary {
+            padding: 20px;
+        }
+
+        .summary-value {
+            font-size: 3rem;
+        }
+
+        .list-header {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .cta-link {
+            width: 100%;
+            text-align: center;
+        }
+
+        .badge-card {
+            min-height: 200px;
+            padding: 20px;
+        }
     }
 </style>

@@ -11,22 +11,29 @@ class StaffLoginController extends Controller
 
     public function login(Request $request)
     {
-        $credentials = $request->only('username', 'password');
+        $validated = $request->validate([
+            'username' => 'required|string',
+            'password' => 'required|string',
+        ], [
+            'username.required' => 'Username harus diisi',
+            'password.required' => 'Password harus diisi',
+        ]);
 
-        if (Auth::attempt($credentials)) {
+        if (Auth::attempt($validated)) {
 
             $request->session()->regenerate();
 
             $user = Auth::user();
 
-            if ($user->role && in_array($user->role->role_name, ['Admin', 'Staff'])) {
+            // Check if user has Admin or Staff role
+            if ($user->isAdmin() || $user->isStaff()) {
                return redirect()->route('control.dashboard');
             }
 
             Auth::logout();
-            return back()->with('error', 'Unauthorized access');
+            return back()->with('error', 'Hanya Admin dan Staff yang dapat login di sini');
         }
 
-        return back()->with('error', 'Invalid login');
+        return back()->with('error', 'Username atau password salah')->withInput($request->only('username'));
     }
 }
