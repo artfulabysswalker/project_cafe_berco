@@ -240,12 +240,19 @@ class OrderController extends Controller
      */
     public function historyAdmin()
     {
-        $orders = Order::where('status_pembayaran', 'paid')
+        $historyOrders = Order::where('status_pembayaran', 'paid')
             ->with('user')
             ->latest()
             ->paginate(10);
 
-        return view('admin.orders.history', compact('orders'));
+        // Calculate stats
+        $totalOrders = Order::count();
+        $totalRevenue = Order::where('status_pembayaran', 'paid')->sum('total_harga');
+        $completedOrders = Order::where('status_order', 'completed')->count();
+        $pendingOrders = Order::where('status_order', '!=', 'completed')->count();
+        $completionRate = $totalOrders > 0 ? round(($completedOrders / $totalOrders) * 100) : 0;
+
+        return view('admin.history', compact('historyOrders', 'totalOrders', 'totalRevenue', 'completedOrders', 'pendingOrders', 'completionRate'));
     }
 
     /**
