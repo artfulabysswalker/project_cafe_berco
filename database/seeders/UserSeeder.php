@@ -22,32 +22,34 @@ class UserSeeder extends Seeder
             ->where('role_name','Customer')
             ->first();
 
-        DB::table('users')->insert([
-
+        DB::table('users')->updateOrInsert(
+            ['username' => 'admin1'],
             [
                 'name' => 'Main Admin',
-                'username' => 'admin1',
                 'email' => 'admin1@email.com',
                 'password' => Hash::make('password'),
                 'id_role' => $adminRole->id_role
-            ],
+            ]
+        );
 
+        DB::table('users')->updateOrInsert(
+            ['username' => 'staff1'],
             [
                 'name' => 'Cashier Staff',
-                'username' => 'staff1',
                 'email' => 'staff1@email.com',
                 'password' => Hash::make('password'),
                 'id_role' => $staffRole->id_role
-            ],
+            ]
+        );
 
+        DB::table('users')->updateOrInsert(
+            ['username' => 'user1'],
             [
                 'name' => 'Customer One',
-                'username' => 'user1',
                 'email' => 'user1@email.com',
                 'password' => Hash::make('password'),
                 'id_role' => $customerRole->id_role
             ]
-
-        ]);
+        );
     }
 }

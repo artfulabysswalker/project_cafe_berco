@@ -19,16 +19,30 @@ class Order extends Model
         'tanggal',
         'nama_pelanggan',
         'total_harga',
+        'subtotal',
+        'tax_amount',
+        'discount_amount',
+        'final_total',
         'status_pembayaran',
         'service_type',
         'payment_method',
         'notes',
         'status_order',
         'id_user',
+        'id_tax_config',
+        'id_discount_scheme',
+        'cost_of_goods',
+        'profit_margin',
     ];
 
     protected $casts = [
         'tanggal' => 'datetime',
+        'tax_amount' => 'decimal:2',
+        'discount_amount' => 'decimal:2',
+        'subtotal' => 'decimal:2',
+        'final_total' => 'decimal:2',
+        'cost_of_goods' => 'decimal:2',
+        'profit_margin' => 'decimal:2',
     ];
 
     public function user()
@@ -49,5 +63,15 @@ class Order extends Model
     public function payment()
     {
         return $this->hasOne(Payment::class, 'id_order', 'id_order');
+    }
+
+    public function taxConfiguration()
+    {
+        return $this->belongsTo(TaxConfiguration::class, 'id_tax_config', 'id_tax_config');
+    }
+
+    public function discountScheme()
+    {
+        return $this->belongsTo(DiscountScheme::class, 'id_discount_scheme', 'id_discount_scheme');
     }
 }

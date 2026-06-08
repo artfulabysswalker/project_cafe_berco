@@ -17,6 +17,7 @@ class DatabaseSeeder extends Seeder
             RoleSeeder::class,
             UserSeeder::class,
             MenuSeeder::class,
+            TaxDiscountSeeder::class,
             // BigGSeeder::class, // Commented: konflict dengan UserSeeder
         ]);
     }

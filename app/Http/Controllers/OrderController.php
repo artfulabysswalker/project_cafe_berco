@@ -27,10 +27,46 @@ class OrderController extends Controller
             return $item->menu->harga * $item->quantity;
         });
 
-        $tax = $subtotal * 0.1;
+        // Default calculation (will be recalculated in JavaScript)
+        $tax = $subtotal * 0.05;  // 5% tax for dine in
         $total = $subtotal + $tax;
 
         return view('Customerviews.checkout', compact('cartItems', 'subtotal', 'tax', 'total'));
+    }
+
+    /**
+     * Calculate order price based on service type
+     */
+    private function calculateOrderPrice($cartItems, $serviceType)
+    {
+        if ($serviceType === 'take_away') {
+            // Take away: add 1000 per item
+            $itemCount = $cartItems->sum('quantity');
+            $subtotal = $cartItems->sum(function ($item) {
+                return $item->menu->harga * $item->quantity;
+            });
+            $tax = $itemCount * 1000;
+            $total = $subtotal + $tax;
+            
+            return [
+                'subtotal' => $subtotal,
+                'tax' => $tax,
+                'total' => $total,
+            ];
+        } else {
+            // Dine in: add 5% tax
+            $subtotal = $cartItems->sum(function ($item) {
+                return $item->menu->harga * $item->quantity;
+            });
+            $tax = $subtotal * 0.05;
+            $total = $subtotal + $tax;
+            
+            return [
+                'subtotal' => $subtotal,
+                'tax' => $tax,
+                'total' => $total,
+            ];
+        }
     }
 
     /**
@@ -40,7 +76,7 @@ class OrderController extends Controller
     {
         $request->validate([
             'service_type' => 'required|in:dine_in,take_away',
-            'payment_method' => 'required|in:cash,card,e_wallet,bank_transfer,qris',
+            'payment_method' => 'required|in:cash,qris',
             'notes' => 'nullable|string|max:500',
         ]);
 
@@ -54,18 +90,16 @@ class OrderController extends Controller
             ], 422);
         }
 
-        $subtotal = $cartItems->sum(function ($item) {
-            return $item->menu->harga * $item->quantity;
-        });
-
-        $tax = $subtotal * 0.1;
-        $total = $subtotal + $tax;
+        // Calculate price based on service type
+        $priceInfo = $this->calculateOrderPrice($cartItems, $request->service_type);
 
         try {
             $order = Order::create([
                 'tanggal' => now(),
                 'nama_pelanggan' => $user->name,
-                'total_harga' => $total,
+                'total_harga' => $priceInfo['total'],
+                'subtotal' => $priceInfo['subtotal'],
+                'tax_amount' => $priceInfo['tax'],
                 'status_pembayaran' => 'pending',
                 'service_type' => $request->service_type,
                 'payment_method' => $request->payment_method,
@@ -85,7 +119,7 @@ class OrderController extends Controller
 
             $user->cartItems()->delete();
 
-            // Handle different payment methods
+            // Handle payment methods
             if ($request->payment_method === 'qris') {
                 // Auto-generate QRIS invoice and redirect directly to Xendit
                 try {
@@ -120,54 +154,11 @@ class OrderController extends Controller
                         'message' => 'Gagal membuat QRIS invoice: ' . $e->getMessage(),
                     ], 500);
                 }
-            } elseif (in_array($request->payment_method, ['card', 'e_wallet', 'bank_transfer'])) {
-                // Auto-generate Xendit invoice and redirect directly to Xendit for all payment methods
-                try {
-                    $xenditController = new XenditPaymentController();
-                    $invoiceResponse = $xenditController->createInvoice($order);
-                    $invoiceData = json_decode($invoiceResponse->content(), true);
-
-                    if (!$invoiceData['success']) {
-                        return response()->json([
-                            'success' => false,
-                            'message' => $invoiceData['message'],
-                        ], 500);
-                    }
-
-                    // Redirect directly to Xendit checkout page
-                    $redirectRoute = $invoiceData['invoice_url'];
-
-                    \Log::info('OrderController Payment Route (Xendit Direct)', [
-                        'payment_method' => $request->payment_method,
-                        'invoice_id' => $invoiceData['invoice_id'],
-                        'order_id' => $order->id_order,
-                        'xendit_url' => $redirectRoute,
-                    ]);
-
-                    return response()->json([
-                        'success' => true,
-                        'message' => 'Pesanan berhasil dibuat, redirecting ke Xendit...',
-                        'order_id' => $order->id_order,
-                        'redirect' => $redirectRoute,
-                        'invoice' => $invoiceData,
-                    ]);
-                } catch (\Exception $e) {
-                    \Log::error('OrderController Xendit Invoice Creation Failed', [
-                        'order_id' => $order->id_order,
-                        'payment_method' => $request->payment_method,
-                        'error' => $e->getMessage(),
-                    ]);
-
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'Gagal membuat invoice: ' . $e->getMessage(),
-                    ], 500);
-                }
             } else {
-                // For cash payment, go directly to receipt/pending
+                // For cash payment, stay pending for admin to manually confirm
                 return response()->json([
                     'success' => true,
-                    'message' => 'Pesanan berhasil dibuat',
+                    'message' => 'Pesanan berhasil dibuat. Menunggu konfirmasi admin...',
                     'order_id' => $order->id_order,
                     'redirect' => route('order.receipt', $order),
                 ]);

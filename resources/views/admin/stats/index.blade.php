@@ -119,20 +119,78 @@
             </h2>
             <div class="space-y-3">
                 <div class="flex justify-between items-center pb-3 border-b border-gray-100">
-                    <span class="text-gray-700">Cash</span>
-                    <span class="font-semibold text-gray-800">{{ $stats['cash_payments'] ?? 0 }} (45%)</span>
+                    <span class="text-gray-700">💵 Cash</span>
+                    <span class="font-semibold text-gray-800">{{ $stats['cash_payments'] ?? 0 }} ({{ $stats['total_payments'] > 0 ? round(($stats['cash_payments'] / $stats['total_payments']) * 100) : 0 }}%)</span>
                 </div>
-                <div class="flex justify-between items-center pb-3 border-b border-gray-100">
-                    <span class="text-gray-700">Debit Card</span>
-                    <span class="font-semibold text-gray-800">{{ $stats['debit_payments'] ?? 0 }} (35%)</span>
+                <div class="flex justify-between items-center pb-3">
+                    <span class="text-gray-700">📱 QRIS</span>
+                    <span class="font-semibold text-gray-800">{{ $stats['qris_payments'] ?? 0 }} ({{ $stats['total_payments'] > 0 ? round(($stats['qris_payments'] / $stats['total_payments']) * 100) : 0 }}%)</span>
                 </div>
-                <div class="flex justify-between items-center pb-3 border-b border-gray-100">
-                    <span class="text-gray-700">Credit Card</span>
-                    <span class="font-semibold text-gray-800">{{ $stats['credit_payments'] ?? 0 }} (20%)</span>
-                </div>
+            </div>
+        </div>
+
+        <!-- Daily Sales Chart -->
+        <div class="bg-white rounded-lg shadow-md p-6 col-span-1 md:col-span-2">
+            <h2 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                <i class="fas fa-chart-line text-blue-500"></i>
+                Grafik Penjualan (7 Hari Terakhir)
+            </h2>
+            <div style="position: relative; height: 200px;">
+                <canvas id="salesChart"></canvas>
             </div>
         </div>
     </div>
 </div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Prepare daily sales data
+    const dailySalesData = @json($stats['daily_sales'] ?? []);
+    
+    if (dailySalesData.length > 0) {
+        const labels = dailySalesData.map(item => new Date(item.date).toLocaleDateString('id-ID', { weekday: 'short', month: 'short', day: 'numeric' }));
+        const data = dailySalesData.map(item => item.total);
+        
+        const ctx = document.getElementById('salesChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Penjualan (Rp)',
+                    data: data,
+                    borderColor: '#3b82f6',
+                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                    borderWidth: 2,
+                    tension: 0.4,
+                    fill: true,
+                    pointRadius: 4,
+                    pointBackgroundColor: '#3b82f6',
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2,
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false,
+                    },
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return 'Rp ' + value.toLocaleString('id-ID');
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+</script>
 
 @endsection

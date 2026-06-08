@@ -298,6 +298,10 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/checkout', [OrderController::class, 'checkout'])
         ->name('checkout');
 
+    // Get available discounts (API endpoint)
+    Route::get('/api/discounts/available', [\App\Http\Controllers\Admin\DiscountSchemeController::class, 'getAvailable'])
+        ->name('api.discounts.available');
+
     Route::post('/order', [OrderController::class, 'store'])
         ->name('order.store');
 
@@ -479,6 +483,65 @@ Route::middleware(['admin.staff'])->prefix('admin')->group(function () {
     // Stats
     Route::get('/stats', [StatsController::class, 'index'])
         ->name('admin.stats');
+
+    // Tax Configuration
+    Route::prefix('tax')->name('admin.tax.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Admin\TaxConfigurationController::class, 'index'])
+            ->name('index');
+        Route::get('/create', [\App\Http\Controllers\Admin\TaxConfigurationController::class, 'create'])
+            ->name('create');
+        Route::post('/', [\App\Http\Controllers\Admin\TaxConfigurationController::class, 'store'])
+            ->name('store');
+        Route::get('/{tax}/edit', [\App\Http\Controllers\Admin\TaxConfigurationController::class, 'edit'])
+            ->name('edit');
+        Route::put('/{tax}', [\App\Http\Controllers\Admin\TaxConfigurationController::class, 'update'])
+            ->name('update');
+        Route::delete('/{tax}', [\App\Http\Controllers\Admin\TaxConfigurationController::class, 'destroy'])
+            ->name('destroy');
+        Route::post('/{tax}/set-active', [\App\Http\Controllers\Admin\TaxConfigurationController::class, 'setActive'])
+            ->name('setActive');
+    });
+
+    // Discount Schemes
+    Route::prefix('discount')->name('admin.discount.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Admin\DiscountSchemeController::class, 'index'])
+            ->name('index');
+        Route::get('/create', [\App\Http\Controllers\Admin\DiscountSchemeController::class, 'create'])
+            ->name('create');
+        Route::post('/', [\App\Http\Controllers\Admin\DiscountSchemeController::class, 'store'])
+            ->name('store');
+        Route::get('/{discount}/edit', [\App\Http\Controllers\Admin\DiscountSchemeController::class, 'edit'])
+            ->name('edit');
+        Route::put('/{discount}', [\App\Http\Controllers\Admin\DiscountSchemeController::class, 'update'])
+            ->name('update');
+        Route::delete('/{discount}', [\App\Http\Controllers\Admin\DiscountSchemeController::class, 'destroy'])
+            ->name('destroy');
+    });
+
+    // Penjualan Hari Ini
+    Route::get('/sales-today', function () {
+        return view('admin.sales-today');
+    })->name('admin.sales.today');
+
+    // Penjualan Produk & Analytics
+    Route::get('/product-analytics', function () {
+        return view('admin.product-sales-analytics');
+    })->name('admin.product.analytics');
+
+    // Konfigurasi Pajak & Diskon
+    Route::get('/config/tax-discount', function () {
+        return view('admin.tax-discount-config');
+    })->name('admin.config.tax-discount');
+
+    // Analytics & Reports (Owner only)
+    Route::middleware(['is_admin'])->prefix('analytics')->name('admin.analytics.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Admin\AnalyticsController::class, 'dashboard'])
+            ->name('dashboard');
+        Route::get('/products', [\App\Http\Controllers\Admin\AnalyticsController::class, 'productReport'])
+            ->name('products');
+        Route::get('/export', [\App\Http\Controllers\Admin\AnalyticsController::class, 'exportCsv'])
+            ->name('export');
+    });
 
     // Reset Request
     Route::get('/reset-request', [PasswordResetRequestController::class, 'create'])

@@ -52,36 +52,6 @@
                             </div>
                         </label>
                         <label class="option-item">
-                            <input type="radio" name="payment_method" value="card">
-                            <div class="option-info">
-                                <i class="fas fa-credit-card" style="color: #2980b9;"></i>
-                                <div>
-                                    <strong>Kartu Debit/Kredit</strong>
-                                    <span>Bayar dengan kartu debit atau kredit</span>
-                                </div>
-                            </div>
-                        </label>
-                        <label class="option-item">
-                            <input type="radio" name="payment_method" value="e_wallet">
-                            <div class="option-info">
-                                <i class="fas fa-mobile-alt" style="color: #e74c3c;"></i>
-                                <div>
-                                    <strong>E-Wallet</strong>
-                                    <span>GCash, OVO, Dana, LinkAja, dll</span>
-                                </div>
-                            </div>
-                        </label>
-                        <label class="option-item">
-                            <input type="radio" name="payment_method" value="bank_transfer">
-                            <div class="option-info">
-                                <i class="fas fa-university" style="color: #f39c12;"></i>
-                                <div>
-                                    <strong>Transfer Bank</strong>
-                                    <span>Transfer dari rekening bank Anda</span>
-                                </div>
-                            </div>
-                        </label>
-                        <label class="option-item">
                             <input type="radio" name="payment_method" value="qris">
                             <div class="option-info">
                                 <i class="fas fa-qrcode" style="color: #16a34a;"></i>
@@ -384,6 +354,65 @@
 </style>
 
 <script>
+const cartItems = @json($cartItems);
+
+function calculatePrice() {
+    const serviceType = document.querySelector('input[name="service_type"]:checked').value;
+    
+    // Calculate subtotal
+    let subtotal = 0;
+    cartItems.forEach(item => {
+        subtotal += item.menu.harga * item.quantity;
+    });
+    
+    let tax = 0;
+    let total = 0;
+    let taxLabel = '';
+    
+    if (serviceType === 'take_away') {
+        // Take away: 1000 per item
+        const itemCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
+        tax = itemCount * 1000;
+        taxLabel = `Charge/Item (${itemCount}x @ 1k)`;
+    } else {
+        // Dine in: 5% tax
+        tax = subtotal * 0.05;
+        taxLabel = 'Pajak (5%)';
+    }
+    
+    total = subtotal + tax;
+    
+    // Update display
+    document.querySelector('.calc-row:nth-child(2) span:first-child').textContent = taxLabel;
+    document.querySelector('.calc-row:nth-child(2) span:last-child').textContent = 
+        'Rp ' + number_format(tax, 0, ',', '.');
+    document.querySelector('.calc-row.total span:last-child').textContent = 
+        'Rp ' + number_format(total, 0, ',', '.');
+    document.getElementById('total-amount').textContent = 
+        'Rp ' + number_format(total, 0, ',', '.');
+}
+
+function number_format(number, decimals, dec_point, thousands_sep) {
+    let n = !isFinite(+number) ? 0 : +number;
+    let prec = !isFinite(+decimals) ? 0 : Math.abs(decimals);
+    let sep = (typeof thousands_sep === 'undefined') ? ',' : thousands_sep;
+    let dec = (typeof dec_point === 'undefined') ? ',' : dec_point;
+    let s = '';
+    let toFixedFix = function(n, prec) {
+        let k = Math.pow(10, prec);
+        return '' + Math.round(n * k) / k;
+    };
+    s = (prec ? toFixedFix(n, prec) : '' + Math.round(n)).split('.');
+    if (s[0].length > 3) {
+        s[0] = s[0].replace(/\B(?=(?:\d{3})+(?!\d))/g, sep);
+    }
+    if ((s[1] || '').length < prec) {
+        s[1] = s[1] || '';
+        s[1] += new Array(prec - s[1].length + 1).join('0');
+    }
+    return s.join(dec);
+}
+
 function processPayment() {
     const serviceType = document.querySelector('input[name="service_type"]:checked').value;
     const paymentMethod = document.querySelector('input[name="payment_method"]:checked').value;
@@ -422,5 +451,13 @@ function processPayment() {
         btn.innerHTML = '<i class="fas fa-check"></i> Konfirmasi Pembayaran';
     });
 }
+
+// Initialize price calculation and add event listeners
+document.addEventListener('DOMContentLoaded', function() {
+    calculatePrice();
+    document.querySelectorAll('input[name="service_type"]').forEach(radio => {
+        radio.addEventListener('change', calculatePrice);
+    });
+});
 </script>
 @endsection

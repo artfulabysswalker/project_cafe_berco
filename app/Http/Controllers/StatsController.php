@@ -73,7 +73,7 @@ class StatsController extends Controller
 
         // ✅ Peak hours (LIMITED)
         $peakHours = Order::select(
-                DB::raw('HOUR(tanggal) as hour'),
+                DB::raw('CAST(strftime("%H", tanggal) AS INTEGER) as hour'),
                 DB::raw('COUNT(*) as total')
             )
             ->where('status_order', 'completed')
@@ -95,6 +95,29 @@ class StatsController extends Controller
             ->limit(30) // 🚨 prevents memory crash
             ->get();
 
+        // ✅ Payment method statistics (CASH and QRIS only)
+        $paymentStats = Order::select('payment_method', DB::raw('COUNT(*) as total'))
+            ->where('status_order', 'completed')
+            ->when($startDate, fn($q) => $q->where('tanggal', '>=', $startDate))
+            ->groupBy('payment_method')
+            ->get()
+            ->pluck('total', 'payment_method');
+
+        $totalPayments = $paymentStats->sum();
+        $cashPayments = $paymentStats->get('cash', 0);
+        $qrisPayments = $paymentStats->get('qris', 0);
+
+        // ✅ Daily sales data for chart (last 7 days)
+        $dailySales = Order::select(
+                DB::raw('DATE(tanggal) as date'),
+                DB::raw('SUM(total_harga) as total')
+            )
+            ->where('status_order', 'completed')
+            ->where('tanggal', '>=', now()->subDays(7))
+            ->groupBy('date')
+            ->orderBy('date')
+            ->get();
+
         return [
             'total_revenue' => $totalSales,
             'total_orders' => $totalOrders,
@@ -106,6 +129,14 @@ class StatsController extends Controller
 
             'peak_hours' => $peakHours,
             'customers_per_day' => $customersPerDay,
+            
+            // Payment methods
+            'cash_payments' => $cashPayments,
+            'qris_payments' => $qrisPayments,
+            'total_payments' => $totalPayments,
+            
+            // Daily sales for chart
+            'daily_sales' => $dailySales,
         ];
     }
 }
