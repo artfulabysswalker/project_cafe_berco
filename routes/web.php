@@ -40,7 +40,7 @@ Route::get('/xendit/test', function () {
 
         return response()->json([
             'status' => 'success',
-            'message' => '✅ Xendit SDK berhasil diinisialisasi!',
+            'message' => ' Xendit SDK berhasil diinisialisasi!',
             'config' => [
                 'api_key_set' => !empty(config('services.xendit.secret_key')),
                 'public_key_set' => !empty(config('services.xendit.public_key')),
@@ -50,7 +50,7 @@ Route::get('/xendit/test', function () {
     } catch (\Exception $e) {
         return response()->json([
             'status' => 'error',
-            'message' => '❌ Error: ' . $e->getMessage(),
+            'message' => ' Error: ' . $e->getMessage(),
         ], 500);
     }
 })->name('xendit.test')->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class]);
