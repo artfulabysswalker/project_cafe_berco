@@ -211,35 +211,98 @@
         #story {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 80px;
-            align-items: center;
+            gap: 60px;
+            align-items: flex-start;
             margin-bottom: 180px;
+        }
+
+        .story-content {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .story-images {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .story-images img {
+            flex: 1;
+            min-width: 150px;
+            height: auto;
+            max-height: 450px;
+        }
+
+        .story-images img:nth-child(2) {
+            margin-top: 30px;
         }
 
         #story h2 {
             font-size: 4rem;
-            margin-bottom: 30px;
+            font-weight: 800;
+            margin-bottom: 40px;
             color: #78350F;
             position: relative;
             display: inline-block;
+            letter-spacing: -1px;
         }
 
         #story h2::after {
             content: '';
             position: absolute;
-            bottom: -10px;
+            bottom: -15px;
             left: 0;
-            width: 60%;
-            height: 4px;
+            width: 100px;
+            height: 5px;
             background: linear-gradient(to right, #ea580c, #9a3412);
-            border-radius: 2px;
+            border-radius: 3px;
         }
 
         #story p {
-            font-size: 1.15rem;
-            line-height: 2;
+            font-size: 1.05rem;
+            line-height: 1.8;
             color: #5b3417;
-            margin-bottom: 15px;
+            margin-bottom: 20px;
+            font-weight: 400;
+        }
+
+        .story-highlights {
+            background: linear-gradient(135deg, #fff9f1 0%, #fffaf3 100%);
+            border-left: 4px solid #ea580c;
+            padding: 25px 25px;
+            border-radius: 12px;
+            margin-top: 30px;
+            margin-bottom: 0;
+        }
+
+        .story-highlights p {
+            margin-bottom: 12px;
+            font-size: 0.95rem;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: #78350F;
+            font-weight: 500;
+        }
+
+        .story-highlights p:last-child {
+            margin-bottom: 0;
+        }
+
+        .story-highlights p::before {
+            content: '✓';
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 24px;
+            height: 24px;
+            background: linear-gradient(135deg, #ea580c 0%, #c2410c 100%);
+            color: white;
+            border-radius: 50%;
+            font-weight: bold;
+            font-size: 0.85rem;
+            flex-shrink: 0;
         }
 
         #story img {
@@ -493,6 +556,44 @@
                 font-size: 0.95rem;
             }
 
+            #story {
+                grid-template-columns: 1fr;
+                gap: 40px;
+                margin-bottom: 100px;
+            }
+
+            #story h2 {
+                font-size: 2.5rem;
+                margin-bottom: 25px;
+            }
+
+            #story p {
+                font-size: 0.95rem;
+                margin-bottom: 15px;
+            }
+
+            .story-highlights {
+                padding: 20px 15px;
+            }
+
+            .story-highlights p {
+                font-size: 0.9rem;
+                margin-bottom: 10px;
+            }
+
+            .story-images {
+                gap: 12px;
+            }
+
+            .story-images img {
+                height: auto;
+                max-height: 300px;
+            }
+
+            .story-images img:nth-child(2) {
+                margin-top: 0;
+            }
+
             .gallery-item {
                 height: 280px;
             }
@@ -535,7 +636,7 @@
             
             <!-- Tooltip on Hover -->
             <div class="absolute left-0 top-full mt-2 hidden group-hover:block bg-gray-900 text-white text-xs px-3 py-2 rounded-lg whitespace-nowrap z-50 pointer-events-none">
-                <span id="tooltipText">🟢 Kafe sedang BUKA (16:00 - 23:00)</span>
+                <span id="tooltipText">🟢 Kafe sedang BUKA (16:00 - 22:00)</span>
                 <div class="absolute bottom-full left-8 border-4 border-transparent border-b-gray-900"></div>
             </div>
         </a>
@@ -598,7 +699,7 @@
         <img src="https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?q=80&w=1600" alt="Berco Cafe" class="hero-background">
         <div class="hero-overlay"></div>
         <div class="hero-content">
-            <h1 class="hero-title">🍵 BERCO CAFE 🍵</h1>
+            <h1 class="hero-title">BERCO CAFE</h1>
             <p class="hero-subtitle">
                 Nikmati kopi dan makanan terbaik dalam suasana yang nyaman di Banyuwangi bagian selatan.
             </p>
@@ -617,25 +718,25 @@
     <main>
         {{-- STORY SECTION --}}
         <section id="story" class="py-20">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-20 items-center mb-32">
-                <div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-16 items-start mb-32">
+                <div class="story-content">
                     <h2>Cerita Berco</h2>
                     <p>
-                        <span style="color: #C2410C; font-weight: 700;">Sejak 2018,</span> 
+                        <span style="color: #C2410C; font-weight: 700; font-size: 1.1rem;">Sejak 2018,</span> 
                         Berco Cafe lahir dari kecintaan kami terhadap kekayaan kopi lokal Tanah Blambangan.
                     </p>
                     <p>
                         Kami menghadirkan kualitas kopi specialty yang bisa dinikmati semua kalangan. Setiap seduhan adalah bentuk apresiasi kami terhadap petani lokal dan semangat eksplorasi anak muda Banyuwangi.
                     </p>
-                    <p style="margin-top: 20px; font-size: 0.95rem; color: #78350F; line-height: 1.8;">
-                        ✓ Kopi specialty berkualitas tinggi dari petani lokal Tanah Blambangan<br>
-                        ✓ Suasana nyaman untuk bersantai dan berkumpul<br>
-                        ✓ Menu makanan pilihan yang melengkapi pengalaman coffee break Anda
-                    </p>
+                    <div class="story-highlights">
+                        <p>Kopi specialty berkualitas tinggi dari petani lokal Tanah Blambangan</p>
+                        <p>Suasana nyaman untuk bersantai dan berkumpul</p>
+                        <p>Menu makanan pilihan yang melengkapi pengalaman coffee break Anda</p>
+                    </div>
                 </div>
-                <div class="flex gap-6">
-                    <img src="https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=500" alt="Coffee Specialty" class="w-1/2 h-[450px] object-cover rounded-[2rem] shadow-2xl">
-                    <img src="https://images.unsplash.com/photo-1511920170033-f8396924c348?w=500" alt="Coffee Interior" class="w-1/2 h-[450px] object-cover rounded-[2rem] shadow-2xl mt-16">
+                <div class="story-images">
+                    <img src="https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=500" alt="Coffee Specialty" class="rounded-[2rem] shadow-2xl">
+                    <img src="https://images.unsplash.com/photo-1511920170033-f8396924c348?w=500" alt="Coffee Interior" class="rounded-[2rem] shadow-2xl">
                 </div>
             </div>
         </section>
@@ -707,6 +808,22 @@
         function updateStatusIndicator() {
             const now = new Date();
             const hour = now.getHours();
-            const isOpen = hour >= 16 && hour < 23;
-            
+            const isOpen = hour >= 16 && hour < 22;
+
             const statusDot = document.getElementById('statusDot');
+            const tooltipText = document.getElementById('tooltipText');
+
+            if (isOpen) {
+                statusDot.className = 'w-3 h-3 rounded-full bg-[#22C55E] animate-pulse';
+                tooltipText.innerHTML = '🟢 Kafe sedang BUKA (16:00 - 22:00)';
+            } else {
+                statusDot.className = 'w-3 h-3 rounded-full bg-[#EF4444] animate-pulse';
+                tooltipText.innerHTML = '🔴 Kafe sedang TUTUP (Buka 16:00 - 22:00)';
+            }
+        }
+
+        setInterval(updateStatusIndicator, 60000);
+        updateStatusIndicator();
+    </script>
+</body>
+</html>

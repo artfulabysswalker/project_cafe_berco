@@ -208,7 +208,6 @@
     <header class="header">
         <div class="header-container">
             <div class="logo-area">
-                <i class="fas fa-coffee cup-icon"></i>
                 <div class="logo-text">
                     <h1>BERCO</h1>
                 </div>

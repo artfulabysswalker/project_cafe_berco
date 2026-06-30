@@ -47,23 +47,8 @@
     <div class="relative flex flex-col items-center pt-8 md:pt-12 px-4 min-h-screen">
         {{-- Header Logo --}}
         <div class="animate-slideIn flex flex-col items-center mb-8 text-center">
-            <a href="{{ route('home') }}" class="mb-4 inline-block hover:scale-105 transition">
-                <div class="w-20 h-20 bg-gradient-to-br from-[#78350F] to-[#5a2308] rounded-full flex items-center justify-center shadow-lg hover:shadow-xl transition">
-                    <span class="text-3xl">☕</span>
-                </div>
-            </a>
             <h1 class="text-4xl md:text-5xl font-bold tracking-tight text-[#78350F]">BERCO CAFE</h1>
             <p class="text-zinc-600 mt-2 text-sm md:text-base">Sistem Pemesanan Online & Loyalty Program</p>
-        </div>
-
-        {{-- Status Alert --}}
-        <div class="w-full max-w-lg bg-gradient-to-r from-[#FEF3C7] to-[#FFFBEC] border-l-4 border-[#F59E0B] rounded-lg p-4 mb-6 text-center shadow-sm animate-slideIn">
-            <div class="flex items-center justify-center gap-2">
-                <i class="fas fa-clock text-[#F59E0B]"></i>
-                <p class="text-[#92400E] text-sm font-medium">
-                    Buka: <span class="font-bold">16.00 - 22.00 WIB</span>
-                </p>
-            </div>
         </div>
 
         {{-- Login Card --}}

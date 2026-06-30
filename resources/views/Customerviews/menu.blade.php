@@ -44,7 +44,7 @@
                         <div class="image-overlay"></div>
                         @auth
                             <button class="wishlist-btn {{ in_array($product->id, $favoriteIds ?? []) ? 'liked' : '' }}"
-                                    onclick="toggleFavorite({{ $product->id }}, this)"
+                                    data-favorite-id="{{ $product->id }}"
                                     type="button">
                                 <i class="far fa-heart"></i>
                             </button>
@@ -148,39 +148,45 @@
         @auth
             @if($products->count() > 0)
                 <div class="review-submit-section">
-                    <div class="review-form">
-                        <div class="review-form-title">
-                            <i class="fas fa-star review-form-icon"></i>
-                            <span>Berikan Review & Rating</span>
+                    <div class="review-box">
+                        <div class="review-box-header">
+                            <div>
+                                <h3>Bagikan Pengalamanmu</h3>
+                                <p>Review ini membantu pelanggan lain dan meningkatkan kualitas menu kami.</p>
+                            </div>
+                            <span class="review-box-badge">Review Cepat</span>
                         </div>
-                        <form id="menu-review-form" method="POST" action="{{ route('reviews.store', $products->first()) }}" class="space-y-4">
+                        <form id="menu-review-form" method="POST" action="{{ route('reviews.store', $products->first()) }}">
                             @csrf
-                            <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
-                                <div>
-                                    <label class="text-sm text-gray-600">Pilih Menu:</label>
+                            <div class="review-grid">
+                                <div class="field-group">
+                                    <label>Pilih Menu</label>
                                     <select id="review-product-select" class="review-select" required>
                                         @foreach($products as $product)
                                             <option value="{{ route('reviews.store', $product) }}">{{ $product->name }}</option>
                                         @endforeach
                                     </select>
                                 </div>
-                                <div>
-                                    <label class="text-sm text-gray-600">Rating:</label>
+                                <div class="field-group">
+                                    <label>Rating</label>
                                     <select name="rating" required class="review-select">
                                         <option value="">Pilih rating</option>
                                         @for($i = 1; $i <= 5; $i++)
-                                            <option value="{{ $i }}">{{ $i }} star{{ $i > 1 ? 's' : '' }}</option>
+                                            <option value="{{ $i }}">{{ $i }} bintang</option>
                                         @endfor
                                     </select>
                                 </div>
+                                <div class="field-group review-action-group">
+                                    <label>&nbsp;</label>
+                                    <button type="submit" class="review-submit-btn">
+                                        <i class="fas fa-paper-plane"></i> Kirim Review
+                                    </button>
+                                </div>
                             </div>
-                            <div>
-                                <label class="text-sm text-gray-600">Ulasan:</label>
+                            <div class="field-group">
+                                <label>Ulasan</label>
                                 <textarea name="comment" class="review-textarea" rows="4" placeholder="Ceritakan pengalaman Anda..." required></textarea>
                             </div>
-                            <button type="submit" class="review-submit-btn">
-                                <i class="fas fa-paper-plane mr-2"></i>Kirim Review
-                            </button>
                         </form>
                     </div>
                 </div>
@@ -236,17 +242,6 @@
         font-size: 1.1rem;
         opacity: 0.95;
         color: rgba(255,255,255,0.95);
-    }
-        right: -5px;
-        background: linear-gradient(45deg, #ff6b6b, #ee5a24);
-        color: white;
-        border-radius: 50%;
-        padding: 5px 8px;
-        font-size: 0.8rem;
-        font-weight: bold;
-        min-width: 20px;
-        text-align: center;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.2);
     }
 
     .cart-floating {
@@ -392,26 +387,65 @@
         margin: 0;
     }
 
-    .review-form {
-        background: linear-gradient(135deg, rgba(241,209,182,0.98), rgba(255,250,244,0.95));
+    .review-box {
+        background: linear-gradient(135deg, rgba(255, 248, 242, 0.95), rgba(248, 226, 206, 0.98));
         border: 1px solid #ebc8a4;
-        border-radius: 18px;
-        padding: 18px;
+        border-radius: 22px;
+        padding: 24px;
         margin-top: 20px;
+        box-shadow: 0 18px 50px rgba(191, 117, 18, 0.08);
     }
 
-    .review-form-title {
+    .review-box-header {
         display: flex;
         align-items: center;
-        gap: 10px;
-        margin-bottom: 14px;
-        color: #6b4b2c;
-        font-weight: 700;
+        justify-content: space-between;
+        gap: 18px;
+        padding-bottom: 16px;
+        border-bottom: 1px solid #f3d0b2;
+        margin-bottom: 20px;
     }
 
-    .review-form-icon {
-        color: #cd7e26;
-        font-size: 1rem;
+    .review-box-header h3 {
+        margin: 0;
+        font-size: 1.35rem;
+        color: #6b4b2c;
+    }
+
+    .review-box-header p {
+        margin: 6px 0 0;
+        color: #7a5b42;
+        font-size: 0.95rem;
+        line-height: 1.55;
+    }
+
+    .review-box-badge {
+        background: #fff6ed;
+        border: 1px solid #f1d2b5;
+        border-radius: 999px;
+        padding: 10px 16px;
+        color: #b1682b;
+        font-weight: 700;
+        font-size: 0.85rem;
+        white-space: nowrap;
+    }
+
+    .review-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 18px;
+        margin-bottom: 18px;
+    }
+
+    .field-group {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .review-action-group {
+        display: flex;
+        align-items: flex-end;
     }
 
     .review-select,
@@ -419,8 +453,8 @@
         width: 100%;
         background: white;
         border: 1px solid #d7c0a7;
-        border-radius: 12px;
-        padding: 11px 14px;
+        border-radius: 14px;
+        padding: 12px 14px;
         color: #4a4036;
         font-size: 0.95rem;
         transition: all 0.25s ease;
@@ -434,7 +468,7 @@
     }
 
     .review-textarea {
-        min-height: 90px;
+        min-height: 110px;
         resize: vertical;
     }
 
@@ -443,8 +477,8 @@
         background: linear-gradient(135deg, #bf4f08 0%, #e79e4c 100%);
         color: white;
         border: none;
-        padding: 12px 18px;
-        border-radius: 14px;
+        padding: 14px 18px;
+        border-radius: 16px;
         font-size: 0.95rem;
         font-weight: 700;
         cursor: pointer;
@@ -452,16 +486,17 @@
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        gap: 8px;
+        gap: 10px;
+        min-height: 54px;
     }
 
     .review-submit-btn:hover {
         transform: translateY(-2px);
-        box-shadow: 0 12px 20px rgba(191,79,8,0.24);
+        box-shadow: 0 14px 24px rgba(191,79,8,0.24);
     }
 
     .review-submit-btn i {
-        margin-right: 6px;
+        margin-right: 4px;
     }
 
     .menu-grid {
@@ -733,7 +768,7 @@
 @auth
 <script>
 function addToCart(productId, productName) {
-    fetch('{{ route('cart.add') }}', {
+    fetch("{{ route('cart.add') }}", {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -760,7 +795,7 @@ function addToCart(productId, productName) {
 }
 
 function toggleFavorite(productId, button) {
-    fetch('{{ route('favorites.toggle') }}', {
+    fetch("{{ route('favorites.toggle') }}", {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -785,7 +820,7 @@ function toggleFavorite(productId, button) {
 }
 
 function updateCartBadge() {
-    fetch('{{ route('cart.count') }}')
+    fetch("{{ route('cart.count') }}")
         .then(response => response.json())
         .then(data => {
             const badge = document.getElementById('floating-badge');
@@ -807,6 +842,15 @@ function attachCartButtons() {
             if (productId && productName) {
                 addToCart(productId, productName);
             }
+        });
+    });
+}
+
+function attachWishlistButtons() {
+    document.querySelectorAll('.wishlist-btn[data-favorite-id]').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const productId = this.dataset.favoriteId;
+            toggleFavorite(productId, this);
         });
     });
 }
