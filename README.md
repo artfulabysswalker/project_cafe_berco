@@ -4,7 +4,7 @@
 
 **Cafe Berco** adalah sistem informasi manajemen kafe yang komprehensif, dirancang untuk memudahkan pengelolaan menu, pesanan, dan laporan penjualan. Aplikasi ini menyediakan panel admin yang intuitif untuk mengelola katalog menu dengan foto, diskon, dan pesanan pelanggan, serta halaman pelanggan yang user-friendly untuk browsing menu dan memberikan review.
 
-**Nama Kelompok:** Cafe Berco Project Group  
+**Nama Kelompok:** kelompok 5
 **Nama Repository:** CafeBerco_ManajemenKafe
 
 ---
