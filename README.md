@@ -63,6 +63,11 @@ Sistem manajemen kafe dan menu berbasis Laravel dengan antarmuka admin untuk men
   ```
 - Akses aplikasi di `http://127.0.0.1:8000`
 
+- Untuk login Admin:
+Admin Account:
+Email: admin1@email.com
+Password: password
+
 ## Struktur Folder Penting
 
 - `app/` - Kode backend aplikasi (Controller, Models, Services)
