@@ -2,17 +2,21 @@
 
 namespace App\Livewire;
 
-use Livewire\Component;
-use App\Models\OrderItem;
 use App\Models\Menu;
+use App\Models\OrderItem;
 use Carbon\Carbon;
+use Livewire\Component;
 
 class ProductSalesAnalytics extends Component
 {
     public $period = 'daily';
+
     public $date;
+
     public $products = [];
+
     public $topProducts = [];
+
     public $summary = [];
 
     public function mount()
@@ -27,10 +31,10 @@ class ProductSalesAnalytics extends Component
 
         // Product Sales Analytics
         $this->products = $this->getProductAnalytics($this->period, $selectedDate);
-        
+
         // Top selling products
         $this->topProducts = $this->getTopProducts($this->period, $selectedDate);
-        
+
         // Summary
         $this->summary = $this->getSummary($this->period, $selectedDate);
     }
@@ -68,6 +72,7 @@ class ProductSalesAnalytics extends Component
             ->get()
             ->map(function ($item) {
                 $menu = Menu::find($item->id_menu);
+
                 return [
                     'menu_id' => $item->id_menu,
                     'menu_name' => $menu?->nama_menu ?? 'Unknown',
@@ -114,6 +119,7 @@ class ProductSalesAnalytics extends Component
 
         return $products->map(function ($product, $index) {
             $menu = Menu::find($product->id_menu);
+
             return [
                 'rank' => $index + 1,
                 'menu_name' => $menu?->nama_menu ?? 'Unknown',

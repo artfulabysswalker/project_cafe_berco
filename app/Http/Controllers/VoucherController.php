@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Voucher;
 use App\Models\User;
+use App\Models\Voucher;
 use App\Notifications\ComebackVoucherNotification;
 use Illuminate\Http\Request;
 
@@ -12,6 +12,7 @@ class VoucherController extends Controller
     public function index()
     {
         $vouchers = Voucher::paginate(15);
+
         return view('vouchers.index', compact('vouchers'));
     }
 
@@ -50,7 +51,7 @@ class VoucherController extends Controller
     public function update(Request $request, Voucher $voucher)
     {
         $validated = $request->validate([
-            'code' => 'required|string|unique:vouchers,code,' . $voucher->id,
+            'code' => 'required|string|unique:vouchers,code,'.$voucher->id,
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
             'discount_amount' => 'nullable|numeric|min:0',
@@ -81,9 +82,9 @@ class VoucherController extends Controller
     public function distributeForm(Voucher $voucher)
     {
         $inactiveUsersCount = User::where(function ($query) {
-                $query->whereNull('last_activity_at')
-                    ->orWhere('last_activity_at', '<=', now()->subDays(30));
-            })
+            $query->whereNull('last_activity_at')
+                ->orWhere('last_activity_at', '<=', now()->subDays(30));
+        })
             ->whereNotNull('email_verified_at')
             ->count();
 
@@ -98,9 +99,9 @@ class VoucherController extends Controller
         ]);
 
         $inactiveUsers = User::where(function ($query) use ($validated) {
-                $query->whereNull('last_activity_at')
-                    ->orWhere('last_activity_at', '<=', now()->subDays($validated['days']));
-            })
+            $query->whereNull('last_activity_at')
+                ->orWhere('last_activity_at', '<=', now()->subDays($validated['days']));
+        })
             ->whereNotNull('email_verified_at')
             ->get();
 
@@ -115,14 +116,14 @@ class VoucherController extends Controller
                     ->where('voucher_id', $voucher->id)
                     ->exists();
 
-                if (!$hasVoucher) {
+                if (! $hasVoucher) {
 
                     $user->vouchers()->attach($voucher->id, [
                         'status' => 'active',
                         'notified_at' => now(),
                     ]);
 
-                    if (!empty($validated['send_notification'])) {
+                    if (! empty($validated['send_notification'])) {
 
                         // FIX: only send if notify works
                         if (method_exists($user, 'notify')) {

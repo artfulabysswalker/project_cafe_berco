@@ -13,7 +13,7 @@ class PasswordResetRequest extends Model
         'full_name',
         'email',
         'reason',
-        'status'
+        'status',
     ];
 
     public function user()

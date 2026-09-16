@@ -15,7 +15,7 @@ class DiscountSchemeController extends Controller
     public function index()
     {
         $schemes = DiscountScheme::with('user')->latest()->paginate(10);
-        
+
         return view('admin.discount.index', compact('schemes'));
     }
 
@@ -68,7 +68,7 @@ class DiscountSchemeController extends Controller
     public function update(Request $request, DiscountScheme $discount)
     {
         $validated = $request->validate([
-            'code' => 'required|string|unique:discount_schemes,code,' . $discount->id_discount_scheme . ',id_discount_scheme',
+            'code' => 'required|string|unique:discount_schemes,code,'.$discount->id_discount_scheme.',id_discount_scheme',
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
             'discount_type' => 'required|in:percentage,fixed',
@@ -93,7 +93,7 @@ class DiscountSchemeController extends Controller
     public function destroy(DiscountScheme $discount)
     {
         $discount->delete();
-        
+
         return redirect()->route('admin.discount.index')
             ->with('success', 'Skema diskon berhasil dihapus');
     }

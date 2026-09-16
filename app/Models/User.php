@@ -3,27 +3,14 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Str;
-use App\Models\Achievement;
-use App\Models\CartItem;
-use App\Models\Favorite;
-use App\Models\Order;
-use App\Models\Referral;
-use App\Models\Redemption;
-use App\Models\Review;
-use App\Models\Role;
-use App\Models\Voucher;
-use App\Models\PlaylistVote;
 use Laravel\Fortify\TwoFactorAuthenticatable;
 
 class User extends Authenticatable
 {
     use HasFactory, Notifiable, TwoFactorAuthenticatable;
-    use Notifiable;
-
 
     /*
     |--------------------------------------------------------------------------
@@ -34,7 +21,9 @@ class User extends Authenticatable
         'name',
         'username',
         'email',
+        'phone',
         'password',
+        'status',
         'id_role',
         'is_guest',
         'exp',
@@ -43,7 +32,6 @@ class User extends Authenticatable
         'referred_by',
         'referral_balance',
     ];
-
 
     /*
     |--------------------------------------------------------------------------
@@ -56,7 +44,6 @@ class User extends Authenticatable
         'two_factor_secret',
         'two_factor_recovery_codes',
     ];
-
 
     /*
     |--------------------------------------------------------------------------
@@ -93,6 +80,21 @@ class User extends Authenticatable
      */
     protected $keyType = 'int';
 
+    /**
+     * Get the id attribute alias for id_user.
+     */
+    public function getIdAttribute()
+    {
+        return $this->attributes['id_user'] ?? null;
+    }
+
+    /**
+     * Set the id attribute alias for id_user.
+     */
+    public function setIdAttribute($value): void
+    {
+        $this->attributes['id_user'] = $value;
+    }
 
     /*
     |--------------------------------------------------------------------------
@@ -104,7 +106,6 @@ class User extends Authenticatable
         return $this->belongsTo(Role::class, 'id_role', 'id_role');
     }
 
-
     /*
     |--------------------------------------------------------------------------
     | Login uses username instead of email
@@ -114,7 +115,6 @@ class User extends Authenticatable
     {
         return 'id_user';
     }
-
 
     /*
     |--------------------------------------------------------------------------
@@ -126,7 +126,7 @@ class User extends Authenticatable
         return Str::of($this->name)
             ->explode(' ')
             ->take(2)
-            ->map(fn($word) => Str::substr($word, 0, 1))
+            ->map(fn ($word) => Str::substr($word, 0, 1))
             ->implode('');
     }
 
@@ -140,14 +140,13 @@ class User extends Authenticatable
         return $this->hasMany(Redemption::class, 'user_id', 'id_user');
     }
 
-
     public function vouchers()
     {
         return $this->belongsToMany(Voucher::class)
             ->withPivot([
                 'status',
                 'notified_at',
-                'used_at'
+                'used_at',
             ])
             ->withTimestamps();
     }
@@ -192,42 +191,81 @@ class User extends Authenticatable
     {
         return $this->hasMany(Referral::class, 'referrer_id', 'id_user');
     }
-    
 
-public function playlistVotes()
-{
-    return $this->hasMany(PlaylistVote::class, 'user_id', 'id_user');
-}
+    public function playlistVotes()
+    {
+        return $this->hasMany(PlaylistVote::class, 'user_id', 'id_user');
+    }
 
-/**
- * Check if user is admin
- */
-public function isAdmin(): bool
-{
-    return $this->role && $this->role->role_name === 'Admin';
-}
+    /**
+     * Shift yang sedang aktif/open oleh user
+     */
+    public function activeShift()
+    {
+        return $this->hasOne(CashierShift::class, 'user_id', 'id_user')->where('status', 'open');
+    }
 
-/**
- * Check if user is staff/kasir
- */
-public function isStaff(): bool
-{
-    return $this->role && $this->role->role_name === 'Staff';
-}
+    /**
+     * Riwayat seluruh shift user
+     */
+    public function shifts()
+    {
+        return $this->hasMany(CashierShift::class, 'user_id', 'id_user');
+    }
 
-/**
- * Check if user is customer
- */
-public function isCustomer(): bool
-{
-    return $this->role && $this->role->role_name === 'Customer';
-}
+    /**
+     * Check if user is active
+     */
+    public function isActive(): bool
+    {
+        return ($this->status ?? 'active') === 'active';
+    }
 
-/**
- * Check if user is guest
- */
-public function isGuest(): bool
-{
-    return $this->role && $this->role->role_name === 'Guest';
-}
+    /**
+     * Check if user is admin
+     */
+    public function isAdmin(): bool
+    {
+        return $this->role && in_array(strtolower($this->role->role_name), ['admin', 'owner']);
+    }
+
+    /**
+     * Check if user is cashier
+     */
+    public function isCashier(): bool
+    {
+        return $this->role && in_array(strtolower($this->role->role_name), ['cashier', 'kasir']);
+    }
+
+    /**
+     * Check if user is staff / operational employee
+     */
+    public function isStaff(): bool
+    {
+        return $this->role && in_array(strtolower($this->role->role_name), ['staff', 'cashier', 'kasir', 'pegawai']);
+    }
+
+    /**
+     * Check if user can manage menu and inventory
+     */
+    public function canManageMenu(): bool
+    {
+        return $this->isAdmin() || $this->isStaff();
+    }
+
+    /**
+     * Check if user is customer
+     */
+    public function isCustomer(): bool
+    {
+        return $this->role && in_array(strtolower($this->role->role_name), ['customer', 'pelanggan']);
+    }
+
+    /**
+     * Check if user is guest
+     */
+    public function isGuest(): bool
+    {
+        return $this->role && strtolower($this->role->role_name) === 'guest';
+    }
 }

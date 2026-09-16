@@ -10,8 +10,8 @@ class AdminMiddleware
 {
     public function handle(Request $request, Closure $next)
     {
-        if (!Auth::check()) {
-            return redirect('/');
+        if (! Auth::check()) {
+            return redirect()->guest(route('login'));
         }
 
         $user = Auth::user();

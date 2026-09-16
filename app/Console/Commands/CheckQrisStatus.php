@@ -19,8 +19,9 @@ class CheckQrisStatus extends Command
             // Check single order
             $transaction = QrisTransaction::where('id_order', $orderId)->first();
 
-            if (!$transaction) {
+            if (! $transaction) {
                 $this->error("❌ No QRIS transaction found for order #{$orderId}");
+
                 return 1;
             }
 
@@ -31,6 +32,7 @@ class CheckQrisStatus extends Command
 
             if ($pendingTransactions->isEmpty()) {
                 $this->info('✅ No pending transactions');
+
                 return 0;
             }
 
@@ -50,19 +52,19 @@ class CheckQrisStatus extends Command
     {
         $this->line("Transaction ID: #{$transaction->id_qris_transaction}");
         $this->line("Order ID: #{$transaction->id_order}");
-        $this->line("Amount: Rp " . number_format($transaction->amount, 0));
-        $this->line("Status: <fg=" . $this->getStatusColor($transaction->status) . ">{$transaction->status}</>");
+        $this->line('Amount: Rp '.number_format($transaction->amount, 0));
+        $this->line('Status: <fg='.$this->getStatusColor($transaction->status).">{$transaction->status}</>");
         $this->line("Payment Channel: {$transaction->payment_channel}");
         $this->line("Customer: {$transaction->customer_name} ({$transaction->customer_email})");
-        $this->line("Created: {$transaction->created_at->format('Y-m-d H:i:s')}");
-        $this->line("Expires: {$transaction->expires_at?->format('Y-m-d H:i:s') ?? 'N/A'}");
+        $expiresAt = $transaction->expires_at ? $transaction->expires_at->format('Y-m-d H:i:s') : 'N/A';
+        $this->line("Expires: {$expiresAt}");
 
         if ($transaction->paid_at) {
             $this->line("Paid: {$transaction->paid_at->format('Y-m-d H:i:s')}");
         }
 
         if ($transaction->isExpired()) {
-            $this->warn("⚠️ This transaction has expired!");
+            $this->warn('⚠️ This transaction has expired!');
         }
     }
 

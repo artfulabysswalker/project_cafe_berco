@@ -61,7 +61,7 @@ class PasswordResetRequestController extends Controller
     {
         $passwordResetRequest = PasswordResetRequest::where('id_user', $id_user)->first();
 
-        if (!$passwordResetRequest) {
+        if (! $passwordResetRequest) {
             return back()->with('error', 'Request tidak ditemukan');
         }
 

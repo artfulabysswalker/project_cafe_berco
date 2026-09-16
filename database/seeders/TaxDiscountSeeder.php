@@ -2,11 +2,10 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
-use App\Models\TaxConfiguration;
 use App\Models\DiscountScheme;
+use App\Models\TaxConfiguration;
 use App\Models\User;
-use Carbon\Carbon;
+use Illuminate\Database\Seeder;
 
 class TaxDiscountSeeder extends Seeder
 {

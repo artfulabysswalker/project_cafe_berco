@@ -3,11 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Models\CashierShift;
-use App\Models\User;
 use App\Models\Order;
+use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Carbon\Carbon;
 
 class ShiftController extends Controller
 {
@@ -20,7 +20,7 @@ class ShiftController extends Controller
         $isAdmin = $user ? $user->isAdmin() : true;
         $query = CashierShift::with(['user', 'orders']);
 
-        if (!$isAdmin && $user) {
+        if (! $isAdmin && $user) {
             $query->where('user_id', $user->id_user);
         }
 
@@ -51,7 +51,7 @@ class ShiftController extends Controller
             ->get();
 
         // 2. Daftar Pegawai untuk Filter dan Modal Buka Shift
-        $employees = User::whereHas('role', function($q) {
+        $employees = User::whereHas('role', function ($q) {
             $q->whereIn('role_name', ['Cashier', 'Staff', 'Admin', 'kasir']);
         })->get(['id_user', 'name', 'username']);
 
@@ -94,7 +94,7 @@ class ShiftController extends Controller
         $myActiveShift = $user ? $user->activeShift : null;
 
         return view('admin.shifts', compact(
-            'shifts', 'employees', 'leaderboard', 'activeShifts', 
+            'shifts', 'employees', 'leaderboard', 'activeShifts',
             'shift1Stats', 'shift2Stats', 'myActiveShift'
         ));
     }
@@ -108,11 +108,11 @@ class ShiftController extends Controller
 
         // Security / Policy check
         $user = auth()->user();
-        if ($user && !$user->isAdmin() && $shift->user_id !== $user->id_user) {
+        if ($user && ! $user->isAdmin() && $shift->user_id !== $user->id_user) {
             return response()->json(['error' => 'Akses ditolak. Anda tidak memiliki izin melihat transaksi shift ini.'], 403);
         }
 
-        $orders = $shift->orders->map(function($order) {
+        $orders = $shift->orders->map(function ($order) {
             return [
                 'id_order' => $order->id_order,
                 'nama_pelanggan' => $order->nama_pelanggan,
@@ -121,11 +121,11 @@ class ShiftController extends Controller
                 'status_pembayaran' => $order->status_pembayaran,
                 'status_order' => $order->status_order,
                 'final_total' => $order->final_total,
-                'formatted_total' => 'Rp ' . number_format($order->final_total, 0, ',', '.'),
+                'formatted_total' => 'Rp '.number_format($order->final_total, 0, ',', '.'),
                 'items_count' => $order->items->count(),
-                'items_detail' => $order->items->map(function($item) {
-                    return ($item->menu ? $item->menu->nama_menu : 'Menu') . ' x' . $item->quantity;
-                })->implode(', ')
+                'items_detail' => $order->items->map(function ($item) {
+                    return ($item->menu ? $item->menu->nama_menu : 'Menu').' x'.$item->quantity;
+                })->implode(', '),
             ];
         });
 
@@ -136,24 +136,24 @@ class ShiftController extends Controller
                 'shift_type' => $shift->shift_type == 'shift_1' ? 'Shift 1 (Pagi: 07:00 - 15:00)' : 'Shift 2 (Sore: 15:00 - 23:00)',
                 'status' => $shift->status,
                 'starting_cash' => $shift->starting_cash,
-                'formatted_starting_cash' => 'Rp ' . number_format($shift->starting_cash, 0, ',', '.'),
+                'formatted_starting_cash' => 'Rp '.number_format($shift->starting_cash, 0, ',', '.'),
                 'cash_sales' => $shift->cash_sales,
-                'formatted_cash_sales' => 'Rp ' . number_format($shift->cash_sales, 0, ',', '.'),
+                'formatted_cash_sales' => 'Rp '.number_format($shift->cash_sales, 0, ',', '.'),
                 'non_cash_sales' => $shift->non_cash_sales,
-                'formatted_non_cash_sales' => 'Rp ' . number_format($shift->non_cash_sales, 0, ',', '.'),
+                'formatted_non_cash_sales' => 'Rp '.number_format($shift->non_cash_sales, 0, ',', '.'),
                 'expected_cash' => $shift->starting_cash + $shift->cash_sales,
-                'formatted_expected_cash' => 'Rp ' . number_format($shift->starting_cash + $shift->cash_sales, 0, ',', '.'),
+                'formatted_expected_cash' => 'Rp '.number_format($shift->starting_cash + $shift->cash_sales, 0, ',', '.'),
                 'actual_cash' => $shift->actual_cash,
-                'formatted_actual_cash' => $shift->actual_cash !== null ? 'Rp ' . number_format($shift->actual_cash, 0, ',', '.') : '-',
+                'formatted_actual_cash' => $shift->actual_cash !== null ? 'Rp '.number_format($shift->actual_cash, 0, ',', '.') : '-',
                 'difference' => $shift->difference,
-                'formatted_difference' => $shift->difference !== null ? 'Rp ' . number_format($shift->difference, 0, ',', '.') : '-',
+                'formatted_difference' => $shift->difference !== null ? 'Rp '.number_format($shift->difference, 0, ',', '.') : '-',
                 'opened_at' => $shift->opened_at ? $shift->opened_at->format('d M Y, H:i') : '-',
                 'closed_at' => $shift->closed_at ? $shift->closed_at->format('d M Y, H:i') : 'Masih Berjalan',
                 'notes' => $shift->notes ?? '-',
             ],
             'orders' => $orders,
             'total_orders' => $orders->count(),
-            'total_omzet' => 'Rp ' . number_format($shift->cash_sales + $shift->non_cash_sales, 0, ',', '.')
+            'total_omzet' => 'Rp '.number_format($shift->cash_sales + $shift->non_cash_sales, 0, ',', '.'),
         ]);
     }
 
@@ -177,10 +177,11 @@ class ShiftController extends Controller
             ->first();
 
         if ($existingOpenShift) {
-            $message = 'Kasir ini masih memiliki shift aktif yang belum ditutup (Shift #' . $existingOpenShift->id_shift . '). Harap tutup shift terlebih dahulu.';
+            $message = 'Kasir ini masih memiliki shift aktif yang belum ditutup (Shift #'.$existingOpenShift->id_shift.'). Harap tutup shift terlebih dahulu.';
             if ($request->wantsJson()) {
                 return response()->json(['status' => 'error', 'message' => $message], 422);
             }
+
             return back()->with('error', $message);
         }
 
@@ -199,13 +200,13 @@ class ShiftController extends Controller
             'notes' => $request->notes,
         ]);
 
-        $successMsg = 'Shift ' . ($shiftType == 'shift_1' ? '1 (Pagi)' : '2 (Sore)') . ' berhasil dibuka untuk ' . $shift->user->name . ' dengan modal kas awal Rp ' . number_format($request->modal_awal, 0, ',', '.') . '.';
+        $successMsg = 'Shift '.($shiftType == 'shift_1' ? '1 (Pagi)' : '2 (Sore)').' berhasil dibuka untuk '.$shift->user->name.' dengan modal kas awal Rp '.number_format($request->modal_awal, 0, ',', '.').'.';
 
         if ($request->wantsJson()) {
             return response()->json([
                 'status' => 'success',
                 'message' => $successMsg,
-                'shift' => $shift
+                'shift' => $shift,
             ]);
         }
 
@@ -230,6 +231,7 @@ class ShiftController extends Controller
             if ($request->wantsJson()) {
                 return response()->json(['status' => 'error', 'message' => $message], 400);
             }
+
             return back()->with('error', $message);
         }
 
@@ -258,14 +260,14 @@ class ShiftController extends Controller
             'notes' => $request->notes ?? $shift->notes,
         ]);
 
-        $statusSelisih = $selisih == 0 ? 'Kas Pas / Balance' : ($selisih < 0 ? 'Selisih Kurang Rp ' . number_format(abs($selisih), 0, ',', '.') : 'Surplus Rp ' . number_format($selisih, 0, ',', '.'));
-        $successMsg = 'Shift #' . $shift->id_shift . ' (' . $shift->user->name . ') berhasil ditutup. Total Kas Masuk: Rp ' . number_format($tunai, 0, ',', '.') . ' | Hasil: ' . $statusSelisih . '.';
+        $statusSelisih = $selisih == 0 ? 'Kas Pas / Balance' : ($selisih < 0 ? 'Selisih Kurang Rp '.number_format(abs($selisih), 0, ',', '.') : 'Surplus Rp '.number_format($selisih, 0, ',', '.'));
+        $successMsg = 'Shift #'.$shift->id_shift.' ('.$shift->user->name.') berhasil ditutup. Total Kas Masuk: Rp '.number_format($tunai, 0, ',', '.').' | Hasil: '.$statusSelisih.'.';
 
         if ($request->wantsJson()) {
             return response()->json([
                 'status' => 'success',
                 'message' => $successMsg,
-                'shift' => $shift
+                'shift' => $shift,
             ]);
         }
 
@@ -291,15 +293,15 @@ class ShiftController extends Controller
      */
     public function getEmployees()
     {
-        $employees = User::whereHas('role', function($query) {
+        $employees = User::whereHas('role', function ($query) {
             $query->whereIn('role_name', ['Cashier', 'Staff', 'Admin', 'kasir']);
         })->with('role')->get(['id_user', 'name', 'id_role']);
 
-        $formatted = $employees->map(function($user) {
+        $formatted = $employees->map(function ($user) {
             return [
                 'id_user' => $user->id_user,
                 'name' => $user->name,
-                'role' => $user->role ? $user->role->role_name : 'Staff'
+                'role' => $user->role ? $user->role->role_name : 'Staff',
             ];
         });
 

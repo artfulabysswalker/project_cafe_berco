@@ -105,7 +105,7 @@ class PlaylistController extends Controller
      */
     public function vote(Request $request, Playlist $playlist)
     {
-        if (!Auth::check()) {
+        if (! Auth::check()) {
             return response()->json(['error' => 'Harus login untuk memberikan vote'], 401);
         }
 
@@ -145,7 +145,7 @@ class PlaylistController extends Controller
 
         // Update vote count di playlist
         $playlist->update([
-            'vote_count' => $playlist->votes()->count()
+            'vote_count' => $playlist->votes()->count(),
         ]);
 
         if ($request->wantsJson()) {

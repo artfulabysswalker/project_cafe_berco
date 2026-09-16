@@ -14,16 +14,17 @@ class DebugQrisCode extends Command
     public function handle()
     {
         $orderId = $this->argument('order_id');
-        
+
         $transaction = QrisTransaction::where('id_order', $orderId)->first();
-        
-        if (!$transaction) {
+
+        if (! $transaction) {
             $this->error("No QRIS transaction found for order #{$orderId}");
+
             return 1;
         }
 
         $this->info("=== QRIS Transaction Debug ===\n");
-        
+
         $this->table(['Property', 'Value'], [
             ['ID', $transaction->id_qris_transaction],
             ['Order ID', $transaction->id_order],
@@ -35,22 +36,22 @@ class DebugQrisCode extends Command
             ['Amount', $transaction->amount],
             ['Created', $transaction->created_at],
         ]);
-        
+
         $this->line('');
-        
-        if (!$transaction->qris_code) {
+
+        if (! $transaction->qris_code) {
             $this->warn('⚠️ QRIS Code is EMPTY! Checking metadata...');
             $metadata = $transaction->metadata;
             if ($metadata) {
-                $this->line('Metadata keys: ' . implode(', ', array_keys($metadata)));
+                $this->line('Metadata keys: '.implode(', ', array_keys($metadata)));
                 if (isset($metadata['qris_string'])) {
-                    $this->info('Found in metadata["qris_string"]: ' . substr($metadata['qris_string'], 0, 50));
+                    $this->info('Found in metadata["qris_string"]: '.substr($metadata['qris_string'], 0, 50));
                 }
             }
         } else {
             $this->info('✅ QRIS Code found and stored correctly!');
         }
-        
+
         return 0;
     }
 }

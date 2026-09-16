@@ -1,8 +1,8 @@
-@extends('layouts.app')
+@extends('Customerviews.layouts.web')
 
 @section('title', 'Keranjang Belanja - Berco Cafe')
 
-@push('styles')
+@section('styles')
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
     :root {
@@ -487,7 +487,7 @@
         font-weight:600;
     }
 </style>
-@endpush
+@endsection
 
 @section('content')
 
@@ -581,25 +581,19 @@
             <div class="summary-section">
                 @php 
                     $subtotal = $cartItems->sum(fn($i)=>(($i->menu->price ?? 0) * $i->quantity)); 
-                    $tax = round($subtotal * 0.11); 
-                    $total = $subtotal + $tax; 
-                @endphp
-                <div class="summary-row">
-                    <span>Subtotal ({{ $itemCount }} item)</span>
-                    <span>Rp {{ number_format($subtotal, 0, ',', '.') }}</span>
-                </div>
-                <div class="summary-row">
-                    <span>PPN 11%</span>
-                    <span>Rp {{ number_format($tax, 0, ',', '.') }}</span>
-                </div>
-                <div class="summary-row">
-                    <span>Biaya layanan</span>
-                    <span style="color:var(--berco-success); font-weight:600;">Gratis</span>
-                </div>
-                <div class="summary-row summary-total">
-                    <span>Total</span>
-                    <span style="color:var(--berco-gold); font-size:1.15rem;">Rp {{ number_format($total, 0, ',', '.') }}</span>
-                </div>
+                    @endphp
+                    <div class="summary-row">
+                        <span>Subtotal ({{ $itemCount }} item)</span>
+                        <span>Rp {{ number_format($subtotal, 0, ',', '.') }}</span>
+                    </div>
+                    <div class="summary-row">
+                        <span>Biaya take-away</span>
+                        <span style="color:var(--berco-success); font-weight:600;">Akan dihitung saat checkout</span>
+                    </div>
+                    <div class="summary-row summary-total">
+                        <span>Total Saat Ini</span>
+                        <span style="color:var(--berco-gold); font-size:1.15rem;">Rp {{ number_format($subtotal, 0, ',', '.') }}</span>
+                    </div>
             </div>
 
             <div class="summary-section">

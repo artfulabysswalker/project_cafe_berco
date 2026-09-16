@@ -2,11 +2,11 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\User;
 use App\Models\Role;
+use App\Models\User;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 
 class CostumerController extends Controller
 {
@@ -24,7 +24,7 @@ class CostumerController extends Controller
         $counter = 1;
         $originalUsername = $username;
         while (User::where('username', $username)->exists()) {
-            $username = $originalUsername . $counter;
+            $username = $originalUsername.$counter;
             $counter++;
         }
 
@@ -47,8 +47,6 @@ class CostumerController extends Controller
             ->with('success', 'Account created successfully');
     }
 
-
-
     public function login(Request $request)
     {
         $credentials = $request->validate([
@@ -58,13 +56,13 @@ class CostumerController extends Controller
 
         if (Auth::attempt($credentials)) {
             $user = Auth::user();
-            
+
             // Ensure user has proper role setup and is not guest
-            if (!$user->id_role) {
+            if (! $user->id_role) {
                 $customerRole = Role::where('role_name', 'customer')->first();
                 $user->update(['id_role' => $customerRole->id_role]);
             }
-            
+
             $user->update(['is_guest' => false]);
             $request->session()->regenerate();
 

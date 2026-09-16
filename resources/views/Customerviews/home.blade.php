@@ -1,74 +1,186 @@
 @extends('Customerviews.layouts.web')
 
-@section('title', 'Beranda - Berco Cafe')
+@section('title', 'Beranda Member — Cafe Berco')
 
 @section('content')
-    <section class="hero-home" style="padding: 120px 40px 80px; background: linear-gradient(180deg, #fff9f1 0%, #fff1df 100%); min-height: calc(100vh - 180px);">
-        <div class="max-w-6xl mx-auto">
-            <div class="grid gap-10 lg:grid-cols-[1.2fr_0.8fr] items-start">
-                <div>
-                    <p class="text-sm uppercase tracking-[0.4em] text-[#c2410c] mb-4">Selamat datang di Berco Cafe</p>
-                    <h1 class="text-5xl font-extrabold leading-tight text-[#3a1f0f] mb-6">Halo, {{ Auth::user()->name }}!</h1>
-                    <p class="text-lg text-[#5f3b22] mb-8">Nikmati menu terbaik kami, klaim hadiah harian, dan tukarkan EXP untuk rewards menarik.</p>
+<div class="space-y-8">
+    {{-- Flash Messages --}}
+    @if(session('success'))
+        <div class="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-md text-xs font-mono flex items-center space-x-2">
+            <i class="fas fa-circle-check text-emerald-600"></i>
+            <span>{{ session('success') }}</span>
+        </div>
+    @endif
 
-                    <div class="grid gap-4 sm:grid-cols-2">
-                        <a href="{{ route('menu.index') }}" class="inline-flex items-center justify-center gap-3 rounded-3xl bg-[#c2410c] px-8 py-4 text-white text-base font-semibold shadow-xl shadow-[#c2410c]/20 transition hover:-translate-y-1">Pesan Sekarang <i class="fas fa-mug-hot"></i></a>
-                        <a href="{{ route('cart.index') }}" class="inline-flex items-center justify-center gap-3 rounded-3xl bg-white border border-[#ddb892] px-8 py-4 text-[#6b3a0f] text-base font-semibold shadow-sm transition hover:-translate-y-1">Lihat Keranjang <i class="fas fa-shopping-cart"></i></a>
-                    </div>
+    @if($errors->has('daily'))
+        <div class="p-3 bg-amber-50 border border-amber-200 text-amber-800 rounded-md text-xs font-mono flex items-center space-x-2">
+            <i class="fas fa-triangle-exclamation text-amber-600"></i>
+            <span>{{ $errors->first('daily') }}</span>
+        </div>
+    @endif
+
+    {{-- Hero Section --}}
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+        
+        {{-- Welcome Banner --}}
+        <div class="lg:col-span-7 bg-white border border-border rounded-lg p-6 flex flex-col justify-between space-y-6 shadow-2xs">
+            <div class="space-y-3">
+                <div class="inline-flex items-center space-x-2 text-[11px] font-mono uppercase tracking-widest text-terracotta">
+                    <span class="w-2 h-2 rounded-full bg-terracotta"></span>
+                    <span>Loyalty & Member Portal</span>
                 </div>
+                <h1 class="text-3xl font-serif text-ink tracking-tight font-normal">
+                    Selamat datang, {{ Auth::user()->name }}
+                </h1>
+                <p class="text-xs text-ink-muted leading-relaxed">
+                    Nikmati racikan kopi specialty pilihan, selesaikan quest harian, kumpulkan EXP, dan tukarkan dengan voucher diskon serta menu gratis.
+                </p>
+            </div>
 
-                <div class="status-card" style="background: white; border-radius: 32px; padding: 36px; box-shadow: 0 30px 80px rgba(67, 32, 12, 0.12);">
-                    <h2 class="text-2xl font-bold text-[#5f3b22] mb-4">Status Akun</h2>
-
-                    <div class="stats grid gap-4">
-                        <div class="stat-item" style="background: #fff4e6; border-radius: 24px; padding: 24px;">
-                            <p class="text-sm uppercase tracking-[0.3em] text-[#b45309] mb-2">EXP Anda</p>
-                            <p class="text-4xl font-extrabold text-[#92400e]">{{ Auth::user()->exp ?? 0 }}</p>
-                        </div>
-
-                        <div class="stat-item" style="background: #fdf3e6; border-radius: 24px; padding: 24px;">
-                            <p class="text-sm uppercase tracking-[0.3em] text-[#b45309] mb-2">Akun</p>
-                            <p class="text-lg font-semibold text-[#7c4a24]">{{ Auth::user()->is_guest ? 'Guest' : 'Terdaftar' }}</p>
-                        </div>
-
-                        <div class="stat-item" style="background: #eef7ff; border-radius: 24px; padding: 24px;">
-                            <p class="text-sm uppercase tracking-[0.3em] text-[#1d4ed8] mb-2">Daily Streak</p>
-                            @php
-                                $lastClaim = Auth::user()->last_daily_claim;
-                                $streakMessage = 'Belum dimulai. Klaim sekarang untuk memulai streak!';
-
-                                if ($lastClaim) {
-                                    if ($lastClaim->isToday()) {
-                                        $streakMessage = 'Streak aktif: kamu sudah klaim hari ini.';
-                                    } elseif ($lastClaim->isYesterday()) {
-                                        $streakMessage = 'Streak hampir lanjut, klaim hari ini untuk menjaga streak.';
-                                    } else {
-                                        $streakMessage = 'Mulai streak baru dengan klaim harian berikutnya.';
-                                    }
-                                }
-                            @endphp
-                            <p class="text-sm text-[#1e3a8a]">{{ $streakMessage }}</p>
-                        </div>
-
-                        <div class="stat-item" style="background: #f7f3ee; border-radius: 24px; padding: 24px;">
-                            <p class="text-sm uppercase tracking-[0.3em] text-[#b45309] mb-2">Daily Claim</p>
-                            @if(!Auth::user()->last_daily_claim || !Auth::user()->last_daily_claim->isToday())
-                                <form method="POST" action="{{ route('daily.claim') }}">
-                                    @csrf
-                                    <button type="submit" class="w-full rounded-3xl bg-[#f59e0b] px-5 py-3 text-white font-semibold shadow hover:bg-[#d97706] transition">Klaim Sekarang</button>
-                                </form>
-                            @else
-                                <p class="text-sm text-[#6b4226]">Sudah diklaim hari ini. Kembali besok untuk bonus lagi.</p>
-                            @endif
-                        </div>
-                    </div>
-
-                    <div class="mt-8 space-y-4">
-                        <a href="{{ route('daily-quest') }}" class="block rounded-3xl bg-[#fff1d6] px-6 py-4 text-[#9a3412] font-semibold transition hover:bg-[#ffe8c2]">Daily Quest</a>
-                        <a href="{{ route('redeem.index') }}" class="block rounded-3xl bg-[#f8fafc] border border-[#f1f5f9] px-6 py-4 text-[#475569] font-semibold transition hover:bg-[#eef2ff]">Tukar EXP</a>
-                    </div>
-                </div>
+            <div class="flex flex-wrap items-center gap-2.5 pt-2">
+                <a href="{{ route('menu.index') }}" class="text-xs font-mono font-medium bg-ink text-white px-4 py-2 rounded-md hover:bg-stone-800 transition-colors shadow-2xs inline-flex items-center space-x-1.5">
+                    <i class="fas fa-mug-hot text-[10px]"></i>
+                    <span>Jelajahi Menu</span>
+                </a>
+                <a href="{{ route('redeem.index') }}" class="text-xs font-mono font-medium bg-white text-ink border border-border px-4 py-2 rounded-md hover:bg-stone-50 transition-colors inline-flex items-center space-x-1.5">
+                    <i class="fas fa-gift text-terracotta text-[10px]"></i>
+                    <span>Tukar Hadiah</span>
+                </a>
+                <a href="{{ route('playlists.index') }}" class="text-xs font-mono text-ink-muted hover:text-ink border border-border px-3.5 py-2 rounded-md hover:bg-stone-50 transition-colors">
+                    <i class="fas fa-music text-[10px] mr-1"></i> Request Musik
+                </a>
             </div>
         </div>
-    </section>
+
+        {{-- EXP & Daily Streak Card --}}
+        <div class="lg:col-span-5 bg-white border border-border rounded-lg p-6 flex flex-col justify-between space-y-5 shadow-2xs">
+            <div class="flex items-center justify-between border-b border-stone-100 pb-3">
+                <div>
+                    <span class="text-[10px] font-mono text-ink-muted uppercase tracking-widest block">STATUS MEMBER</span>
+                    <h3 class="text-sm font-semibold text-ink">{{ Auth::user()->is_guest ? 'Guest Customer' : 'Berco Tier Member' }}</h3>
+                </div>
+                <div class="text-right font-mono">
+                    <span class="text-[10px] text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
+                        {{ number_format(Auth::user()->exp ?? 0) }} EXP
+                    </span>
+                </div>
+            </div>
+
+            {{-- Daily Streak Box --}}
+            <div class="bg-canvas border border-border/80 rounded-md p-4 space-y-3">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h4 class="text-xs font-semibold text-ink">Daily Streak Bonus</h4>
+                        <p class="text-[11px] text-ink-muted mt-0.5">Klaim <strong class="text-ink">+50 EXP</strong> gratis setiap 24 jam.</p>
+                    </div>
+                </div>
+
+                @php
+                    $hasClaimedToday = Auth::user()->last_daily_claim && Auth::user()->last_daily_claim->isToday();
+                @endphp
+
+                @if(!$hasClaimedToday)
+                    <form method="POST" action="{{ route('daily.claim') }}" class="m-0">
+                        @csrf
+                        <button type="submit" class="w-full text-xs font-mono bg-terracotta hover:bg-terracotta-dark text-white py-2 rounded-md transition-colors shadow-2xs">
+                            Klaim 50 EXP Sekarang
+                        </button>
+                    </form>
+                @else
+                    <button type="button" class="w-full text-xs font-mono bg-stone-100 text-stone-500 py-2 rounded-md cursor-not-allowed border border-border" disabled>
+                        ✓ Sudah Diklaim Hari Ini
+                    </button>
+                @endif
+            </div>
+
+            <div class="grid grid-cols-3 gap-2 text-center text-[11px] font-mono border-t border-stone-100 pt-3 text-ink-muted">
+                <a href="{{ route('redeem.index') }}" class="hover:text-ink">Voucher →</a>
+                <a href="{{ route('daily.quest') }}" class="hover:text-ink">Quest →</a>
+                <a href="{{ route('order.history') }}" class="hover:text-ink">Riwayat →</a>
+            </div>
+        </div>
+
+    </div>
+
+    {{-- Features Grid --}}
+    <div class="space-y-4">
+        <div class="border-b border-border pb-2">
+            <h2 class="text-xs font-mono uppercase tracking-widest text-ink-muted font-semibold">Layanan & Menu Cepat</h2>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {{-- Feature 1: Menu --}}
+            <a href="{{ route('menu.index') }}" class="bg-white border border-border rounded-lg p-5 hover:border-stone-400 transition-colors flex flex-col justify-between space-y-3 group shadow-2xs">
+                <div class="space-y-1.5">
+                    <div class="w-8 h-8 rounded-md bg-stone-100 text-ink flex items-center justify-center text-xs">
+                        <i class="fas fa-mug-hot"></i>
+                    </div>
+                    <h3 class="text-sm font-semibold text-ink group-hover:text-terracotta transition-colors">Daftar Menu Spesial</h3>
+                    <p class="text-xs text-ink-muted leading-relaxed">Pilih aneka kopi espresso, manual brew, minuman non-kopi, dan kudapan segar.</p>
+                </div>
+                <span class="text-xs font-mono text-ink font-medium">Buka Menu →</span>
+            </a>
+
+            {{-- Feature 2: Tukar EXP --}}
+            <a href="{{ route('redeem.index') }}" class="bg-white border border-border rounded-lg p-5 hover:border-stone-400 transition-colors flex flex-col justify-between space-y-3 group shadow-2xs">
+                <div class="space-y-1.5">
+                    <div class="w-8 h-8 rounded-md bg-stone-100 text-ink flex items-center justify-center text-xs">
+                        <i class="fas fa-gift"></i>
+                    </div>
+                    <h3 class="text-sm font-semibold text-ink group-hover:text-terracotta transition-colors">Tukar EXP & Voucher</h3>
+                    <p class="text-xs text-ink-muted leading-relaxed">Gunakan EXP Anda untuk ditukar voucher diskon dan minuman gratis.</p>
+                </div>
+                <span class="text-xs font-mono text-ink font-medium">Tukar Hadiah →</span>
+            </a>
+
+            {{-- Feature 3: Daily Quest --}}
+            <a href="{{ route('daily.quest') }}" class="bg-white border border-border rounded-lg p-5 hover:border-stone-400 transition-colors flex flex-col justify-between space-y-3 group shadow-2xs">
+                <div class="space-y-1.5">
+                    <div class="w-8 h-8 rounded-md bg-stone-100 text-ink flex items-center justify-center text-xs">
+                        <i class="fas fa-trophy"></i>
+                    </div>
+                    <h3 class="text-sm font-semibold text-ink group-hover:text-terracotta transition-colors">Daily Quest & Streak</h3>
+                    <p class="text-xs text-ink-muted leading-relaxed">Selesaikan misi belanja, unlock achievement, dan raih reward ekstra.</p>
+                </div>
+                <span class="text-xs font-mono text-ink font-medium">Lihat Quest →</span>
+            </a>
+
+            {{-- Feature 4: Playlist --}}
+            <a href="{{ route('playlists.index') }}" class="bg-white border border-border rounded-lg p-5 hover:border-stone-400 transition-colors flex flex-col justify-between space-y-3 group shadow-2xs">
+                <div class="space-y-1.5">
+                    <div class="w-8 h-8 rounded-md bg-stone-100 text-ink flex items-center justify-center text-xs">
+                        <i class="fas fa-music"></i>
+                    </div>
+                    <h3 class="text-sm font-semibold text-ink group-hover:text-terracotta transition-colors">Playlist Kafe</h3>
+                    <p class="text-xs text-ink-muted leading-relaxed">Request lagu favorit Anda untuk diputar di kafe dan vote bersama pelanggan lain.</p>
+                </div>
+                <span class="text-xs font-mono text-ink font-medium">Request Musik →</span>
+            </a>
+
+            {{-- Feature 5: Cart --}}
+            <a href="{{ route('cart.index') }}" class="bg-white border border-border rounded-lg p-5 hover:border-stone-400 transition-colors flex flex-col justify-between space-y-3 group shadow-2xs">
+                <div class="space-y-1.5">
+                    <div class="w-8 h-8 rounded-md bg-stone-100 text-ink flex items-center justify-center text-xs">
+                        <i class="fas fa-bag-shopping"></i>
+                    </div>
+                    <h3 class="text-sm font-semibold text-ink group-hover:text-terracotta transition-colors">Keranjang Pesanan</h3>
+                    <p class="text-xs text-ink-muted leading-relaxed">Cek item pesanan Anda, pilih Dine In atau Take Away, lalu bayar via QRIS/Cash.</p>
+                </div>
+                <span class="text-xs font-mono text-ink font-medium">Buka Keranjang →</span>
+            </a>
+
+            {{-- Feature 6: History --}}
+            <a href="{{ route('order.history') }}" class="bg-white border border-border rounded-lg p-5 hover:border-stone-400 transition-colors flex flex-col justify-between space-y-3 group shadow-2xs">
+                <div class="space-y-1.5">
+                    <div class="w-8 h-8 rounded-md bg-stone-100 text-ink flex items-center justify-center text-xs">
+                        <i class="fas fa-receipt"></i>
+                    </div>
+                    <h3 class="text-sm font-semibold text-ink group-hover:text-terracotta transition-colors">Riwayat & Struk</h3>
+                    <p class="text-xs text-ink-muted leading-relaxed">Pantau status pesanan dan unduh struk digital bukti transaksi Anda.</p>
+                </div>
+                <span class="text-xs font-mono text-ink font-medium">Cek Riwayat →</span>
+            </a>
+        </div>
+    </div>
+</div>
 @endsection

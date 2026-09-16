@@ -2,13 +2,11 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Order;
 use App\Models\Menu;
-use App\Models\User;
+use App\Models\Order;
 use App\Models\OrderItem;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 
 class DashboardController extends Controller
 {
@@ -23,26 +21,26 @@ class DashboardController extends Controller
         // 1. Key Metrics (Revenue, Orders, Profit)
         $completedOrdersQuery = Order::where(function ($q) {
             $q->whereIn('status_pembayaran', ['paid', 'Sudah'])
-              ->orWhere('status_order', 'completed');
+                ->orWhere('status_order', 'completed');
         });
 
-        if (!$isAdmin) {
+        if (! $isAdmin) {
             $completedOrdersQuery->where('id_user', $user->id_user);
         }
 
         $totalRevenue = (float) $completedOrdersQuery->sum('total_harga');
 
         $totalOrdersQuery = Order::query();
-        if (!$isAdmin) {
+        if (! $isAdmin) {
             $totalOrdersQuery->where('id_user', $user->id_user);
         }
         $totalOrders = $totalOrdersQuery->count();
 
         $completedOrdersCountQuery = Order::where(function ($q) {
             $q->whereIn('status_pembayaran', ['paid', 'Sudah'])
-              ->orWhere('status_order', 'completed');
+                ->orWhere('status_order', 'completed');
         });
-        if (!$isAdmin) {
+        if (! $isAdmin) {
             $completedOrdersCountQuery->where('id_user', $user->id_user);
         }
         $completedOrdersCount = $completedOrdersCountQuery->count();
@@ -50,13 +48,13 @@ class DashboardController extends Controller
         // Cash Breakdown
         $cashOrdersQuery = Order::where(function ($q) {
             $q->where('payment_method', 'cash')
-              ->orWhere('payment_method', 'tunai')
-              ->orWhereNull('payment_method');
+                ->orWhere('payment_method', 'tunai')
+                ->orWhereNull('payment_method');
         })->where(function ($q) {
             $q->whereIn('status_pembayaran', ['paid', 'Sudah'])
-              ->orWhere('status_order', 'completed');
+                ->orWhere('status_order', 'completed');
         });
-        if (!$isAdmin) {
+        if (! $isAdmin) {
             $cashOrdersQuery->where('id_user', $user->id_user);
         }
         $cashRevenue = (float) $cashOrdersQuery->sum('total_harga');
@@ -65,13 +63,13 @@ class DashboardController extends Controller
         // QRIS Breakdown
         $qrisOrdersQuery = Order::where(function ($q) {
             $q->where('payment_method', 'qris')
-              ->orWhere('payment_method', 'QRIS')
-              ->orWhere('payment_method', 'transfer');
+                ->orWhere('payment_method', 'QRIS')
+                ->orWhere('payment_method', 'transfer');
         })->where(function ($q) {
             $q->whereIn('status_pembayaran', ['paid', 'Sudah'])
-              ->orWhere('status_order', 'completed');
+                ->orWhere('status_order', 'completed');
         });
-        if (!$isAdmin) {
+        if (! $isAdmin) {
             $qrisOrdersQuery->where('id_user', $user->id_user);
         }
         $qrisRevenue = (float) $qrisOrdersQuery->sum('total_harga');
@@ -79,7 +77,7 @@ class DashboardController extends Controller
 
         $pendingOrdersQuery = Order::where('status_pembayaran', 'pending')
             ->orWhere('status_order', 'pending');
-        if (!$isAdmin) {
+        if (! $isAdmin) {
             $pendingOrdersQuery->where('id_user', $user->id_user);
         }
         $pendingOrdersCount = $pendingOrdersQuery->count();
@@ -87,9 +85,9 @@ class DashboardController extends Controller
         // Estimated Cost of Goods Sold (HPP) & Gross Profit Calculation
         $completedOrderIdsQuery = Order::where(function ($q) {
             $q->whereIn('status_pembayaran', ['paid', 'Sudah'])
-              ->orWhere('status_order', 'completed');
+                ->orWhere('status_order', 'completed');
         });
-        if (!$isAdmin) {
+        if (! $isAdmin) {
             $completedOrderIdsQuery->where('id_user', $user->id_user);
         }
         $completedOrderIds = $completedOrderIdsQuery->pluck('id_order');
@@ -152,7 +150,7 @@ class DashboardController extends Controller
             $dayRevenueQuery = Order::whereDate('tanggal', $date->toDateString());
             $dayOrdersQuery = Order::whereDate('tanggal', $date->toDateString());
 
-            if (!$isAdmin) {
+            if (! $isAdmin) {
                 $dayRevenueQuery->where('id_user', $user->id_user);
                 $dayOrdersQuery->where('id_user', $user->id_user);
             }
@@ -168,7 +166,7 @@ class DashboardController extends Controller
         $paymentMethodsQuery = Order::select('payment_method', DB::raw('count(*) as count'), DB::raw('sum(total_harga) as total'))
             ->groupBy('payment_method');
 
-        if (!$isAdmin) {
+        if (! $isAdmin) {
             $paymentMethodsQuery->where('id_user', $user->id_user);
         }
         $paymentMethods = $paymentMethodsQuery->get();
@@ -192,7 +190,7 @@ class DashboardController extends Controller
 
         $serviceTypesQuery = Order::select('service_type', DB::raw('count(*) as count'))
             ->groupBy('service_type');
-        if (!$isAdmin) {
+        if (! $isAdmin) {
             $serviceTypesQuery->where('id_user', $user->id_user);
         }
         $serviceTypes = $serviceTypesQuery->get();
@@ -213,7 +211,7 @@ class DashboardController extends Controller
             ->orderByDesc('total_sold')
             ->limit(5);
 
-        if (!$isAdmin) {
+        if (! $isAdmin) {
             $topSoldQuery->where('orders.id_user', $user->id_user);
         }
         $topSold = $topSoldQuery->get();
@@ -250,7 +248,7 @@ class DashboardController extends Controller
         $recentOrdersQuery = Order::with('user')
             ->latest('tanggal')
             ->limit(5);
-        if (!$isAdmin) {
+        if (! $isAdmin) {
             $recentOrdersQuery->where('id_user', $user->id_user);
         }
         $recentOrders = $recentOrdersQuery->get();

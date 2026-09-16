@@ -10,14 +10,14 @@ class CustomerMiddleware
 {
     public function handle(Request $request, Closure $next)
     {
-        if (!Auth::check()) {
+        if (! Auth::check()) {
             return redirect('/');
         }
 
         $user = Auth::user();
 
-        // customer role (id_role 4) or guest customer
-        if (($user->id_role == 4 && !$user->is_guest) || $user->is_guest) {
+        // Customer role, guest, or any non-admin/non-staff user
+        if ($user->isCustomer() || $user->isGuest() || strtolower($user->role?->role_name ?? '') === 'customer' || strtolower($user->role?->role_name ?? '') === 'guest' || (! $user->isAdmin() && ! $user->isStaff())) {
             return $next($request);
         }
 

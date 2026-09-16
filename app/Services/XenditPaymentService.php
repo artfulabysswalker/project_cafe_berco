@@ -2,12 +2,12 @@
 
 namespace App\Services;
 
-use Xendit\Configuration;
-use Xendit\Invoice\InvoiceApi;
-use Xendit\Invoice\CreateInvoiceRequest;
 use App\Models\Order;
 use App\Models\Payment;
 use Exception;
+use Xendit\Configuration;
+use Xendit\Invoice\CreateInvoiceRequest;
+use Xendit\Invoice\InvoiceApi;
 
 class XenditPaymentService
 {
@@ -27,12 +27,12 @@ class XenditPaymentService
         try {
             self::init();
 
-            $apiInstance = new InvoiceApi();
-            
+            $apiInstance = new InvoiceApi;
+
             $invoiceData = [
-                'external_id' => 'ORDER-' . $order->id_order . '-' . time(),
+                'external_id' => 'ORDER-'.$order->id_order.'-'.time(),
                 'amount' => (int) $order->total_harga,
-                'description' => $options['description'] ?? 'Order #' . $order->id_order . ' - ' . $order->nama_pelanggan,
+                'description' => $options['description'] ?? 'Order #'.$order->id_order.' - '.$order->nama_pelanggan,
                 'payment_methods' => $options['payment_methods'] ?? self::getPaymentMethods($order->payment_method),
                 'currency' => 'IDR',
             ];
@@ -57,7 +57,7 @@ class XenditPaymentService
 
             return $invoice;
         } catch (Exception $e) {
-            throw new Exception('Failed to create invoice: ' . $e->getMessage());
+            throw new Exception('Failed to create invoice: '.$e->getMessage());
         }
     }
 
@@ -68,11 +68,12 @@ class XenditPaymentService
     {
         try {
             self::init();
-            $apiInstance = new InvoiceApi();
+            $apiInstance = new InvoiceApi;
             $invoice = $apiInstance->getInvoiceById($invoiceId);
+
             return $invoice;
         } catch (Exception $e) {
-            throw new Exception('Failed to get invoice status: ' . $e->getMessage());
+            throw new Exception('Failed to get invoice status: '.$e->getMessage());
         }
     }
 
@@ -84,7 +85,7 @@ class XenditPaymentService
         try {
             $payment = Payment::where('id_order', $order->id_order)->first();
 
-            if (!$payment || !$payment->transaction_id) {
+            if (! $payment || ! $payment->transaction_id) {
                 return [
                     'status' => 'no_payment',
                     'message' => 'No payment record found',
@@ -104,10 +105,10 @@ class XenditPaymentService
                     'status' => $payment->status,
                     'transaction_id' => $payment->transaction_id,
                     'created_at' => $payment->created_at,
-                ]
+                ],
             ];
         } catch (Exception $e) {
-            throw new Exception('Failed to check payment status: ' . $e->getMessage());
+            throw new Exception('Failed to check payment status: '.$e->getMessage());
         }
     }
 
@@ -118,7 +119,7 @@ class XenditPaymentService
     {
         $methods = [];
 
-        if (!$paymentType) {
+        if (! $paymentType) {
             return ['BANK_TRANSFER', 'DEBIT_CARD', 'CREDIT_CARD', 'OVO', 'DANA', 'LINKAJA', 'ASTRAPAY'];
         }
 
@@ -168,10 +169,10 @@ class XenditPaymentService
         try {
             self::init();
 
-            $apiInstance = new InvoiceApi();
-            
+            $apiInstance = new InvoiceApi;
+
             $invoiceData = [
-                'external_id' => 'TEST-' . time() . '-' . rand(1000, 9999),
+                'external_id' => 'TEST-'.time().'-'.rand(1000, 9999),
                 'amount' => (int) $amount,
                 'description' => $description,
                 'payment_methods' => self::getPaymentMethods(),
@@ -179,9 +180,10 @@ class XenditPaymentService
             ];
 
             $createInvoiceRequest = new CreateInvoiceRequest($invoiceData);
+
             return $apiInstance->createInvoice($createInvoiceRequest);
         } catch (Exception $e) {
-            throw new Exception('Failed to create test invoice: ' . $e->getMessage());
+            throw new Exception('Failed to create test invoice: '.$e->getMessage());
         }
     }
 
@@ -192,7 +194,7 @@ class XenditPaymentService
     {
         try {
             $externalId = $webhookData['external_id'] ?? null;
-            if (!$externalId) {
+            if (! $externalId) {
                 throw new Exception('Invalid webhook data: external_id missing');
             }
 
@@ -205,13 +207,13 @@ class XenditPaymentService
             $orderId = $parts[1];
             $order = Order::where('id_order', $orderId)->first();
 
-            if (!$order) {
-                throw new Exception('Order not found: ' . $orderId);
+            if (! $order) {
+                throw new Exception('Order not found: '.$orderId);
             }
 
             $payment = Payment::where('id_order', $order->id_order)->first();
-            if (!$payment) {
-                throw new Exception('Payment record not found for order: ' . $orderId);
+            if (! $payment) {
+                throw new Exception('Payment record not found for order: '.$orderId);
             }
 
             $status = $webhookData['status'] ?? null;
@@ -255,7 +257,7 @@ class XenditPaymentService
                 'order_status' => $order->status_pembayaran,
             ];
         } catch (Exception $e) {
-            throw new Exception('Failed to update payment: ' . $e->getMessage());
+            throw new Exception('Failed to update payment: '.$e->getMessage());
         }
     }
 }

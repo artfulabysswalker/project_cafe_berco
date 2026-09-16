@@ -1,17 +1,22 @@
 <?php
-require __DIR__ . '/../vendor/autoload.php';
-$app = require __DIR__ . '/../bootstrap/app.php';
-$kernel = $app->make(Illuminate\Contracts\Console\Kernel::class);
+
+require __DIR__.'/../vendor/autoload.php';
+$app = require __DIR__.'/../bootstrap/app.php';
+$kernel = $app->make(Kernel::class);
 $kernel->bootstrap();
 
-use Illuminate\Support\Facades\Schema;
-use Illuminate\Support\Facades\DB;
-use App\Models\User;
 use App\Models\Menu;
+use App\Models\User;
+use Illuminate\Contracts\Console\Kernel;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 $results = [];
 $user = User::first();
-if (!$user) { echo "No user available for feature tests.\n"; exit(1); }
+if (! $user) {
+    echo "No user available for feature tests.\n";
+    exit(1);
+}
 
 // Reviews
 if (Schema::hasTable('reviews')) {
@@ -27,8 +32,12 @@ if (Schema::hasTable('reviews')) {
         ]);
         DB::table('reviews')->where('id', $reviewId)->delete();
         $results['reviews'] = 'ok';
-    } catch (\Exception $e) { $results['reviews'] = 'error: '.$e->getMessage(); }
-} else { $results['reviews'] = 'missing'; }
+    } catch (Exception $e) {
+        $results['reviews'] = 'error: '.$e->getMessage();
+    }
+} else {
+    $results['reviews'] = 'missing';
+}
 
 // Vouchers
 if (Schema::hasTable('vouchers')) {
@@ -51,8 +60,12 @@ if (Schema::hasTable('vouchers')) {
         DB::table('user_vouchers')->where('id', $uid)->delete();
         DB::table('vouchers')->where('id', $vid)->delete();
         $results['vouchers'] = 'ok';
-    } catch (\Exception $e) { $results['vouchers'] = 'error: '.$e->getMessage(); }
-} else { $results['vouchers'] = 'missing'; }
+    } catch (Exception $e) {
+        $results['vouchers'] = 'error: '.$e->getMessage();
+    }
+} else {
+    $results['vouchers'] = 'missing';
+}
 
 // Referrals
 if (Schema::hasTable('referrals')) {
@@ -66,8 +79,12 @@ if (Schema::hasTable('referrals')) {
         ]);
         DB::table('referrals')->where('id', $rid)->delete();
         $results['referrals'] = 'ok';
-    } catch (\Exception $e) { $results['referrals'] = 'error: '.$e->getMessage(); }
-} else { $results['referrals'] = 'missing'; }
+    } catch (Exception $e) {
+        $results['referrals'] = 'error: '.$e->getMessage();
+    }
+} else {
+    $results['referrals'] = 'missing';
+}
 
 // Playlists
 if (Schema::hasTable('playlists')) {
@@ -86,11 +103,17 @@ if (Schema::hasTable('playlists')) {
             'created_at' => now(),
             'updated_at' => now(),
         ]) : null;
-        if ($vid) DB::table('playlist_votes')->where('id', $vid)->delete();
+        if ($vid) {
+            DB::table('playlist_votes')->where('id', $vid)->delete();
+        }
         DB::table('playlists')->where('id', $pid)->delete();
         $results['playlists'] = 'ok';
-    } catch (\Exception $e) { $results['playlists'] = 'error: '.$e->getMessage(); }
-} else { $results['playlists'] = 'missing'; }
+    } catch (Exception $e) {
+        $results['playlists'] = 'error: '.$e->getMessage();
+    }
+} else {
+    $results['playlists'] = 'missing';
+}
 
 // Rewards/Redemptions
 if (Schema::hasTable('rewards') && Schema::hasTable('redemptions')) {
@@ -112,8 +135,12 @@ if (Schema::hasTable('rewards') && Schema::hasTable('redemptions')) {
         DB::table('redemptions')->where('id', $did)->delete();
         DB::table('rewards')->where('id', $rid)->delete();
         $results['rewards_redemptions'] = 'ok';
-    } catch (\Exception $e) { $results['rewards_redemptions'] = 'error: '.$e->getMessage(); }
-} else { $results['rewards_redemptions'] = 'missing'; }
+    } catch (Exception $e) {
+        $results['rewards_redemptions'] = 'error: '.$e->getMessage();
+    }
+} else {
+    $results['rewards_redemptions'] = 'missing';
+}
 
 // Report
 foreach ($results as $k => $v) {

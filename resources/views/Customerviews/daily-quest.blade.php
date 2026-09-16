@@ -1,548 +1,629 @@
 @extends('Customerviews.layouts.web')
 
-@section('title', 'Daily Quest - Berco Cafe')
+@section('title', 'Daily Quest & Streak - Berco Cafe')
 
 @section('content')
-<div class="daily-quest-page">
-    <main class="container">
-        <!-- Hero Section -->
-        <section class="quest-hero card-hero">
-            <div class="hero-grid">
-                <div>
-                    <span class="section-label">Daily Quest Center</span>
-                    <h1 class="section-title">Selesaikan quest harian dan raih reward menarik.</h1>
-                    <p class="section-copy">Kumpulkan badge eksklusif, unlock achievement, dan dapatkan poin loyalty setiap kali kamu menyelesaikan tantangan harian di Berco.</p>
-                </div>
-                <div class="hero-summary card-summary">
-                    <span class="summary-label">Poin Hari Ini</span>
-                    <strong class="summary-value">120</strong>
-                    <p class="summary-copy">Poin yang telah kamu kumpulkan hari ini dari berbagai aktivitas.</p>
-                </div>
-            </div>
-        </section>
+<div class="quest-minimal-page">
+    <div class="quest-max-container">
 
-        <!-- Features Section -->
-        <section class="feature-section card-list">
-            <div class="list-header">
-                <div>
-                    <h2>Fitur Daily Quest</h2>
-                    <p>Ikuti tantangan harian dan kumpulkan badge serta poin loyalty setiap kali kamu aktif.</p>
-                </div>
+        {{-- Flash Messages --}}
+        @if(session('success'))
+            <div class="alert-minimal alert-success-min">
+                <i class="fas fa-circle-check"></i> {{ session('success') }}
             </div>
-            <div class="badge-cards">
-                <article class="badge-card badge-gold">
-                    <div class="badge-icon">🏅</div>
-                    <h2>First Sip</h2>
-                    <p>Badge untuk pembelian pertama di Berco.</p>
-                </article>
-                <article class="badge-card badge-fire">
-                    <div class="badge-icon">🔥</div>
-                    <h2>Daily Regular</h2>
-                    <p>Beli menu setiap hari untuk menjaga streak dan naik level.</p>
-                </article>
-                <article class="badge-card badge-star">
-                    <div class="badge-icon">⭐</div>
-                    <h2>Trusted Reviewer</h2>
-                    <p>Tulis review pada menu yang dipesan untuk mendapatkan badge eksklusif.</p>
-                </article>
-            </div>
-        </section>
+        @endif
 
-        <!-- Challenges Section -->
-        <section class="quest-section card-list">
-            <div class="list-header">
-                <div>
-                    <h2>Tantangan Hari Ini</h2>
-                    <p>Pilih tantangan untuk dipenuhi hari ini dan raih lebih banyak reward.</p>
+        @if(isset($errors) && $errors->has('daily'))
+            <div class="alert-minimal alert-warning-min">
+                <i class="fas fa-circle-exclamation"></i> {{ $errors->first('daily') }}
+            </div>
+        @endif
+
+        {{-- 1. COMPACT STREAK & EXP CLAIM BAR --}}
+        @php
+            $hasClaimedToday = auth()->user()->last_daily_claim && auth()->user()->last_daily_claim->isToday();
+            $userExp = auth()->user()->exp ?? 0;
+        @endphp
+
+        <div class="streak-banner-card">
+            <div class="streak-left-info">
+                <div class="streak-icon-box">
+                    <i class="fas fa-fire-flame-curved"></i>
                 </div>
-                <a href="{{ route('menu.index') }}" class="cta-link">Buka Menu Sekarang</a>
+                <div>
+                    <div class="streak-title-row">
+                        <h1 class="streak-title-text">Daily Streak & Loyalty Quest</h1>
+                        <span class="pill-daily-status {{ $hasClaimedToday ? 'claimed' : 'unclaimed' }}">
+                            {{ $hasClaimedToday ? '🟢 Streak Aktif' : '⚡ Klaim Tersedia' }}
+                        </span>
+                    </div>
+                    <p class="streak-sub-text">Check-in setiap hari untuk menjaga streak dan kumpulkan EXP gratis untuk ditukar reward.</p>
+                </div>
             </div>
 
-            <div class="quests-grid">
-                <article class="quest-box quest-highlight">
-                    <div class="quest-meta">
-                        <span class="quest-tag">Target</span>
-                        <span class="quest-progress">80%</span>
+            <div class="streak-claim-action-box">
+                <div class="exp-inline-display">
+                    <span class="exp-lbl">Saldo Anda:</span>
+                    <strong class="exp-val">{{ number_format($userExp) }} EXP</strong>
+                </div>
+
+                @if(!$hasClaimedToday)
+                    <form method="POST" action="{{ route('daily.claim') }}">
+                        @csrf
+                        <button type="submit" class="btn-claim-streak">
+                            <i class="fas fa-gift"></i> Klaim +50 EXP Hari Ini
+                        </button>
+                    </form>
+                @else
+                    <div class="streak-claimed-badge">
+                        <i class="fas fa-check-circle"></i> Sudah Diklaim Hari Ini
                     </div>
-                    <h3>Beli menu senilai Rp100.000</h3>
-                    <p>Lengkapi transaksi dengan total belanja besar untuk unlock badge Big Spender.</p>
-                    <div class="progress-track"><div class="progress-fill" style="width: 80%;"></div></div>
-                </article>
-                <article class="quest-box quest-review">
-                    <div class="quest-meta">
-                        <span class="quest-tag">Review</span>
-                        <span class="quest-progress">40%</span>
-                    </div>
-                    <h3>Review 3 menu favorit</h3>
-                    <p>Tulis ulasan singkat untuk 3 menu yang sudah kamu nikmati.</p>
-                    <div class="progress-track"><div class="progress-fill fill-blue" style="width: 40%;"></div></div>
-                </article>
-                <article class="quest-box quest-coffee">
-                    <div class="quest-meta">
-                        <span class="quest-tag">Kopi</span>
-                        <span class="quest-progress">60%</span>
-                    </div>
-                    <h3>Beli 2 kopi sekaligus</h3>
-                    <p>Dapatkan badge Coffee Duo dengan membeli dua varian kopi dalam satu transaksi.</p>
-                    <div class="progress-track"><div class="progress-fill fill-green" style="width: 60%;"></div></div>
-                </article>
+                @endif
             </div>
-        </section>
-    </main>
+        </div>
+
+        {{-- 2. DAILY QUESTS (MINIMALIST LIST LAYOUT) --}}
+        <div class="quest-section-card">
+            <div class="quest-section-header">
+                <div>
+                    <h2 class="section-heading-text"><i class="fas fa-list-check text-amber"></i> Tantangan Harian (Daily Quest)</h2>
+                    <p class="section-sub-text">Selesaikan quest di bawah ini untuk mendapatkan bonus EXP dan voucher spesial.</p>
+                </div>
+                <a href="{{ route('menu.index') }}" class="btn-goto-menu">
+                    <i class="fas fa-mug-hot"></i> Buka Menu
+                </a>
+            </div>
+
+            <div class="minimal-quest-list">
+                {{-- Quest 1 --}}
+                <div class="quest-list-row">
+                    <div class="quest-row-icon bg-amber-soft">
+                        <i class="fas fa-mug-hot text-amber"></i>
+                    </div>
+                    <div class="quest-row-content">
+                        <div class="quest-row-header">
+                            <h3 class="quest-name">Beli 2 Varian Kopi Hari Ini</h3>
+                            <span class="quest-reward-pill">+50 EXP</span>
+                        </div>
+                        <p class="quest-desc">Pesan minimal 2 cup kopi specialty dalam satu pesanan.</p>
+                        <div class="quest-progress-wrap">
+                            <div class="quest-progress-bar"><div class="quest-progress-fill" style="width: 50%;"></div></div>
+                            <span class="quest-progress-txt">1 / 2 Cup</span>
+                        </div>
+                    </div>
+                    <div class="quest-row-action">
+                        <a href="{{ route('menu.index') }}" class="btn-quest-action">Pesan</a>
+                    </div>
+                </div>
+
+                {{-- Quest 2 --}}
+                <div class="quest-list-row">
+                    <div class="quest-row-icon bg-blue-soft">
+                        <i class="fas fa-pen-to-square text-blue"></i>
+                    </div>
+                    <div class="quest-row-content">
+                        <div class="quest-row-header">
+                            <h3 class="quest-name">Beri Ulasan Menu Favorit</h3>
+                            <span class="quest-reward-pill">+30 EXP</span>
+                        </div>
+                        <p class="quest-desc">Bagikan pengalaman dan ulasan Anda pada menu yang telah dinikmati.</p>
+                        <div class="quest-progress-wrap">
+                            <div class="quest-progress-bar"><div class="quest-progress-fill bg-blue" style="width: 0%;"></div></div>
+                            <span class="quest-progress-txt">0 / 1 Ulasan</span>
+                        </div>
+                    </div>
+                    <div class="quest-row-action">
+                        <a href="{{ route('menu.index') }}#menu-review-form" class="btn-quest-action">Review</a>
+                    </div>
+                </div>
+
+                {{-- Quest 3 --}}
+                <div class="quest-list-row">
+                    <div class="quest-row-icon bg-green-soft">
+                        <i class="fas fa-basket-shopping text-green"></i>
+                    </div>
+                    <div class="quest-row-content">
+                        <div class="quest-row-header">
+                            <h3 class="quest-name">Belanja Minimal Rp 50.000</h3>
+                            <span class="quest-reward-pill">+100 EXP</span>
+                        </div>
+                        <p class="quest-desc">Lengkapi pesanan Anda dan raih bonus loyalitas poin besar.</p>
+                        <div class="quest-progress-wrap">
+                            <div class="quest-progress-bar"><div class="quest-progress-fill bg-green" style="width: 70%;"></div></div>
+                            <span class="quest-progress-txt">Rp 35.000 / Rp 50.000</span>
+                        </div>
+                    </div>
+                    <div class="quest-row-action">
+                        <a href="{{ route('menu.index') }}" class="btn-quest-action">Pesan</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {{-- 3. BADGES & ACHIEVEMENTS (COMPACT LIST) --}}
+        <div class="quest-section-card">
+            <div class="quest-section-header">
+                <div>
+                    <h2 class="section-heading-text"><i class="fas fa-medal text-amber"></i> Lencana & Pencapaian (Badges)</h2>
+                    <p class="section-sub-text">Koleksi lencana reputasi kamu sebagai pelanggan setia Berco Cafe.</p>
+                </div>
+                <a href="{{ route('redeem.index') }}" class="btn-goto-menu">
+                    <i class="fas fa-gift"></i> Tukar Hadiah
+                </a>
+            </div>
+
+            <div class="compact-badges-grid">
+                <div class="compact-badge-item unlocked">
+                    <div class="badge-mini-icon">☕</div>
+                    <div class="badge-mini-info">
+                        <strong class="badge-mini-title">First Sip</strong>
+                        <p class="badge-mini-desc">Pesanan pertama berhasil dibuat.</p>
+                        <span class="badge-mini-status"><i class="fas fa-check"></i> Terbuka</span>
+                    </div>
+                </div>
+
+                <div class="compact-badge-item unlocked">
+                    <div class="badge-mini-icon">🔥</div>
+                    <div class="badge-mini-info">
+                        <strong class="badge-mini-title">Daily Regular</strong>
+                        <p class="badge-mini-desc">Aktif check-in 3 hari berturut-turut.</p>
+                        <span class="badge-mini-status"><i class="fas fa-check"></i> Terbuka</span>
+                    </div>
+                </div>
+
+                <div class="compact-badge-item locked">
+                    <div class="badge-mini-icon">⭐</div>
+                    <div class="badge-mini-info">
+                        <strong class="badge-mini-title">Top Reviewer</strong>
+                        <p class="badge-mini-desc">Tulis 5 ulasan menu Berco Cafe.</p>
+                        <span class="badge-mini-status locked"><i class="fas fa-lock"></i> Terkunci</span>
+                    </div>
+                </div>
+
+                <div class="compact-badge-item locked">
+                    <div class="badge-mini-icon">👑</div>
+                    <div class="badge-mini-info">
+                        <strong class="badge-mini-title">Berco VIP</strong>
+                        <p class="badge-mini-desc">Kumpulkan total 1.000 EXP poin.</p>
+                        <span class="badge-mini-status locked"><i class="fas fa-lock"></i> Terkunci</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
 </div>
 
 <style>
-    /* ===== BASE LAYOUT ===== */
-    .daily-quest-page {
-        padding: 40px 0;
-        animation: fadeInUp 0.8s ease-out;
+    .quest-minimal-page {
+        min-height: 100vh;
+        background-color: var(--cream-bg);
+        padding: 30px 20px 80px;
     }
 
-    @keyframes fadeInUp {
-        from {
-            opacity: 0;
-            transform: translateY(30px);
-        }
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
-    }
-
-    .container {
-        max-width: 1100px;
+    .quest-max-container {
+        max-width: 1000px;
         margin: 0 auto;
-        padding: 0 20px;
-    }
-
-    /* ===== HERO SECTION ===== */
-    .card-hero {
-        border-radius: 30px;
-        padding: 48px;
-        background: linear-gradient(135deg, #fef3e8 0%, #fee2e2 100%);
-        box-shadow: 0 24px 70px rgba(203, 81, 0, 0.1);
-        margin-bottom: 32px;
-    }
-
-    .hero-grid {
-        display: grid;
-        gap: 48px;
-        grid-template-columns: 1.5fr 1fr;
-        align-items: center;
-    }
-
-    .section-label {
-        display: inline-flex;
-        padding: 10px 18px;
-        border-radius: 999px;
-        background: #fde68a;
-        color: #92400e;
-        font-size: 0.8rem;
-        font-weight: 700;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-        margin-bottom: 12px;
-    }
-
-    .section-title {
-        margin: 0 0 16px 0;
-        font-size: clamp(2rem, 3vw, 3rem);
-        line-height: 1.1;
-        color: #341a0c;
-        font-weight: 700;
-    }
-
-    .section-copy {
-        color: #5b4636;
-        line-height: 1.8;
-        max-width: 640px;
-        margin: 0;
-        font-size: 0.95rem;
-    }
-
-    .card-summary {
-        border-radius: 28px;
-        background: white;
-        padding: 32px;
-        box-shadow: 0 18px 40px rgba(126, 45, 0, 0.08);
-        text-align: center;
-    }
-
-    .summary-label {
-        color: #92400e;
-        text-transform: uppercase;
-        letter-spacing: 0.08em;
-        font-size: 0.85rem;
-        font-weight: 700;
-        display: block;
-        margin-bottom: 12px;
-    }
-
-    .summary-value {
-        margin: 0 0 12px 0;
-        font-size: 4rem;
-        display: block;
-        color: #b45309;
-        font-weight: 700;
-        line-height: 1;
-    }
-
-    .summary-copy {
-        color: #6b7280;
-        line-height: 1.75;
-        margin: 0;
-        font-size: 0.95rem;
-    }
-
-    /* ===== FEATURE SECTION ===== */
-    .feature-section {
-        margin-bottom: 32px;
-    }
-
-    .list-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-        flex-wrap: wrap;
-        gap: 18px;
-        margin-bottom: 28px;
-    }
-
-    .list-header h2 {
-        margin: 0;
-        font-size: 2rem;
-        color: #111827;
-    }
-
-    .list-header p {
-        margin: 0;
-        color: #6b7280;
-        max-width: 560px;
-    }
-
-    .cta-link {
-        color: #ffffff;
-        background: linear-gradient(135deg, #bf4f08 0%, #d97706 100%);
-        padding: 14px 22px;
-        border-radius: 999px;
-        text-decoration: none;
-        font-weight: 700;
-        transition: all 0.3s ease;
-        position: relative;
-        overflow: hidden;
-        box-shadow: 0 4px 15px rgba(191, 79, 8, 0.3);
-        display: inline-block;
-    }
-
-    .cta-link::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: -100%;
-        width: 100%;
-        height: 100%;
-        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
-        transition: left 0.5s ease;
-    }
-
-    .cta-link:hover::before {
-        left: 100%;
-    }
-
-    .cta-link:hover {
-        background: linear-gradient(135deg, #9a3412 0%, #b45309 100%);
-        transform: translateY(-2px);
-        box-shadow: 0 8px 25px rgba(191, 79, 8, 0.4);
-    }
-
-    /* ===== BADGE CARDS ===== */
-    .badge-cards {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-        gap: 24px;
-        margin-bottom: 32px;
-    }
-
-    .badge-card {
-        border-radius: 24px;
-        padding: 28px;
-        min-height: 240px;
         display: flex;
         flex-direction: column;
-        justify-content: flex-start;
-        gap: 18px;
-        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-        position: relative;
-        overflow: hidden;
-        box-shadow: 0 8px 20px rgba(112, 84, 52, 0.08);
-        border: 1px solid rgba(255, 255, 255, 0.6);
+        gap: 24px;
     }
 
-    .badge-card::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%);
-        opacity: 0;
-        transition: opacity 0.3s ease;
-        pointer-events: none;
+    .alert-minimal {
+        padding: 12px 18px;
+        border-radius: 14px;
+        font-size: 13.5px;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        gap: 10px;
     }
 
-    .badge-card:hover {
-        transform: translateY(-8px);
-        box-shadow: 0 16px 32px rgba(112, 84, 52, 0.15);
+    .alert-success-min {
+        background: #ecfdf5;
+        border: 1px solid #a7f3d0;
+        color: #065f46;
     }
 
-    .badge-card:hover::before {
-        opacity: 1;
-    }
-
-    .badge-icon {
-        width: 62px;
-        height: 62px;
-        border-radius: 22px;
-        display: grid;
-        place-items: center;
-        font-size: 1.75rem;
-        background: rgba(255, 255, 255, 0.8);
-        transition: all 0.3s ease;
-        position: relative;
-        z-index: 2;
-    }
-
-    .badge-card:hover .badge-icon {
-        transform: scale(1.1) rotate(5deg);
-        background: rgba(255, 255, 255, 0.95);
-        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
-    }
-
-    .badge-card h2 {
-        margin: 0;
-        font-size: 1.4rem;
-        color: #111827;
-        position: relative;
-        z-index: 1;
-    }
-
-    .badge-card p {
-        margin: 0;
-        font-size: 0.95rem;
-        color: #4b5563;
-        line-height: 1.75;
-        position: relative;
-        z-index: 1;
-    }
-
-    .badge-gold {
-        background: #fff7ed;
-        border: 1px solid #fed7aa;
-    }
-
-    .badge-fire {
+    .alert-warning-min {
         background: #fffbeb;
         border: 1px solid #fde68a;
+        color: #92400e;
     }
 
-    .badge-star {
-        background: #eff6ff;
-        border: 1px solid #bfdbfe;
-    }
-
-    /* ===== QUEST GRID ===== */
-    .quest-section {
-        margin-bottom: 32px;
-    }
-
-    .quests-grid {
-        display: grid;
-        gap: 20px;
-        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    }
-
-    .quest-box {
-        border-radius: 24px;
-        padding: 26px;
-        background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-        border: 1px solid #e5e7eb;
-        display: flex;
-        flex-direction: column;
-        gap: 18px;
-        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-        position: relative;
-        overflow: hidden;
-        cursor: pointer;
-    }
-
-    .quest-box::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: -100%;
-        width: 100%;
-        height: 100%;
-        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
-        transition: left 0.6s ease;
-    }
-
-    .quest-box:hover::before {
-        left: 100%;
-    }
-
-    .quest-box:hover {
-        transform: translateY(-4px);
-        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.1);
-        border-color: #d1d5db;
-    }
-
-    .quest-meta {
+    /* 1. STREAK BANNER CARD */
+    .streak-banner-card {
+        background: linear-gradient(135deg, #1C1008 0%, #2E190E 100%);
+        border: 1px solid rgba(212, 117, 44, 0.25);
+        border-radius: 20px;
+        padding: 26px 30px;
         display: flex;
         justify-content: space-between;
         align-items: center;
-        gap: 12px;
+        gap: 24px;
+        color: #FFFFFF;
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
         flex-wrap: wrap;
     }
 
-    .quest-tag {
-        padding: 8px 14px;
-        border-radius: 999px;
-        background: #fef3c7;
-        color: #92400e;
-        font-size: 0.85rem;
-        font-weight: 700;
+    .streak-left-info {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        flex: 1 1 380px;
     }
 
-    .quest-progress {
-        font-size: 0.95rem;
-        font-weight: 700;
-        color: #111827;
+    .streak-icon-box {
+        width: 52px;
+        height: 52px;
+        border-radius: 14px;
+        background: rgba(245, 158, 11, 0.18);
+        border: 1px solid rgba(245, 158, 11, 0.35);
+        color: #F59E0B;
+        font-size: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
     }
 
-    .quest-box h3 {
+    .streak-title-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin-bottom: 4px;
+    }
+
+    .streak-title-text {
+        font-family: 'Playfair Display', serif;
+        font-size: 22px;
+        font-weight: 800;
+        color: #FFFFFF;
         margin: 0;
-        font-size: 1.25rem;
-        line-height: 1.4;
-        color: #111827;
     }
 
-    .quest-box p {
-        margin: 0;
-        color: #4b5563;
-        line-height: 1.75;
-    }
-
-    /* ===== PROGRESS BAR ===== */
-    .progress-track {
-        height: 9px;
+    .pill-daily-status {
+        font-size: 11px;
+        font-weight: 800;
+        padding: 3px 10px;
         border-radius: 999px;
-        background: #e2e8f0;
+    }
+
+    .pill-daily-status.claimed {
+        background: rgba(34, 197, 94, 0.2);
+        color: #4ADE80;
+        border: 1px solid rgba(34, 197, 94, 0.4);
+    }
+
+    .pill-daily-status.unclaimed {
+        background: rgba(245, 158, 11, 0.2);
+        color: #FBBF24;
+        border: 1px solid rgba(245, 158, 11, 0.4);
+    }
+
+    .streak-sub-text {
+        font-size: 13px;
+        color: #D6C2B0;
+        margin: 0;
+        line-height: 1.45;
+    }
+
+    .streak-claim-action-box {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 8px;
+        flex-shrink: 0;
+    }
+
+    .exp-inline-display {
+        font-size: 12.5px;
+        color: #A89280;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .exp-inline-display strong {
+        color: #F59E0B;
+        font-size: 16px;
+    }
+
+    .btn-claim-streak {
+        background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%);
+        color: #FFFFFF;
+        border: none;
+        padding: 10px 22px;
+        border-radius: 12px;
+        font-size: 13px;
+        font-weight: 800;
+        font-family: inherit;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        box-shadow: 0 4px 16px rgba(245, 158, 11, 0.35);
+        transition: transform 0.2s ease;
+    }
+
+    .btn-claim-streak:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 6px 20px rgba(245, 158, 11, 0.45);
+    }
+
+    .streak-claimed-badge {
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        color: #E2D3C5;
+        padding: 8px 16px;
+        border-radius: 10px;
+        font-size: 12.5px;
+        font-weight: 700;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    /* 2. QUEST SECTION CARD */
+    .quest-section-card {
+        background: #FFFFFF;
+        border: 1px solid rgba(107, 63, 31, 0.1);
+        border-radius: 20px;
+        padding: 24px 28px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+    }
+
+    .quest-section-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        padding-bottom: 14px;
+        border-bottom: 1px solid rgba(107, 63, 31, 0.08);
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+
+    .section-heading-text {
+        font-size: 18px;
+        font-weight: 800;
+        color: var(--text-dark);
+        margin: 0 0 2px 0;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .section-sub-text {
+        font-size: 12.5px;
+        color: var(--text-muted);
+        margin: 0;
+    }
+
+    .btn-goto-menu {
+        background: #FAF4EB;
+        border: 1px solid rgba(212, 117, 44, 0.2);
+        color: var(--primary-dark);
+        padding: 7px 16px;
+        border-radius: 10px;
+        font-size: 12.5px;
+        font-weight: 700;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        transition: all 0.2s ease;
+    }
+
+    .btn-goto-menu:hover {
+        background: var(--primary);
+        color: #FFFFFF;
+    }
+
+    .minimal-quest-list {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    /* Quest List Row */
+    .quest-list-row {
+        background: #FDFBF8;
+        border: 1px solid #EFE6DC;
+        border-radius: 14px;
+        padding: 14px 18px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        transition: all 0.2s ease;
+    }
+
+    .quest-list-row:hover {
+        background: #FFFFFF;
+        border-color: rgba(212, 117, 44, 0.4);
+        box-shadow: 0 4px 16px rgba(107, 63, 31, 0.06);
+    }
+
+    .quest-row-icon {
+        width: 44px;
+        height: 44px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 18px;
+        flex-shrink: 0;
+    }
+
+    .bg-amber-soft { background: #FEF3C7; }
+    .bg-blue-soft { background: #EFF6FF; }
+    .bg-green-soft { background: #DCFCE7; }
+    .text-blue { color: #2563EB; }
+    .text-green { color: #15803D; }
+
+    .quest-row-content {
+        flex: 1 1 300px;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .quest-row-header {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .quest-name {
+        font-size: 14.5px;
+        font-weight: 800;
+        color: var(--text-dark);
+        margin: 0;
+    }
+
+    .quest-reward-pill {
+        background: #FEF3C7;
+        color: #B45309;
+        font-size: 11px;
+        font-weight: 800;
+        padding: 2px 8px;
+        border-radius: 6px;
+    }
+
+    .quest-desc {
+        font-size: 12px;
+        color: var(--text-muted);
+        margin: 0;
+    }
+
+    .quest-progress-wrap {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-top: 4px;
+    }
+
+    .quest-progress-bar {
+        flex: 1;
+        max-width: 200px;
+        height: 6px;
+        background: #E5E7EB;
+        border-radius: 999px;
         overflow: hidden;
-        margin-top: 10px;
-        position: relative;
     }
 
-    .progress-fill {
+    .quest-progress-fill {
         height: 100%;
+        background: var(--primary);
         border-radius: 999px;
-        background: linear-gradient(90deg, #f97316 0%, #ea580c 100%);
-        transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
-        position: relative;
     }
 
-    .progress-fill::after {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
-        animation: shimmer 2s infinite;
+    .quest-progress-fill.bg-blue { background: #2563EB; }
+    .quest-progress-fill.bg-green { background: #15803D; }
+
+    .quest-progress-txt {
+        font-size: 11px;
+        font-weight: 700;
+        color: #64748B;
     }
 
-    @keyframes shimmer {
-        0% { transform: translateX(-100%); }
-        100% { transform: translateX(100%); }
+    .quest-row-action {
+        flex-shrink: 0;
     }
 
-    .fill-blue {
-        background: #3b82f6 !important;
+    .btn-quest-action {
+        background: var(--primary);
+        color: #FFFFFF;
+        padding: 7px 16px;
+        border-radius: 10px;
+        font-size: 12px;
+        font-weight: 800;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        transition: background 0.2s ease;
     }
 
-    .fill-green {
-        background: #22c55e !important;
+    .btn-quest-action:hover {
+        background: #B45309;
+        color: #FFFFFF;
     }
 
-    /* ===== RESPONSIVE ===== */
+    /* 3. COMPACT BADGES GRID */
+    .compact-badges-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 14px;
+    }
+
+    .compact-badge-item {
+        background: #FDFBF8;
+        border: 1px solid #EFE6DC;
+        border-radius: 14px;
+        padding: 14px;
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+    }
+
+    .compact-badge-item.unlocked {
+        border-color: rgba(212, 117, 44, 0.3);
+        background: #FFFDF9;
+    }
+
+    .compact-badge-item.locked {
+        opacity: 0.7;
+    }
+
+    .badge-mini-icon {
+        font-size: 24px;
+        line-height: 1;
+        flex-shrink: 0;
+    }
+
+    .badge-mini-info {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+    }
+
+    .badge-mini-title {
+        font-size: 13.5px;
+        font-weight: 800;
+        color: var(--text-dark);
+    }
+
+    .badge-mini-desc {
+        font-size: 11.5px;
+        color: var(--text-muted);
+        margin: 0;
+        line-height: 1.35;
+    }
+
+    .badge-mini-status {
+        font-size: 10.5px;
+        font-weight: 800;
+        color: #15803D;
+        margin-top: 4px;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+    .badge-mini-status.locked {
+        color: #94A3B8;
+    }
+
     @media (max-width: 900px) {
-        .hero-grid {
-            grid-template-columns: 1fr;
-            gap: 24px;
-        }
-
-        .badge-cards,
-        .quests-grid {
-            grid-template-columns: 1fr;
-        }
-
-        .section-title {
-            font-size: 2rem;
-        }
-
-        .list-header h2 {
-            font-size: 1.75rem;
-        }
+        .compact-badges-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     }
 
-    @media (max-width: 768px) {
-        .daily-quest-page {
-            padding: 20px 0;
-        }
-
-        .container {
-            padding: 0 15px;
-        }
-
-        .card-hero {
-            padding: 24px;
-            margin-bottom: 24px;
-        }
-
-        .hero-grid {
-            gap: 20px;
-        }
-
-        .section-title {
-            font-size: 1.75rem;
-        }
-
-        .section-copy {
-            font-size: 0.9rem;
-        }
-
-        .card-summary {
-            padding: 20px;
-        }
-
-        .summary-value {
-            font-size: 3rem;
-        }
-
-        .list-header {
-            flex-direction: column;
-            align-items: flex-start;
-        }
-
-        .cta-link {
-            width: 100%;
-            text-align: center;
-        }
-
-        .badge-card {
-            min-height: 200px;
-            padding: 20px;
-        }
+    @media (max-width: 600px) {
+        .streak-banner-card { padding: 18px; }
+        .streak-claim-action-box { align-items: flex-start; width: 100%; }
+        .compact-badges-grid { grid-template-columns: 1fr; }
+        .quest-list-row { flex-wrap: wrap; }
     }
 </style>
+@endsection

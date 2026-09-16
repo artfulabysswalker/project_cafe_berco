@@ -27,7 +27,7 @@ return new class extends Migration
                 'welcome',
                 'comeback',
                 'promotion',
-                'referral'
+                'referral',
             ]);
 
             $table->boolean('is_active')->default(true);

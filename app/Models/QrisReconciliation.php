@@ -7,7 +7,9 @@ use Illuminate\Database\Eloquent\Model;
 class QrisReconciliation extends Model
 {
     protected $table = 'qris_reconciliations';
+
     protected $primaryKey = 'id_reconciliation';
+
     public $timestamps = true;
 
     protected $fillable = [

@@ -32,32 +32,52 @@ class CartController extends Controller
      */
     public function add(Request $request)
     {
+        $productId = $request->input('product_id') ?? $request->input('menu_id') ?? $request->input('id');
+
+        $request->merge(['product_id' => $productId]);
+
         $request->validate([
             'product_id' => 'required|exists:menus,id_menu',
-            'quantity' => 'required|integer|min:1',
+            'quantity' => 'nullable|integer|min:1',
         ]);
 
+        $quantity = (int) ($request->input('quantity') ?? 1);
         $user = auth()->user();
 
+        if (! $user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Sesi belanja belum aktif. Silakan muat ulang halaman.',
+            ], 401);
+        }
+
+        $menu = Menu::where('id_menu', $productId)->firstOrFail();
+
         $cartItem = $user->cartItems()
-            ->where('menu_id', $request->product_id)
+            ->where('menu_id', $productId)
             ->first();
 
         if ($cartItem) {
-            $cartItem->quantity += $request->quantity;
+            $cartItem->quantity += $quantity;
             $cartItem->save();
         } else {
             CartItem::create([
-                'user_id' => $user->id_user,
-                'menu_id' => $request->product_id,
-                'quantity' => $request->quantity,
+                'user_id' => $user->id_user ?? $user->id,
+                'menu_id' => $productId,
+                'quantity' => $quantity,
             ]);
         }
 
+        $totalCount = (int) $user->cartItems()->sum('quantity');
+
         return response()->json([
             'success' => true,
-            'message' => 'Produk ditambahkan ke keranjang',
-            'cart_count' => $user->cartItems()->sum('quantity'),
+            'status' => 'success',
+            'message' => 'Menu "'.$menu->nama_menu.'" berhasil ditambahkan ke keranjang!',
+            'product_name' => $menu->nama_menu,
+            'product_price' => $menu->harga,
+            'cart_count' => $totalCount,
+            'count' => $totalCount,
         ]);
     }
 
@@ -70,15 +90,15 @@ class CartController extends Controller
         if ($request->has('action')) {
             $action = $request->input('action');
             $newQuantity = $cartItem->quantity;
-            
+
             if ($action === 'increase') {
                 $newQuantity++;
             } elseif ($action === 'decrease' && $newQuantity > 1) {
                 $newQuantity--;
             }
-            
+
             $cartItem->update([
-                'quantity' => $newQuantity
+                'quantity' => $newQuantity,
             ]);
         } else {
             // Handle JSON request with quantity parameter
@@ -87,7 +107,7 @@ class CartController extends Controller
             ]);
 
             $cartItem->update([
-                'quantity' => $request->quantity
+                'quantity' => $request->quantity,
             ]);
         }
 
@@ -134,7 +154,7 @@ class CartController extends Controller
             ->sum('quantity');
 
         return response()->json([
-            'count' => $count
+            'count' => $count,
         ]);
     }
 }

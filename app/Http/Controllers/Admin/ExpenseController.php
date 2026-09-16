@@ -5,9 +5,9 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Expense;
 use App\Models\User;
-use Illuminate\Http\Request;
-use Carbon\Carbon;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Carbon\Carbon;
+use Illuminate\Http\Request;
 
 class ExpenseController extends Controller
 {
@@ -24,7 +24,7 @@ class ExpenseController extends Controller
         })->get()->unique('name');
 
         $staffId = $request->query('staff_id');
-        if (!$isAdmin && !$staffId) {
+        if (! $isAdmin && ! $staffId) {
             $staffId = $currentUser ? $currentUser->id_user : 'all';
         }
         $staffId = $staffId ?: 'all';
@@ -139,7 +139,7 @@ class ExpenseController extends Controller
         $desc = $expense->deskripsi;
         $expense->delete();
 
-        return redirect()->route('admin.expenses.index')->with('success', 'Pengeluaran "' . $desc . '" berhasil dihapus!');
+        return redirect()->route('admin.expenses.index')->with('success', 'Pengeluaran "'.$desc.'" berhasil dihapus!');
     }
 
     /**
@@ -194,7 +194,7 @@ class ExpenseController extends Controller
         ]);
 
         $pdf->setPaper('A4', 'portrait');
-        $fileName = 'Laporan_Pengeluaran_' . date('Ymd') . '.pdf';
+        $fileName = 'Laporan_Pengeluaran_'.date('Ymd').'.pdf';
 
         return $pdf->download($fileName);
     }
@@ -204,7 +204,8 @@ class ExpenseController extends Controller
         if ($range === 'custom' && $customStart && $customEnd) {
             $start = Carbon::parse($customStart)->startOfDay();
             $end = Carbon::parse($customEnd)->endOfDay();
-            $label = $start->format('d/m/Y') . ' - ' . $end->format('d/m/Y');
+            $label = $start->format('d/m/Y').' - '.$end->format('d/m/Y');
+
             return [$start, $end, $label];
         }
 
@@ -212,22 +213,22 @@ class ExpenseController extends Controller
             case 'today':
                 $start = Carbon::today()->startOfDay();
                 $end = Carbon::today()->endOfDay();
-                $label = 'Hari Ini (' . $start->format('d/m/Y') . ')';
+                $label = 'Hari Ini ('.$start->format('d/m/Y').')';
                 break;
             case 'yesterday':
                 $start = Carbon::yesterday()->startOfDay();
                 $end = Carbon::yesterday()->endOfDay();
-                $label = 'Kemarin (' . $start->format('d/m/Y') . ')';
+                $label = 'Kemarin ('.$start->format('d/m/Y').')';
                 break;
             case 'week':
                 $start = Carbon::now()->startOfWeek();
                 $end = Carbon::now()->endOfWeek();
-                $label = 'Minggu Ini (' . $start->format('d/m/Y') . ' - ' . $end->format('d/m/Y') . ')';
+                $label = 'Minggu Ini ('.$start->format('d/m/Y').' - '.$end->format('d/m/Y').')';
                 break;
             case 'month':
                 $start = Carbon::now()->startOfMonth();
                 $end = Carbon::now()->endOfMonth();
-                $label = 'Bulan Ini (' . $start->locale('id')->isoFormat('MMMM Y') . ')';
+                $label = 'Bulan Ini ('.$start->locale('id')->isoFormat('MMMM Y').')';
                 break;
             case 'all':
             default:

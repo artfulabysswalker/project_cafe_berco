@@ -3,13 +3,14 @@
 namespace App\Services;
 
 use App\Models\Order;
-use App\Models\QrisTransaction;
 use App\Models\QrisReconciliation;
+use App\Models\QrisTransaction;
+use App\Notifications\PaymentConfirmationNotification;
 use Exception;
 use Xendit\Configuration;
-use Xendit\Invoice\InvoiceApi;
 use Xendit\Invoice\CreateInvoiceRequest;
 use Xendit\Invoice\CustomerObject;
+use Xendit\Invoice\InvoiceApi;
 use Xendit\Invoice\InvoiceItem;
 
 class QrisPaymentService
@@ -19,7 +20,7 @@ class QrisPaymentService
     public function __construct()
     {
         Configuration::setXenditKey(config('services.xendit.secret_key'));
-        $this->invoiceApi = new InvoiceApi();
+        $this->invoiceApi = new InvoiceApi;
     }
 
     /**
@@ -40,9 +41,9 @@ class QrisPaymentService
 
             // Create invoice request - QRIS only
             $createInvoiceRequest = new CreateInvoiceRequest([
-                'external_id' => 'QRIS-ORDER-' . $order->id_order . '-' . time(),
+                'external_id' => 'QRIS-ORDER-'.$order->id_order.'-'.time(),
                 'amount' => (int) $order->total_harga,
-                'description' => 'Order #' . $order->id_order . ' - ' . $order->nama_pelanggan,
+                'description' => 'Order #'.$order->id_order.' - '.$order->nama_pelanggan,
                 'customer' => $customer,
                 'items' => $items,
                 'due_date' => now()->addMinutes(30)->toIso8601String(),
@@ -56,8 +57,8 @@ class QrisPaymentService
             $invoice = $this->invoiceApi->createInvoice($createInvoiceRequest);
 
             \Log::info('Xendit Invoice API Response', [
-                'invoice_keys' => array_keys((array)$invoice),
-                'full_response' => (array)$invoice,
+                'invoice_keys' => array_keys((array) $invoice),
+                'full_response' => (array) $invoice,
             ]);
 
             // Create QRIS transaction record
@@ -123,20 +124,15 @@ class QrisPaymentService
             $items[] = $invoiceItem;
         }
 
-        // Add tax as item
-        $subtotal = $order->orderItems->sum(function ($item) {
-            return $item->menu->harga * $item->quantity;
-        });
-        $tax = $subtotal * 0.1;
-
-        if ($tax > 0) {
-            $taxItem = new InvoiceItem([
-                'name' => 'PPN 10%',
+        // Add service charge item for take-away if present
+        if ($order->service_charge > 0) {
+            $serviceChargeItem = new InvoiceItem([
+                'name' => 'Biaya Take-Away',
                 'quantity' => 1,
-                'price' => (int) $tax,
-                'category' => 'tax',
+                'price' => (int) $order->service_charge,
+                'category' => 'service_charge',
             ]);
-            $items[] = $taxItem;
+            $items[] = $serviceChargeItem;
         }
 
         return $items;
@@ -148,12 +144,12 @@ class QrisPaymentService
     public function processCallback(array $data): array
     {
         try {
-            if (!isset($data['external_id'])) {
+            if (! isset($data['external_id'])) {
                 throw new Exception('Invalid callback data: missing external_id');
             }
 
             $externalId = $data['external_id'];
-            
+
             // Extract order ID from external_id (format: QRIS-ORDER-{id}-{timestamp})
             $parts = explode('-', $externalId);
             if (count($parts) < 3) {
@@ -163,13 +159,13 @@ class QrisPaymentService
             $orderId = $parts[2];
             $order = Order::where('id_order', $orderId)->first();
 
-            if (!$order) {
+            if (! $order) {
                 throw new Exception("Order #$orderId not found");
             }
 
             $qrisTransaction = QrisTransaction::where('id_order', $orderId)->first();
 
-            if (!$qrisTransaction) {
+            if (! $qrisTransaction) {
                 throw new Exception("QRIS transaction for order #$orderId not found");
             }
 
@@ -220,7 +216,7 @@ class QrisPaymentService
     {
         $reconciliation = $transaction->reconciliation;
 
-        if (!$reconciliation) {
+        if (! $reconciliation) {
             return;
         }
 
@@ -248,7 +244,7 @@ class QrisPaymentService
     {
         try {
             if ($order->user) {
-                $order->user->notify(new \App\Notifications\PaymentConfirmationNotification($order, $transaction));
+                $order->user->notify(new PaymentConfirmationNotification($order, $transaction));
             }
         } catch (Exception $e) {
             \Log::warning('Failed to send payment notification', [
@@ -266,7 +262,7 @@ class QrisPaymentService
         try {
             $qrisTransaction = QrisTransaction::where('id_order', $order->id_order)->first();
 
-            if (!$qrisTransaction) {
+            if (! $qrisTransaction) {
                 return [
                     'success' => false,
                     'message' => 'QRIS transaction not found',
@@ -294,7 +290,7 @@ class QrisPaymentService
 
             return [
                 'success' => false,
-                'message' => 'Error checking status: ' . $e->getMessage(),
+                'message' => 'Error checking status: '.$e->getMessage(),
             ];
         }
     }

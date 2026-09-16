@@ -12,6 +12,7 @@ class AdminProductController extends Controller
     public function index()
     {
         $products = Product::latest()->paginate(10);
+
         return view('admin.products.index', compact('products'));
     }
 
@@ -57,12 +58,14 @@ class AdminProductController extends Controller
         ]);
 
         $product->update($validated);
+
         return back()->with('success', 'Menu berhasil diperbarui.');
     }
 
     public function destroy(Product $product)
     {
         $product->delete();
+
         return back()->with('success', 'Menu berhasil dihapus.');
     }
 }

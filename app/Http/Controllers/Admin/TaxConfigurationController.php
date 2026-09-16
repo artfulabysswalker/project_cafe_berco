@@ -16,7 +16,7 @@ class TaxConfigurationController extends Controller
     {
         $taxConfigs = TaxConfiguration::with('user')->latest()->paginate(10);
         $activeConfig = TaxConfiguration::getActiveConfiguration();
-        
+
         return view('admin.tax.index', compact('taxConfigs', 'activeConfig'));
     }
 
@@ -43,7 +43,7 @@ class TaxConfigurationController extends Controller
         ]);
 
         $validated['id_user'] = Auth::id();
-        
+
         // If setting as active, deactivate others
         if ($validated['is_active'] ?? false) {
             TaxConfiguration::where('is_active', true)->update(['is_active' => false]);
@@ -96,7 +96,7 @@ class TaxConfigurationController extends Controller
     public function destroy(TaxConfiguration $tax)
     {
         $tax->delete();
-        
+
         return redirect()->route('admin.tax.index')
             ->with('success', 'Konfigurasi pajak berhasil dihapus');
     }

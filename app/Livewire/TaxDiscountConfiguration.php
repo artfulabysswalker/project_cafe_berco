@@ -2,32 +2,45 @@
 
 namespace App\Livewire;
 
-use Livewire\Component;
-use App\Models\TaxConfiguration;
 use App\Models\DiscountScheme;
+use App\Models\TaxConfiguration;
 use Illuminate\Support\Facades\Auth;
+use Livewire\Component;
 
 class TaxDiscountConfiguration extends Component
 {
     public $mode = 'view'; // view, edit_tax, edit_discount
-    
+
     // Tax Configuration
     public $taxConfigurations = [];
+
     public $activeTaxConfig = null;
+
     public $taxName = '';
+
     public $taxPercentage = '';
+
     public $taxDescription = '';
+
     public $taxId = null;
-    
+
     // Discount Scheme
     public $discountSchemes = [];
+
     public $discountCode = '';
+
     public $discountName = '';
+
     public $discountType = 'percentage';
+
     public $discountValue = '';
+
     public $discountMinPurchase = '';
+
     public $discountMaxDiscount = '';
+
     public $discountMaxUses = '';
+
     public $discountId = null;
 
     public function mount()
@@ -122,7 +135,7 @@ class TaxDiscountConfiguration extends Component
     {
         TaxConfiguration::where('id_user', Auth::id())->update(['is_active' => false]);
         TaxConfiguration::find($taxId)->update(['is_active' => true]);
-        
+
         $this->loadTaxConfigurations();
         $this->dispatch('success', 'Pajak diaktifkan!');
     }

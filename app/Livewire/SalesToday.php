@@ -2,14 +2,16 @@
 
 namespace App\Livewire;
 
-use Livewire\Component;
 use App\Models\Order;
 use Carbon\Carbon;
+use Livewire\Component;
 
 class SalesToday extends Component
 {
     public $date;
+
     public $todaySales = [];
+
     public $purchaseHistory = [];
 
     public function mount()

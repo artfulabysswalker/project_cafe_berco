@@ -14,6 +14,7 @@ class RedeemController extends Controller
     public function index()
     {
         $rewards = Reward::where('available', true)->get();
+
         return view('Customerviews.redeem', compact('rewards'));
     }
 
@@ -21,7 +22,7 @@ class RedeemController extends Controller
     {
         $user = Auth::user();
 
-        if (!$reward->available) {
+        if (! $reward->available) {
             return back()->withErrors(['reward' => 'Voucher tidak tersedia.']);
         }
 
@@ -56,13 +57,14 @@ class RedeemController extends Controller
     public function history()
     {
         $redemptions = Auth::user()->redemptions()->with('reward')->latest()->get();
+
         return view('redeem-history', compact('redemptions'));
     }
 
     public function claimDaily()
     {
         $user = Auth::user();
-        
+
         // Cek apakah user sudah klaim hari ini (menggunakan timestamp)
         if ($user->last_daily_claim && $user->last_daily_claim->isToday()) {
             return back()->withErrors(['daily' => 'Anda sudah mengambil reward hari ini!']);
@@ -82,7 +84,7 @@ class RedeemController extends Controller
             ->where('exp', '>', 0) // Saran: hanya tampilkan yang punya EXP
             ->limit(10)
             ->get(['name', 'exp']);
-            
+
         return view('leaderboard', compact('topUsers'));
     }
 }

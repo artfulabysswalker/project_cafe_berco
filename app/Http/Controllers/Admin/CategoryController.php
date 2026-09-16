@@ -14,6 +14,7 @@ class CategoryController extends Controller
     public function index()
     {
         $categories = Category::withCount('menus')->get();
+
         return view('admin.categories.index', compact('categories'));
     }
 
@@ -41,7 +42,7 @@ class CategoryController extends Controller
             ]);
         }
 
-        return redirect()->back()->with('success', 'Kategori ' . $category->nama_kategori . ' berhasil dibuat!');
+        return redirect()->back()->with('success', 'Kategori '.$category->nama_kategori.' berhasil dibuat!');
     }
 
     /**
@@ -50,9 +51,10 @@ class CategoryController extends Controller
     public function listJson()
     {
         $categories = Category::withCount('menus')->get();
+
         return response()->json([
             'success' => true,
-            'categories' => $categories
+            'categories' => $categories,
         ]);
     }
 
@@ -64,7 +66,7 @@ class CategoryController extends Controller
         $category = Category::findOrFail($id);
 
         $request->validate([
-            'nama_kategori' => 'required|string|max:100|unique:categories,nama_kategori,' . $category->id,
+            'nama_kategori' => 'required|string|max:100|unique:categories,nama_kategori,'.$category->id,
             'icon' => 'nullable|string|max:50',
         ]);
 

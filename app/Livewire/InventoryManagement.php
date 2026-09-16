@@ -2,27 +2,37 @@
 
 namespace App\Livewire;
 
+use App\Models\Inventory;
 use Livewire\Component;
 use Livewire\WithPagination;
-use App\Models\Inventory;
 
 class InventoryManagement extends Component
 {
     use WithPagination;
 
     public $search = '';
+
     public $selectedCategory = 'all';
+
     public $selectedStatus = 'all';
 
     // Form fields for Add / Edit modal
     public $isModalOpen = false;
+
     public $isEditMode = false;
+
     public $inventoryId;
+
     public $item_code;
+
     public $item_name;
+
     public $category = 'Bahan Baku';
+
     public $current_stock = 0;
+
     public $unit = 'Pcs';
+
     public $min_stock = 0;
 
     protected $rules = [
@@ -90,7 +100,7 @@ class InventoryManagement extends Component
                 'unit' => $this->unit,
                 'min_stock' => $this->min_stock,
             ]);
-            session()->flash('message', 'Item ' . $this->item_name . ' berhasil diperbarui!');
+            session()->flash('message', 'Item '.$this->item_name.' berhasil diperbarui!');
         } else {
             Inventory::create([
                 'item_code' => $this->item_code,
@@ -100,7 +110,7 @@ class InventoryManagement extends Component
                 'unit' => $this->unit,
                 'min_stock' => $this->min_stock,
             ]);
-            session()->flash('message', 'Item ' . $this->item_name . ' berhasil ditambahkan!');
+            session()->flash('message', 'Item '.$this->item_name.' berhasil ditambahkan!');
         }
 
         $this->closeModal();
@@ -111,7 +121,7 @@ class InventoryManagement extends Component
         $item = Inventory::findOrFail($id);
         $newStock = max(0, $item->current_stock + $amount);
         $item->update(['current_stock' => $newStock]);
-        session()->flash('message', 'Stok ' . $item->item_name . ' diperbarui: ' . number_format($newStock) . ' ' . $item->unit);
+        session()->flash('message', 'Stok '.$item->item_name.' diperbarui: '.number_format($newStock).' '.$item->unit);
     }
 
     public function deleteItem($id)
@@ -119,18 +129,18 @@ class InventoryManagement extends Component
         $item = Inventory::findOrFail($id);
         $itemName = $item->item_name;
         $item->delete();
-        session()->flash('message', 'Item ' . $itemName . ' berhasil dihapus dari stok!');
+        session()->flash('message', 'Item '.$itemName.' berhasil dihapus dari stok!');
     }
 
     public function render()
     {
         $query = Inventory::query();
 
-        if (!empty($this->search)) {
+        if (! empty($this->search)) {
             $query->where(function ($q) {
-                $q->where('item_code', 'like', '%' . $this->search . '%')
-                  ->orWhere('item_name', 'like', '%' . $this->search . '%')
-                  ->orWhere('category', 'like', '%' . $this->search . '%');
+                $q->where('item_code', 'like', '%'.$this->search.'%')
+                    ->orWhere('item_name', 'like', '%'.$this->search.'%')
+                    ->orWhere('category', 'like', '%'.$this->search.'%');
             });
         }
 

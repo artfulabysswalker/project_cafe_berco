@@ -2,15 +2,13 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Order;
-use App\Models\OrderHistory;
-use App\Models\OrderItem;
 use App\Models\Expense;
-use App\Models\User;
+use App\Models\Order;
 use App\Models\Shift;
-use Illuminate\Http\Request;
-use Carbon\Carbon;
+use App\Models\User;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Carbon\Carbon;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class StatsController extends Controller
@@ -27,13 +25,13 @@ class StatsController extends Controller
         $staffList = User::whereHas('role', function ($q) {
             $q->whereIn('role_name', ['Admin', 'Staff', 'Cashier', 'kasir', 'pegawai']);
         })->orWhereIn('username', ['admin', 'robin', 'nikita', 'dery'])
-          ->with('role')
-          ->get()
-          ->unique('name');
+            ->with('role')
+            ->get()
+            ->unique('name');
 
         // Determine staff filter
         $staffId = $request->query('staff_id');
-        if (!$isAdmin && !$staffId) {
+        if (! $isAdmin && ! $staffId) {
             $staffId = $currentUser ? $currentUser->id_user : 'all';
         }
         $staffId = $staffId ?: 'all';
@@ -91,11 +89,12 @@ class StatsController extends Controller
         $paymentBreakdown = $allOrders->groupBy('payment_method')->map(function ($orders, $method) use ($totalOrdersCount) {
             $totalAmount = $orders->sum('total_harga');
             $count = $orders->count();
+
             return [
                 'method' => strtoupper($method ?: 'CASH'),
                 'count' => $count,
                 'total' => $totalAmount,
-                'percentage' => $totalOrdersCount > 0 ? round(($count / $totalOrdersCount) * 100, 1) : 0
+                'percentage' => $totalOrdersCount > 0 ? round(($count / $totalOrdersCount) * 100, 1) : 0,
             ];
         })->values();
 
@@ -106,14 +105,14 @@ class StatsController extends Controller
             'selectedStaff' => $staffLabel,
             'paymentBreakdown' => $paymentBreakdown,
             'printedAt' => Carbon::now()->locale('id')->isoFormat('D MMMM Y, HH:mm'),
-            'allOrders' => $allOrders->sortByDesc('tanggal')
+            'allOrders' => $allOrders->sortByDesc('tanggal'),
         ]);
 
         $pdf = Pdf::loadView('admin.reports.financial_pdf', $pdfData);
         $pdf->setPaper('A4', 'portrait');
 
         $cleanStaffName = str_replace(' ', '-', $staffLabel);
-        $fileName = 'laporan-penjualan-' . $cleanStaffName . '-' . now()->format('Y-m-d') . '.pdf';
+        $fileName = 'laporan-penjualan-'.$cleanStaffName.'-'.now()->format('Y-m-d').'.pdf';
 
         return $pdf->download($fileName);
     }
@@ -146,11 +145,12 @@ class StatsController extends Controller
         $paymentBreakdown = $allOrders->groupBy('payment_method')->map(function ($orders, $method) use ($totalOrdersCount) {
             $totalAmount = $orders->sum('total_harga');
             $count = $orders->count();
+
             return [
                 'method' => strtoupper($method ?: 'CASH'),
                 'count' => $count,
                 'total' => $totalAmount,
-                'percentage' => $totalOrdersCount > 0 ? round(($count / $totalOrdersCount) * 100, 1) : 0
+                'percentage' => $totalOrdersCount > 0 ? round(($count / $totalOrdersCount) * 100, 1) : 0,
             ];
         })->values();
 
@@ -161,7 +161,7 @@ class StatsController extends Controller
             'selectedStaff' => $staffLabel,
             'paymentBreakdown' => $paymentBreakdown,
             'printedAt' => Carbon::now()->locale('id')->isoFormat('D MMMM Y, HH:mm'),
-            'allOrders' => $allOrders->sortByDesc('tanggal')
+            'allOrders' => $allOrders->sortByDesc('tanggal'),
         ]);
 
         return view('admin.reports.financial_pdf', $printData);
@@ -175,7 +175,8 @@ class StatsController extends Controller
         if ($range === 'custom' && $customStart && $customEnd) {
             $start = Carbon::parse($customStart)->startOfDay();
             $end = Carbon::parse($customEnd)->endOfDay();
-            $label = $start->format('d/m/Y') . ' - ' . $end->format('d/m/Y');
+            $label = $start->format('d/m/Y').' - '.$end->format('d/m/Y');
+
             return [$start, $end, $label];
         }
 
@@ -183,7 +184,7 @@ class StatsController extends Controller
             case 'yesterday':
                 $start = Carbon::yesterday()->startOfDay();
                 $end = Carbon::yesterday()->endOfDay();
-                $label = 'Kemarin (' . $start->format('d/m/Y') . ')';
+                $label = 'Kemarin ('.$start->format('d/m/Y').')';
                 break;
             case 'month':
                 $start = Carbon::now()->startOfMonth();
@@ -193,7 +194,7 @@ class StatsController extends Controller
             default:
                 $start = Carbon::today()->startOfDay();
                 $end = Carbon::today()->endOfDay();
-                $label = 'Hari Ini (' . $start->format('d/m/Y') . ')';
+                $label = 'Hari Ini ('.$start->format('d/m/Y').')';
                 break;
         }
 
@@ -219,8 +220,8 @@ class StatsController extends Controller
 
         $allOrders = $query->orderBy('tanggal', 'asc')->get();
 
-        $cashOrders = $allOrders->filter(fn($o) => in_array(strtolower($o->payment_method), ['cash', 'tunai', '']));
-        $qrisOrders = $allOrders->filter(fn($o) => in_array(strtolower($o->payment_method), ['qris', 'transfer', 'debit', 'credit']));
+        $cashOrders = $allOrders->filter(fn ($o) => in_array(strtolower($o->payment_method), ['cash', 'tunai', '']));
+        $qrisOrders = $allOrders->filter(fn ($o) => in_array(strtolower($o->payment_method), ['qris', 'transfer', 'debit', 'credit']));
 
         $totalCash = $cashOrders->sum('total_harga');
         $totalQris = $qrisOrders->sum('total_harga');
@@ -238,7 +239,9 @@ class StatsController extends Controller
         $marginLabaKotor = ($totalOmzet > 0) ? round(($labaKotor / $totalOmzet) * 100, 1) : 0;
 
         $expenseQuery = Expense::whereBetween('tanggal', [$startDate, $endDate]);
-        if ($staffId !== 'all') $expenseQuery->where('id_user', $staffId);
+        if ($staffId !== 'all') {
+            $expenseQuery->where('id_user', $staffId);
+        }
 
         $expenses = $expenseQuery->orderBy('tanggal', 'asc')->get();
         $totalExpenses = $expenses->sum('nominal');

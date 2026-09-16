@@ -3,9 +3,10 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Category;
 use App\Models\Menu;
-use App\Models\RawMaterial;
 use App\Models\ProductRecipe;
+use App\Models\RawMaterial;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -22,7 +23,7 @@ class HppController extends Controller
         $query = Menu::with(['categoryRelation', 'recipes.rawMaterial'])->latest('id_menu');
 
         if ($request->filled('search')) {
-            $query->where('nama_menu', 'like', '%' . $search . '%');
+            $query->where('nama_menu', 'like', '%'.$search.'%');
         }
 
         if ($request->filled('category') && $categoryFilter !== 'all') {
@@ -31,15 +32,15 @@ class HppController extends Controller
 
         $menus = $query->get();
         $rawMaterials = RawMaterial::latest()->get();
-        $categories = \App\Models\Category::all();
+        $categories = Category::all();
 
         // 1. Metric Calculations
         $totalMenus = $menus->count();
-        $menusWithRecipe = $menus->filter(fn($m) => $m->recipes->count() > 0)->count();
+        $menusWithRecipe = $menus->filter(fn ($m) => $m->recipes->count() > 0)->count();
         $totalRawMaterials = $rawMaterials->count();
-        
-        $avgMarginPct = $totalMenus > 0 
-            ? round($menus->avg(fn($m) => $m->profit_percentage ?? 0), 1) 
+
+        $avgMarginPct = $totalMenus > 0
+            ? round($menus->avg(fn ($m) => $m->profit_percentage ?? 0), 1)
             : 0;
 
         return view('admin.hpp.index', compact(
@@ -115,7 +116,7 @@ class HppController extends Controller
             $totalCalculatedHpp = 0;
             $ingredients = $request->input('ingredients', []);
 
-            if (!empty($ingredients)) {
+            if (! empty($ingredients)) {
                 foreach ($ingredients as $item) {
                     $rawMat = RawMaterial::find($item['raw_material_id']);
                     if ($rawMat) {
@@ -140,20 +141,21 @@ class HppController extends Controller
             if ($request->wantsJson()) {
                 return response()->json([
                     'status' => 'success',
-                    'message' => 'Resep dan HPP untuk "' . $menu->nama_menu . '" berhasil disimpan!',
+                    'message' => 'Resep dan HPP untuk "'.$menu->nama_menu.'" berhasil disimpan!',
                     'new_hpp' => $menu->hpp,
                     'profit_margin' => $menu->profit_margin,
                     'profit_pct' => $menu->profit_percentage,
                 ]);
             }
 
-            return redirect()->route('admin.hpp')->with('success', 'Resep dan kalkulasi HPP untuk "' . $menu->nama_menu . '" berhasil diperbarui!');
+            return redirect()->route('admin.hpp')->with('success', 'Resep dan kalkulasi HPP untuk "'.$menu->nama_menu.'" berhasil diperbarui!');
         } catch (\Exception $e) {
             DB::rollBack();
             if ($request->wantsJson()) {
                 return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500);
             }
-            return redirect()->back()->with('error', 'Gagal menyimpan resep: ' . $e->getMessage());
+
+            return redirect()->back()->with('error', 'Gagal menyimpan resep: '.$e->getMessage());
         }
     }
 
@@ -178,7 +180,7 @@ class HppController extends Controller
             'notes' => $request->notes,
         ]);
 
-        return redirect()->route('admin.hpp')->with('success', 'Bahan baku "' . $request->name . '" berhasil ditambahkan!');
+        return redirect()->route('admin.hpp')->with('success', 'Bahan baku "'.$request->name.'" berhasil ditambahkan!');
     }
 
     /**
@@ -213,7 +215,7 @@ class HppController extends Controller
             }
         }
 
-        return redirect()->route('admin.hpp')->with('success', 'Bahan baku "' . $material->name . '" diperbarui & HPP menu terkait disinkronkan!');
+        return redirect()->route('admin.hpp')->with('success', 'Bahan baku "'.$material->name.'" diperbarui & HPP menu terkait disinkronkan!');
     }
 
     /**
@@ -225,6 +227,6 @@ class HppController extends Controller
         $name = $material->name;
         $material->delete();
 
-        return redirect()->route('admin.hpp')->with('success', 'Bahan baku "' . $name . '" berhasil dihapus!');
+        return redirect()->route('admin.hpp')->with('success', 'Bahan baku "'.$name.'" berhasil dihapus!');
     }
 }

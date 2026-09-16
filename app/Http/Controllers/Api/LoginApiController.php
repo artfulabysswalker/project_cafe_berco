@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use App\Models\User;
 
 class LoginApiController extends Controller
 {
@@ -27,14 +26,14 @@ class LoginApiController extends Controller
                     'id_user' => $user->id_user,
                     'name' => $user->name,
                     'email' => $user->email,
-                    'role' => $role
-                ]
+                    'role' => $role,
+                ],
             ]);
         }
 
         return response()->json([
             'status' => 'error',
-            'message' => 'Invalid email or password'
+            'message' => 'Invalid email or password',
         ], 401);
     }
 }

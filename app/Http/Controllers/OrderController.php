@@ -4,11 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Models\Order;
 use App\Models\OrderItem;
-use App\Models\OrderHistory;
 use App\Models\Payment;
-use App\Services\QrisPaymentService;
+use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
+
 class OrderController extends Controller
 {
     /**
@@ -28,328 +28,260 @@ class OrderController extends Controller
             return $item->menu->harga * $item->quantity;
         });
 
-        // Default calculation (will be recalculated in JavaScript)
-        $tax = $subtotal * 0.05;  // 5% tax for dine in
-        $total = $subtotal + $tax;
+        $priceInfo = $this->calculateOrderPrice($cartItems, 'dine_in');
 
-        return view('Customerviews.checkout', compact('cartItems', 'subtotal', 'tax', 'total'));
+        $cartItemsArray = $cartItems->map(function ($item) {
+            return [
+                'id' => $item->id,
+                'quantity' => $item->quantity,
+                'menu' => [
+                    'id_menu' => $item->menu->id_menu,
+                    'nama_menu' => $item->menu->nama_menu,
+                    'harga' => $item->menu->harga,
+                    'name' => $item->menu->name,
+                    'price' => $item->menu->price,
+                ],
+            ];
+        })->toArray();
+
+        return view('Customerviews.checkout', [
+            'cartItems' => $cartItems,
+            'cartItemsData' => $cartItemsArray,
+            'subtotal' => $subtotal,
+            'serviceCharge' => $priceInfo['service_charge'],
+            'discount' => $priceInfo['discount'],
+            'total' => $priceInfo['total'],
+            'morningDiscount' => $priceInfo['discount'] > 0,
+        ]);
     }
 
-    /**
-     * Calculate order price based on service type
-     */
-    private function calculateOrderPrice($cartItems, $serviceType)
+    private function calculateOrderPrice($cartItems, $serviceType, $dateTime = null)
     {
+        $dateTime = $dateTime ?? now();
+        $subtotal = $cartItems->sum(function ($item) {
+            return $item->menu->harga * $item->quantity;
+        });
+        $serviceCharge = 0;
+
         if ($serviceType === 'take_away') {
-            // Take away: add 1000 per item
             $itemCount = $cartItems->sum('quantity');
-            $subtotal = $cartItems->sum(function ($item) {
-                return $item->menu->harga * $item->quantity;
-            });
-            $tax = $itemCount * 1000;
-            $total = $subtotal + $tax;
-
-            return [
-                'subtotal' => $subtotal,
-                'tax' => $tax,
-                'total' => $total,
-            ];
-        } else {
-            // Dine in: add 5% tax
-            $subtotal = $cartItems->sum(function ($item) {
-                return $item->menu->harga * $item->quantity;
-            });
-            $tax = $subtotal * 0.05;
-            $total = $subtotal + $tax;
-
-            return [
-                'subtotal' => $subtotal,
-                'tax' => $tax,
-                'total' => $total,
-            ];
+            $serviceCharge = $itemCount * 1000;
         }
+
+        $discount = $this->calculateMorningDiscount($subtotal, $dateTime);
+        $total = max(0, $subtotal + $serviceCharge - $discount);
+
+        return [
+            'subtotal' => $subtotal,
+            'service_charge' => $serviceCharge,
+            'discount' => $discount,
+            'total' => $total,
+        ];
     }
 
-    /**
-     * Process order (payment)
-     */
+    private function calculateMorningDiscount($amount, $dateTime)
+    {
+        $hour = $dateTime->hour;
+        if ($hour >= 6 && $hour < 11) {
+            return round($amount * 0.05);
+        }
+
+        return 0;
+    }
+
     public function store(Request $request)
     {
-        $request->validate([
-            'service_type' => 'required|in:dine_in,take_away',
-            'payment_method' => 'required|in:cash,qris',
-            'notes' => 'nullable|string|max:500',
-        ]);
-
         $user = auth()->user();
         $cartItems = $user->cartItems()->with('menu')->get();
 
         if ($cartItems->isEmpty()) {
             return response()->json([
                 'success' => false,
-                'message' => 'Keranjang Anda kosong',
-            ], 422);
+                'message' => 'Keranjang belanja Anda kosong.',
+            ], 400);
         }
 
-        // Calculate price based on service type
-        $priceInfo = $this->calculateOrderPrice($cartItems, $request->service_type);
+        $validated = $request->validate([
+            'service_type' => 'required|in:dine_in,take_away',
+            'payment_method' => 'required|in:cash,qris,debit,credit',
+            'notes' => 'nullable|string|max:500',
+        ]);
 
-        try {
-            $order = Order::create([
-                'tanggal' => now(),
-                'nama_pelanggan' => $user->name,
-                'total_harga' => $priceInfo['total'],
-                'subtotal' => $priceInfo['subtotal'],
-                'tax_amount' => $priceInfo['tax'],
-                'status_pembayaran' => 'pending',
-                'service_type' => $request->service_type,
-                'payment_method' => $request->payment_method,
-                'notes' => $request->notes,
-                'status_order' => 'pending',
-                'id_user' => $user->id_user,
+        // 1. Stock validation before creating order
+        foreach ($cartItems as $item) {
+            $menu = $item->menu;
+            if (! $menu) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Salah satu produk di keranjang tidak valid.',
+                ], 400);
+            }
+
+            if ($menu->stok < $item->quantity) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Stok menu "'.$menu->nama_menu.'" tidak mencukupi (Sisa stok: '.$menu->stok.' unit).',
+                ], 400);
+            }
+        }
+
+        // 2. Calculations
+        $priceInfo = $this->calculateOrderPrice($cartItems, $validated['service_type']);
+        $subtotal = $priceInfo['subtotal'];
+        $serviceCharge = $priceInfo['service_charge'];
+        $discount = $priceInfo['discount'];
+        $total = $priceInfo['total'];
+
+        $totalHpp = $cartItems->sum(function ($item) {
+            return ($item->menu->hpp ?? 0) * $item->quantity;
+        });
+        $profitMargin = max(0, $total - $totalHpp);
+
+        // 3. Create Order
+        $order = Order::create([
+            'tanggal' => now(),
+            'nama_pelanggan' => $user->name,
+            'total_harga' => $total,
+            'subtotal' => $subtotal,
+            'service_charge' => $serviceCharge,
+            'discount_amount' => $discount,
+            'final_total' => $total,
+            'cost_of_goods' => $totalHpp,
+            'profit_margin' => $profitMargin,
+            'status_pembayaran' => $validated['payment_method'] === 'cash' ? 'paid' : 'pending',
+            'service_type' => $validated['service_type'],
+            'payment_method' => $validated['payment_method'],
+            'notes' => $validated['notes'] ?? null,
+            'status_order' => 'pending',
+            'id_user' => $user->id_user,
+        ]);
+
+        // 4. Create OrderItems, record historical HPP, and deduct stock
+        foreach ($cartItems as $item) {
+            $menu = $item->menu;
+            $itemHpp = $menu->hpp ?? 0;
+
+            OrderItem::create([
+                'id_order' => $order->id_order,
+                'id_menu' => $menu->id_menu,
+                'quantity' => $item->quantity,
+                'subtotal' => $menu->harga * $item->quantity,
+                'hpp' => $itemHpp,
+                'hpp_at_sale' => $itemHpp,
             ]);
 
-            foreach ($cartItems as $cartItem) {
-                OrderItem::create([
-                    'id_order' => $order->id_order,
-                    'id_menu' => $cartItem->menu_id,
-                    'quantity' => $cartItem->quantity,
-                    'subtotal' => $cartItem->menu->harga * $cartItem->quantity,
-                ]);
-            }
-
-            $user->cartItems()->delete();
-
-            // Handle payment methods
-            if ($request->payment_method === 'qris') {
-                // Auto-generate QRIS invoice and redirect directly to Xendit
-                try {
-                    $qrisService = new QrisPaymentService();
-                    $invoiceResult = $qrisService->createQrisInvoice($order);
-
-                    // Redirect directly to Xendit checkout page (no intermediate QRIS page)
-                    $redirectRoute = $invoiceResult['invoice_url'];
-
-                    \Log::info('OrderController Auto-Generate QRIS Invoice & Redirect to Xendit', [
-                        'order_id' => $order->id_order,
-                        'invoice_id' => $invoiceResult['invoice_id'],
-                        'amount' => $invoiceResult['amount'],
-                        'xendit_url' => $redirectRoute,
-                    ]);
-
-                    return response()->json([
-                        'success' => true,
-                        'message' => 'Pesanan berhasil dibuat, redirecting ke Xendit...',
-                        'order_id' => $order->id_order,
-                        'redirect' => $redirectRoute,
-                        'invoice' => $invoiceResult,
-                    ]);
-                } catch (\Exception $e) {
-                    \Log::error('OrderController QRIS Invoice Creation Failed', [
-                        'order_id' => $order->id_order,
-                        'error' => $e->getMessage(),
-                    ]);
-
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'Gagal membuat QRIS invoice: ' . $e->getMessage(),
-                    ], 500);
-                }
-            } else {
-                // For cash payment, stay pending for admin to manually confirm
-                return response()->json([
-                    'success' => true,
-                    'message' => 'Pesanan berhasil dibuat. Menunggu konfirmasi admin...',
-                    'order_id' => $order->id_order,
-                    'redirect' => route('order.receipt', $order),
-                ]);
-            }
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Terjadi kesalahan saat memproses pesanan: ' . $e->getMessage(),
-            ], 500);
+            // Deduct stock automatically
+            $menu->decrementStock($item->quantity);
         }
+
+        // 5. Clear cart
+        $user->cartItems()->delete();
+
+        // 6. Return response
+        $redirectUrl = ($validated['payment_method'] === 'qris')
+            ? route('xendit.qris.redirect', $order->id_order)
+            : route('order.receipt', $order->id_order);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Pesanan berhasil dibuat!',
+            'order_id' => $order->id_order,
+            'redirect' => $redirectUrl,
+        ]);
     }
 
-    /**
-     * Show order receipt
-     */
     public function receipt(Order $order)
     {
-        if ($order->id_user !== auth()->user()->id_user) {
-            return redirect()->route('home')
-                ->with('error', 'Anda tidak memiliki akses ke pesanan ini');
-        }
-
         $order->load('items.menu');
 
         return view('Customerviews.receipt', compact('order'));
     }
 
-    /**
-     * Get order history
-     */
     public function history()
     {
-        $orders = auth()->user()->orders()
-            ->with('items.menu')
-            ->latest()
-            ->paginate(10);
+        $orders = auth()->user()->orders()->with('items.menu')->latest()->paginate(10);
 
         return view('Customerviews.order-history', compact('orders'));
     }
 
     /**
-     * Get order details via AJAX
+     * Admin: Unified Sales History & Reporting
      */
-    public function show(Order $order)
+    public function historyAdmin(Request $request)
     {
-        if ($order->id_user !== auth()->user()->id_user) {
-            return response()->json(['error' => 'Unauthorized'], 403);
+        $user = auth()->user();
+        $isAdmin = $user->isAdmin();
+        $query = Order::with(['user', 'items.menu']);
+
+        if (! $isAdmin) {
+            $query->where('id_user', $user->id_user);
         }
 
-        $order->load('items.menu');
+        // 1. Date Filters
+        if ($request->filled('start_date') && $request->filled('end_date')) {
+            $query->whereBetween('tanggal', [
+                Carbon::parse($request->start_date)->startOfDay(),
+                Carbon::parse($request->end_date)->endOfDay(),
+            ]);
+        } elseif ($request->query('range') === 'today') {
+            $query->whereDate('tanggal', Carbon::today());
+        }
 
-        return response()->json($order);
-    }
+        // 2. Staff Filter
+        if ($request->filled('staff') && $request->staff !== 'all') {
+            $query->where(function ($q) use ($request) {
+                $q->where('cashier_name', $request->staff)
+                    ->orWhereHas('user', function ($sq) use ($request) {
+                        $sq->where('name', $request->staff);
+                    });
+            });
+        }
 
-    /**
-     * Admin: Get all orders (pending)
-     */
-    public function index()
-    {
-        $orders = auth()->user()->orders()
-            ->with('items.menu')
-            ->latest()
-            ->paginate(40);
+        // 3. Payment Method Filter
+        if ($request->filled('payment_method') && $request->payment_method !== 'all') {
+            $query->where('payment_method', $request->payment_method);
+        }
 
-        return view('admin.orders', compact('orders'));
-    }
-    /**
-     * Admin: Get order history (completed)
-     */
-
-
-
-public function historyAdmin(Request $request)
-{
-    $query = OrderHistory::query();
-
-    // 🔍 Search by name or order ID
-    if ($request->filled('search')) {
-        $search = $request->search;
-
-        $query->where(function ($q) use ($search) {
-            $q->where('nama_pelanggan', 'like', "%{$search}%")
-              ->orWhere('id_order', 'like', "%{$search}%");
-        });
-    }
-
-    // 🚫 FILTER CANCELLED / COMPLETED
-    if ($request->filled('status')) {
-        if ($request->status === 'exclude_cancelled') {
-            $query->where('status_order', '!=', 'cancelled');
-        } else {
+        // 4. Status Filter
+        if ($request->filled('status') && $request->status !== 'all') {
             $query->where('status_order', $request->status);
         }
+
+        $historyOrders = $query->latest('tanggal')->paginate(15)->withQueryString();
+
+        // Calculate Header Stats
+        $statsQuery = clone $query;
+        $totalRevenue = $statsQuery->where('status_order', 'completed')->sum('total_harga');
+        $totalOrders = $query->count();
+
+        // Employee list for dropdown
+        $staffList = User::whereHas('role', function ($q) {
+            $q->whereIn('role_name', ['Admin', 'Staff', 'pegawai']);
+        })->get(['name']);
+
+        return view('admin.history', compact('historyOrders', 'totalOrders', 'totalRevenue', 'staffList'));
     }
 
-    // 📅 DATE FILTER
-    if ($request->filled('date')) {
-        $query->whereDate('created_at', $request->date);
-    }
-
-    $historyOrders = $query->latest()->paginate(10);
-
-    // Stats (global)
-    $totalOrders = OrderHistory::count();
-    $totalRevenue = OrderHistory::sum('total_harga');
-    $completedOrders = OrderHistory::where('status_order', 'completed')->count();
-    $pendingOrders = OrderHistory::where('status_order', 'cancelled')->count();
-
-    $completionRate = $totalOrders > 0
-        ? round(($completedOrders / $totalOrders) * 100)
-        : 0;
-
-    return view('admin.history', compact(
-        'historyOrders',
-        'totalOrders',
-        'totalRevenue',
-        'completedOrders',
-        'pendingOrders',
-        'completionRate'
-    ));
-}
-
-    /**
-     * Admin: Mark order as completed
-     */
     public function complete($id_order)
     {
-        $order = Order::where('id_order', $id_order)->firstOrFail();
+        $order = Order::findOrFail($id_order);
+        $order->update(['status_pembayaran' => 'paid', 'status_order' => 'completed']);
 
-        $order->update([
-            'status_pembayaran' => 'paid',
-            'status_order' => 'completed',
-        ]);
-
-        return back()->with('success', 'Pesanan berhasil ditandai sebagai selesai');
+        return back()->with('success', 'Pesanan selesai');
     }
 
-    /**
-     * Admin: Cancel order
-     */
-   public function cancel($id_order)
-{
-    $order = Order::where('id_order', $id_order)->firstOrFail();
-
-    DB::transaction(function () use ($order) {
-
-        // 1. Save to history as CANCELLED
-        OrderHistory::create([
-            'id_order' => $order->id_order,
-            'id_user' => $order->id_user,
-            'nama_pelanggan' => $order->nama_pelanggan,
-            'total_harga' => $order->total_harga,
-            'payment_method' => $order->payment_method,
-            'service_type' => $order->service_type,
-            'status_order' => 'cancelled',
-            'status_pembayaran' => $order->status_pembayaran,
-            'notes' => $order->notes,
-        ]);
-
-        // 2. Remove from active orders
-        $order->delete();
-    });
-
-    return back()->with('success', 'Order cancelled & moved to history');
-}
-
-
-    public function finishOrder($id_order)
+    public function cancel($id_order)
     {
-        $order = Order::where('id_order', $id_order)->firstOrFail();
+        $order = Order::findOrFail($id_order);
+        $order->update(['status_order' => 'cancelled']);
 
-        DB::transaction(function () use ($order) {
+        return back()->with('success', 'Pesanan dibatalkan');
+    }
 
-            // 1. Save to history (MODEL WAY)
-            OrderHistory::create([
-                'id_order' => $order->id_order,
-                'id_user' => $order->id_user,
-                'nama_pelanggan' => $order->nama_pelanggan,
-                'total_harga' => $order->total_harga,
-                'payment_method' => $order->payment_method,
-                'service_type' => $order->service_type,
-                'status_order' => 'completed',
-                'status_pembayaran' => $order->status_pembayaran,
-                'notes' => $order->notes,
-            ]);
+    public function index()
+    {
+        $orders = Order::where('status_pembayaran', 'pending')->with('user')->latest()->paginate(10);
 
-            // 2. Delete from active orders
-            $order->delete();
-        });
-
-        return back()->with('success', 'Order moved to history');
+        return view('admin.orders.index', compact('orders'));
     }
 }

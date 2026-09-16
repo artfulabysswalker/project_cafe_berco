@@ -23,7 +23,7 @@ return new class extends Migration
 
             $table->dropColumn([
                 'exp',
-                'last_daily_claim'
+                'last_daily_claim',
             ]);
         });
     }

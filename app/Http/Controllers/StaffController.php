@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\User;
 use App\Models\Role;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -56,6 +56,7 @@ class StaffController extends Controller
         if ($roles->isEmpty()) {
             $roles = Role::all();
         }
+
         return view('admin.staffoption.create', compact('roles'));
     }
 
@@ -80,15 +81,15 @@ class StaffController extends Controller
 
         // Auto resolve email if not explicitly provided
         $email = $request->email;
-        if (!$email) {
+        if (! $email) {
             if (filter_var($request->username, FILTER_VALIDATE_EMAIL)) {
                 $email = $request->username;
             } else {
                 $cleanUser = strtolower(preg_replace('/[^a-zA-Z0-9]/', '', $request->username));
-                $email = $cleanUser . '@bercocafe.com';
+                $email = $cleanUser.'@bercocafe.com';
 
                 if (User::where('email', $email)->exists()) {
-                    $email = $cleanUser . '_' . rand(100, 999) . '@bercocafe.com';
+                    $email = $cleanUser.'_'.rand(100, 999).'@bercocafe.com';
                 }
             }
         }
@@ -103,7 +104,7 @@ class StaffController extends Controller
         ]);
 
         return redirect()->route('admin.staffoption.index')
-            ->with('success', 'Akun pegawai "' . $user->name . '" (' . ($user->role?->role_name ?? 'Staff') . ') berhasil dibuat!');
+            ->with('success', 'Akun pegawai "'.$user->name.'" ('.($user->role?->role_name ?? 'Staff').') berhasil dibuat!');
     }
 
     /**
@@ -142,8 +143,8 @@ class StaffController extends Controller
 
         // Security check: prevent demoting primary Admin if only one admin exists
         $newRole = Role::find($request->id_role);
-        if ($staff->isAdmin() && $newRole && !in_array($newRole->role_name, ['Admin', 'admin'])) {
-            $adminCount = User::whereHas('role', fn($q) => $q->whereIn('role_name', ['Admin', 'admin']))->count();
+        if ($staff->isAdmin() && $newRole && ! in_array($newRole->role_name, ['Admin', 'admin'])) {
+            $adminCount = User::whereHas('role', fn ($q) => $q->whereIn('role_name', ['Admin', 'admin']))->count();
             if ($adminCount <= 1) {
                 return back()->with('error', 'Tidak dapat mengubah role satu-satunya Administrator utama.');
             }
@@ -167,7 +168,7 @@ class StaffController extends Controller
         $staff->save();
 
         return redirect()->route('admin.staffoption.index')
-            ->with('success', 'Data pegawai "' . $staff->name . '" berhasil diperbarui!');
+            ->with('success', 'Data pegawai "'.$staff->name.'" berhasil diperbarui!');
     }
 
     /**
@@ -186,8 +187,9 @@ class StaffController extends Controller
         $staff->save();
 
         $statusLabel = $staff->status === 'active' ? 'diaktifkan' : 'dinonaktifkan';
+
         return redirect()->route('admin.staffoption.index')
-            ->with('success', 'Status akun ' . $staff->name . ' berhasil ' . $statusLabel . '.');
+            ->with('success', 'Status akun '.$staff->name.' berhasil '.$statusLabel.'.');
     }
 
     /**
@@ -205,7 +207,7 @@ class StaffController extends Controller
         $staff->save();
 
         return redirect()->route('admin.staffoption.index')
-            ->with('success', 'Password untuk ' . $staff->name . ' berhasil direset!');
+            ->with('success', 'Password untuk '.$staff->name.' berhasil direset!');
     }
 
     /**
@@ -214,15 +216,15 @@ class StaffController extends Controller
     public function updateRole(Request $request, $id_user)
     {
         $request->validate([
-            'id_role' => 'required|exists:roles,id_role'
+            'id_role' => 'required|exists:roles,id_role',
         ]);
 
         $user = User::where('id_user', $id_user)->orWhere('id', $id_user)->firstOrFail();
 
         // Safety check
         $newRole = Role::find($request->id_role);
-        if ($user->isAdmin() && $newRole && !in_array($newRole->role_name, ['Admin', 'admin'])) {
-            $adminCount = User::whereHas('role', fn($q) => $q->whereIn('role_name', ['Admin', 'admin']))->count();
+        if ($user->isAdmin() && $newRole && ! in_array($newRole->role_name, ['Admin', 'admin'])) {
+            $adminCount = User::whereHas('role', fn ($q) => $q->whereIn('role_name', ['Admin', 'admin']))->count();
             if ($adminCount <= 1) {
                 return back()->with('error', 'Tidak dapat mengubah role satu-satunya Administrator utama.');
             }
@@ -231,7 +233,7 @@ class StaffController extends Controller
         $user->id_role = $request->id_role;
         $user->save();
 
-        return back()->with('success', 'Role pengguna ' . $user->name . ' berhasil diubah menjadi ' . ($newRole?->role_name ?? 'Baru') . '.');
+        return back()->with('success', 'Role pengguna '.$user->name.' berhasil diubah menjadi '.($newRole?->role_name ?? 'Baru').'.');
     }
 
     /**
@@ -248,7 +250,7 @@ class StaffController extends Controller
 
         // Prevent deleting sole admin
         if ($staff->isAdmin()) {
-            $adminCount = User::whereHas('role', fn($q) => $q->whereIn('role_name', ['Admin', 'admin']))->count();
+            $adminCount = User::whereHas('role', fn ($q) => $q->whereIn('role_name', ['Admin', 'admin']))->count();
             if ($adminCount <= 1) {
                 return back()->with('error', 'Tidak dapat menghapus satu-satunya akun Administrator utama.');
             }
@@ -258,7 +260,7 @@ class StaffController extends Controller
         $staff->delete();
 
         return redirect()->route('admin.staffoption.index')
-            ->with('success', 'Akun "' . $name . '" berhasil dihapus.');
+            ->with('success', 'Akun "'.$name.'" berhasil dihapus.');
     }
 
     /**
@@ -273,12 +275,12 @@ class StaffController extends Controller
 
         $user = Auth::user();
 
-        if (!Hash::check($request->current_password, $user->password)) {
+        if (! Hash::check($request->current_password, $user->password)) {
             return back()->withErrors(['current_password' => 'Current password is wrong']);
         }
 
         $user->update([
-            'password' => Hash::make($request->password)
+            'password' => Hash::make($request->password),
         ]);
 
         return back()->with('success', 'Password updated successfully');
@@ -305,7 +307,7 @@ class StaffController extends Controller
 
         $user = User::where('id_user', $id_user)->orWhere('id', $id_user)->firstOrFail();
         $user->update([
-            'password' => Hash::make($request->password)
+            'password' => Hash::make($request->password),
         ]);
 
         return redirect()->route('admin.staffoption.index')

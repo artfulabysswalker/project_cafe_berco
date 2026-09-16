@@ -56,10 +56,12 @@
                 <span>Subtotal:</span>
                 <span>Rp {{ number_format($subtotal, 0, ',', '.') }}</span>
             </div>
+            @if($order->service_charge > 0)
             <div class="flex justify-between text-gray-700">
-                <span>PPN (10%):</span>
-                <span>Rp {{ number_format($tax, 0, ',', '.') }}</span>
+                <span>Biaya Take-away:</span>
+                <span>Rp {{ number_format($order->service_charge, 0, ',', '.') }}</span>
             </div>
+            @endif
             <div class="flex justify-between text-lg font-bold text-amber-700 bg-amber-50 p-2 rounded">
                 <span>Total Pembayaran:</span>
                 <span>Rp {{ number_format($order->total_harga, 0, ',', '.') }}</span>

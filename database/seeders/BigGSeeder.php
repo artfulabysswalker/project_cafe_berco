@@ -12,7 +12,7 @@ class BigGSeeder extends Seeder
     {
         DB::statement('SET FOREIGN_KEY_CHECKS=0;');
 
-        $pick = fn($arr) => $arr[array_rand($arr)];
+        $pick = fn ($arr) => $arr[array_rand($arr)];
 
         /*
         | ROLES
@@ -58,7 +58,7 @@ class BigGSeeder extends Seeder
                 'status_tersedia' => 1,
                 'rating' => rand(35, 50) / 10,
                 'deskripsi' => "$name special coffee",
-                'foto' => strtolower($name) . '.jpg',
+                'foto' => strtolower($name).'.jpg',
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);

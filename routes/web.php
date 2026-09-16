@@ -1,31 +1,43 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Facades\Auth;
-
-use App\Http\Controllers\StaffLoginController;
-use App\Http\Controllers\DashboardController;
-use App\Http\Controllers\StaffController;
-use App\Http\Controllers\OrderController;
-use App\Http\Controllers\Auth\AuthenticatedSessionController;
-use App\Http\Controllers\Customer\MenuController;
-use App\Http\Controllers\SettingsController;
-use App\Http\Controllers\PasswordResetRequestController;
-use App\Http\Controllers\ReceiptController;
-use App\Http\Controllers\StatsController;
+use App\Http\Controllers\AchievementController;
+use App\Http\Controllers\Admin\AnalyticsController;
+use App\Http\Controllers\Admin\CategoryController;
+use App\Http\Controllers\Admin\DiscountSchemeController;
+use App\Http\Controllers\Admin\ExpenseController;
+use App\Http\Controllers\Admin\HppController;
+use App\Http\Controllers\Admin\TaxConfigurationController;
+use App\Http\Controllers\Api\LoginApiController;
 use App\Http\Controllers\Customer\CartController;
 use App\Http\Controllers\Customer\FavoriteController;
-use App\Http\Controllers\ReviewController;
-use App\Http\Controllers\VoucherController;
+use App\Http\Controllers\Customer\MenuController;
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\OrderController;
+use App\Http\Controllers\PasswordResetRequestController;
 use App\Http\Controllers\PlaylistController;
-use App\Http\Controllers\ReferralController;
-use App\Http\Controllers\AchievementController;
+use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\QrisPaymentController;
+use App\Http\Controllers\ReceiptController;
 use App\Http\Controllers\RedeemController;
-use App\Models\User;
+use App\Http\Controllers\ReferralController;
+use App\Http\Controllers\ReviewController;
+use App\Http\Controllers\SettingsController;
+use App\Http\Controllers\ShiftController;
+use App\Http\Controllers\StaffController;
+use App\Http\Controllers\StaffLoginController;
+use App\Http\Controllers\StatsController;
+use App\Http\Controllers\VoucherController;
+use App\Http\Controllers\XenditPaymentController;
+use App\Models\Menu;
 use App\Models\Role;
+use App\Models\User;
+use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
-
+use Xendit\Configuration;
 
 /*
 |--------------------------------------------------------------------------
@@ -36,39 +48,39 @@ use Illuminate\Support\Str;
 // Xendit Test Endpoint (no session/db required)
 Route::get('/xendit/test', function () {
     try {
-        \Xendit\Configuration::setXenditKey(config('services.xendit.secret_key'));
+        Configuration::setXenditKey(config('services.xendit.secret_key'));
 
         return response()->json([
             'status' => 'success',
             'message' => 'Xendit SDK berhasil diinisialisasi!',
             'config' => [
-                'api_key_set' => !empty(config('services.xendit.secret_key')),
-                'public_key_set' => !empty(config('services.xendit.public_key')),
+                'api_key_set' => ! empty(config('services.xendit.secret_key')),
+                'public_key_set' => ! empty(config('services.xendit.public_key')),
                 'environment' => config('services.xendit.environment', 'development'),
             ],
         ]);
-    } catch (\Exception $e) {
+    } catch (Exception $e) {
         return response()->json([
             'status' => 'error',
-            'message' => 'Error: ' . $e->getMessage(),
+            'message' => 'Error: '.$e->getMessage(),
         ], 500);
     }
-})->name('xendit.test')->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class]);
+})->name('xendit.test')->withoutMiddleware([VerifyCsrfToken::class]);
 
 Route::get('/', function () {
     if (Auth::check()) {
         $user = Auth::user();
-        if (!$user->is_guest && ($user->isAdmin() || $user->isStaff())) {
+        if (! $user->is_guest && ($user->isAdmin() || $user->isStaff())) {
             return redirect()->route('dashboard');
         }
-        if (!$user->is_guest) {
+        if (! $user->is_guest) {
             return redirect()->route('menu.index');
         }
     }
 
-    $favoriteMenus = \App\Models\Menu::where('status_tersedia', 1)->take(8)->get();
+    $favoriteMenus = Menu::where('status_tersedia', 1)->take(8)->get();
     if ($favoriteMenus->isEmpty()) {
-        $favoriteMenus = \App\Models\Menu::take(8)->get();
+        $favoriteMenus = Menu::take(8)->get();
     }
 
     return view('Customerviews.welcome', compact('favoriteMenus'));
@@ -133,7 +145,6 @@ Route::middleware(['guest'])->group(function () {
 
 });
 
-
 /*
 |--------------------------------------------------------------------------
 | AUTH USERS
@@ -142,7 +153,7 @@ Route::middleware(['guest'])->group(function () {
 
 Route::middleware(['auth'])->group(function () {
 
-    Route::post('/logout', function (Illuminate\Http\Request $request) {
+    Route::post('/logout', function (Request $request) {
 
         Auth::logout();
 
@@ -155,7 +166,6 @@ Route::middleware(['auth'])->group(function () {
     })->name('logout');
 
 });
-
 
 /*
 |--------------------------------------------------------------------------
@@ -260,7 +270,6 @@ Route::middleware(['customer'])->group(function () {
 
 });
 
-
 /*
 |--------------------------------------------------------------------------
 | GUEST MODE
@@ -293,7 +302,7 @@ Route::middleware(['restore.guest'])->group(function () {
         ->name('checkout');
 
     // Get available discounts (API endpoint)
-    Route::get('/api/discounts/available', [\App\Http\Controllers\Admin\DiscountSchemeController::class, 'getAvailable'])
+    Route::get('/api/discounts/available', [DiscountSchemeController::class, 'getAvailable'])
         ->name('api.discounts.available');
 
     Route::post('/order', [OrderController::class, 'store'])
@@ -301,57 +310,78 @@ Route::middleware(['restore.guest'])->group(function () {
 
     // Xendit Payment Routes
     Route::prefix('xendit')->group(function () {
-        Route::get('/payment/{order}/redirect', [\App\Http\Controllers\XenditPaymentController::class, 'redirectToPayment'])
+        Route::get('/payment/{order}/redirect', [XenditPaymentController::class, 'redirectToPayment'])
             ->name('xendit.payment.redirect');
 
-        Route::post('/payment/{order}/invoice', [\App\Http\Controllers\XenditPaymentController::class, 'createInvoice'])
+        Route::post('/payment/{order}/invoice', [XenditPaymentController::class, 'createInvoice'])
             ->name('xendit.payment.create');
 
-        Route::get('/payment/{order}/status', [\App\Http\Controllers\XenditPaymentController::class, 'checkStatus'])
+        Route::get('/payment/{order}/status', [XenditPaymentController::class, 'checkStatus'])
             ->name('xendit.payment.status');
 
         // Success and Failed redirect from Xendit
-        Route::get('/payment/success/{order}', [\App\Http\Controllers\XenditPaymentController::class, 'success'])
+        Route::get('/payment/success/{order}', [XenditPaymentController::class, 'success'])
             ->name('payment.success');
 
-        Route::get('/payment/failed/{order}', [\App\Http\Controllers\XenditPaymentController::class, 'failed'])
+        Route::get('/payment/failed/{order}', [XenditPaymentController::class, 'failed'])
             ->name('payment.failed');
 
         // Xendit Callback
-        Route::post('/payment/callback', [\App\Http\Controllers\XenditPaymentController::class, 'callback'])
+        Route::post('/payment/callback', [XenditPaymentController::class, 'callback'])
             ->name('xendit.payment.callback')
-            ->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class]);
+            ->withoutMiddleware([VerifyCsrfToken::class]);
 
         // QRIS Payment Routes
         Route::prefix('qris')->group(function () {
-            Route::get('/payment/{order}', [\App\Http\Controllers\QrisPaymentController::class, 'show'])
+            Route::get('/payment/{order}', [QrisPaymentController::class, 'show'])
                 ->name('xendit.qris.show');
 
-            Route::get('/payment/{order}/redirect', [\App\Http\Controllers\QrisPaymentController::class, 'redirectToPayment'])
+            Route::get('/payment/{order}/redirect', [QrisPaymentController::class, 'redirectToPayment'])
                 ->name('xendit.qris.redirect');
 
-            Route::post('/payment/{order}/invoice', [\App\Http\Controllers\QrisPaymentController::class, 'createInvoice'])
+            Route::post('/payment/{order}/invoice', [QrisPaymentController::class, 'createInvoice'])
                 ->name('xendit.qris.create');
 
-            Route::get('/payment/{order}/status', [\App\Http\Controllers\QrisPaymentController::class, 'checkStatus'])
+            Route::get('/payment/{order}/status', [QrisPaymentController::class, 'checkStatus'])
                 ->name('xendit.qris.status');
 
             // Success and Failed redirect from Xendit
-            Route::get('/payment/success/{order}', [\App\Http\Controllers\QrisPaymentController::class, 'success'])
+            Route::get('/payment/success/{order}', [QrisPaymentController::class, 'success'])
                 ->name('xendit.qris.success');
 
-            Route::get('/payment/failed/{order}', [\App\Http\Controllers\QrisPaymentController::class, 'failed'])
+            Route::get('/payment/failed/{order}', [QrisPaymentController::class, 'failed'])
                 ->name('xendit.qris.failed');
 
             // QRIS Callback
-            Route::post('/payment/callback', [\App\Http\Controllers\QrisPaymentController::class, 'callback'])
+            Route::post('/payment/callback', [QrisPaymentController::class, 'callback'])
                 ->name('xendit.qris.callback')
-                ->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class]);
+                ->withoutMiddleware([VerifyCsrfToken::class]);
         });
     });
 
 });
 
+/*
+|--------------------------------------------------------------------------
+| AUTH USER ROUTES (Dashboard, Profile)
+|--------------------------------------------------------------------------
+*/
+
+Route::middleware(['auth'])->group(function () {
+
+    Route::get('/dashboard', [DashboardController::class, 'index'])
+        ->name('dashboard');
+
+    Route::get('/profile', [ProfileController::class, 'edit'])
+        ->name('profile.edit');
+
+    Route::patch('/profile', [ProfileController::class, 'update'])
+        ->name('profile.update');
+
+    Route::delete('/profile', [ProfileController::class, 'destroy'])
+        ->name('profile.destroy');
+
+});
 
 /*
 |--------------------------------------------------------------------------
@@ -360,10 +390,6 @@ Route::middleware(['restore.guest'])->group(function () {
 */
 
 Route::middleware(['admin.staff'])->group(function () {
-
-    // Dashboard
-    Route::get('/dashboard', [DashboardController::class, 'index'])
-        ->name('dashboard');
 
     Route::get('/control/dashboard', [DashboardController::class, 'index'])
         ->name('control.dashboard');
@@ -399,10 +425,10 @@ Route::middleware(['admin.staff'])->group(function () {
     });
 
     // Orders
-    Route::get('/orders', [OrderController::class, 'index'])
+    Route::get('/admin/orders', [OrderController::class, 'index'])
         ->name('admin.orders');
 
-    Route::get('/admin/orders', [OrderController::class, 'index'])
+    Route::get('/admin/orders-list', [OrderController::class, 'index'])
         ->name('orders.index');
 
     Route::put('/orders/{id_order}/complete', [OrderController::class, 'complete'])
@@ -429,7 +455,7 @@ Route::middleware(['admin.staff'])->group(function () {
 
     Route::put('/staff/{id}/password', [StaffController::class, 'updatePassword'])
         ->name('admin.staff.password.update');
- 
+
     // History
     Route::get('/history', [OrderController::class, 'historyAdmin'])
         ->name('admin.history');
@@ -444,21 +470,21 @@ Route::middleware(['admin.staff'])->group(function () {
     Route::post('/menu/{id}/discount', [MenuController::class, 'setDiscount'])
         ->name('admin.menu.discount.store');
 
-    Route::get('/menu', [MenuController::class, 'index'])
+    Route::get('/admin/menu', [MenuController::class, 'index'])
         ->name('admin.menu');
 
     // HPP & Resep Bahan Baku
-    Route::get('/hpp', [\App\Http\Controllers\Admin\HppController::class, 'index'])
+    Route::get('/hpp', [HppController::class, 'index'])
         ->name('admin.hpp');
-    Route::get('/hpp/recipe/{menuId}', [\App\Http\Controllers\Admin\HppController::class, 'getRecipe'])
+    Route::get('/hpp/recipe/{menuId}', [HppController::class, 'getRecipe'])
         ->name('admin.hpp.recipe.get');
-    Route::post('/hpp/recipe/{menuId}', [\App\Http\Controllers\Admin\HppController::class, 'saveRecipe'])
+    Route::post('/hpp/recipe/{menuId}', [HppController::class, 'saveRecipe'])
         ->name('admin.hpp.recipe.save');
-    Route::post('/hpp/raw-material', [\App\Http\Controllers\Admin\HppController::class, 'storeRawMaterial'])
+    Route::post('/hpp/raw-material', [HppController::class, 'storeRawMaterial'])
         ->name('admin.hpp.raw-material.store');
-    Route::put('/hpp/raw-material/{id}', [\App\Http\Controllers\Admin\HppController::class, 'updateRawMaterial'])
+    Route::put('/hpp/raw-material/{id}', [HppController::class, 'updateRawMaterial'])
         ->name('admin.hpp.raw-material.update');
-    Route::delete('/hpp/raw-material/{id}', [\App\Http\Controllers\Admin\HppController::class, 'deleteRawMaterial'])
+    Route::delete('/hpp/raw-material/{id}', [HppController::class, 'deleteRawMaterial'])
         ->name('admin.hpp.raw-material.destroy');
 
     // Stok Barang (Inventory Management)
@@ -488,16 +514,16 @@ Route::middleware(['admin.staff'])->group(function () {
         ->name('admin.menu.delete');
 
     // Categories Management
-    Route::get('/categories/list', [\App\Http\Controllers\Admin\CategoryController::class, 'listJson'])
+    Route::get('/categories/list', [CategoryController::class, 'listJson'])
         ->name('admin.categories.list');
 
-    Route::post('/categories', [\App\Http\Controllers\Admin\CategoryController::class, 'store'])
+    Route::post('/categories', [CategoryController::class, 'store'])
         ->name('admin.categories.store');
 
-    Route::put('/categories/{id}', [\App\Http\Controllers\Admin\CategoryController::class, 'update'])
+    Route::put('/categories/{id}', [CategoryController::class, 'update'])
         ->name('admin.categories.update');
 
-    Route::delete('/categories/{id}', [\App\Http\Controllers\Admin\CategoryController::class, 'destroy'])
+    Route::delete('/categories/{id}', [CategoryController::class, 'destroy'])
         ->name('admin.categories.destroy');
 
     // Vouchers CRUD
@@ -560,52 +586,52 @@ Route::middleware(['admin.staff'])->group(function () {
         ->name('admin.stats.print');
 
     // Expense Management (Dedicated Page)
-    Route::get('/expenses', [\App\Http\Controllers\Admin\ExpenseController::class, 'index'])
+    Route::get('/expenses', [ExpenseController::class, 'index'])
         ->name('admin.expenses.index');
 
-    Route::post('/expenses', [\App\Http\Controllers\Admin\ExpenseController::class, 'store'])
+    Route::post('/expenses', [ExpenseController::class, 'store'])
         ->name('admin.expenses.store');
 
-    Route::put('/expenses/{id}', [\App\Http\Controllers\Admin\ExpenseController::class, 'update'])
+    Route::put('/expenses/{id}', [ExpenseController::class, 'update'])
         ->name('admin.expenses.update');
 
-    Route::delete('/expenses/{id}', [\App\Http\Controllers\Admin\ExpenseController::class, 'destroy'])
+    Route::delete('/expenses/{id}', [ExpenseController::class, 'destroy'])
         ->name('admin.expenses.destroy');
 
-    Route::get('/expenses/pdf', [\App\Http\Controllers\Admin\ExpenseController::class, 'downloadPdf'])
+    Route::get('/expenses/pdf', [ExpenseController::class, 'downloadPdf'])
         ->name('admin.expenses.pdf');
 
     // Tax Configuration
     Route::prefix('tax')->name('admin.tax.')->group(function () {
-        Route::get('/', [\App\Http\Controllers\Admin\TaxConfigurationController::class, 'index'])
+        Route::get('/', [TaxConfigurationController::class, 'index'])
             ->name('index');
-        Route::get('/create', [\App\Http\Controllers\Admin\TaxConfigurationController::class, 'create'])
+        Route::get('/create', [TaxConfigurationController::class, 'create'])
             ->name('create');
-        Route::post('/', [\App\Http\Controllers\Admin\TaxConfigurationController::class, 'store'])
+        Route::post('/', [TaxConfigurationController::class, 'store'])
             ->name('store');
-        Route::get('/{tax}/edit', [\App\Http\Controllers\Admin\TaxConfigurationController::class, 'edit'])
+        Route::get('/{tax}/edit', [TaxConfigurationController::class, 'edit'])
             ->name('edit');
-        Route::put('/{tax}', [\App\Http\Controllers\Admin\TaxConfigurationController::class, 'update'])
+        Route::put('/{tax}', [TaxConfigurationController::class, 'update'])
             ->name('update');
-        Route::delete('/{tax}', [\App\Http\Controllers\Admin\TaxConfigurationController::class, 'destroy'])
+        Route::delete('/{tax}', [TaxConfigurationController::class, 'destroy'])
             ->name('destroy');
-        Route::post('/{tax}/set-active', [\App\Http\Controllers\Admin\TaxConfigurationController::class, 'setActive'])
+        Route::post('/{tax}/set-active', [TaxConfigurationController::class, 'setActive'])
             ->name('setActive');
     });
 
     // Discount Schemes
     Route::prefix('discount')->name('admin.discount.')->group(function () {
-        Route::get('/', [\App\Http\Controllers\Admin\DiscountSchemeController::class, 'index'])
+        Route::get('/', [DiscountSchemeController::class, 'index'])
             ->name('index');
-        Route::get('/create', [\App\Http\Controllers\Admin\DiscountSchemeController::class, 'create'])
+        Route::get('/create', [DiscountSchemeController::class, 'create'])
             ->name('create');
-        Route::post('/', [\App\Http\Controllers\Admin\DiscountSchemeController::class, 'store'])
+        Route::post('/', [DiscountSchemeController::class, 'store'])
             ->name('store');
-        Route::get('/{discount}/edit', [\App\Http\Controllers\Admin\DiscountSchemeController::class, 'edit'])
+        Route::get('/{discount}/edit', [DiscountSchemeController::class, 'edit'])
             ->name('edit');
-        Route::put('/{discount}', [\App\Http\Controllers\Admin\DiscountSchemeController::class, 'update'])
+        Route::put('/{discount}', [DiscountSchemeController::class, 'update'])
             ->name('update');
-        Route::delete('/{discount}', [\App\Http\Controllers\Admin\DiscountSchemeController::class, 'destroy'])
+        Route::delete('/{discount}', [DiscountSchemeController::class, 'destroy'])
             ->name('destroy');
     });
 
@@ -626,22 +652,22 @@ Route::middleware(['admin.staff'])->group(function () {
 
     // Analytics & Reports (Owner only)
     Route::middleware(['is_admin'])->prefix('analytics')->name('admin.analytics.')->group(function () {
-        Route::get('/', [\App\Http\Controllers\Admin\AnalyticsController::class, 'dashboard'])
+        Route::get('/', [AnalyticsController::class, 'dashboard'])
             ->name('dashboard');
-        Route::get('/products', [\App\Http\Controllers\Admin\AnalyticsController::class, 'productReport'])
+        Route::get('/products', [AnalyticsController::class, 'productReport'])
             ->name('products');
-        Route::get('/export', [\App\Http\Controllers\Admin\AnalyticsController::class, 'exportCsv'])
+        Route::get('/export', [AnalyticsController::class, 'exportCsv'])
             ->name('export');
     });
 
     // Shift Monitoring
-    Route::get('/shifts', [\App\Http\Controllers\ShiftController::class, 'index'])
+    Route::get('/shifts', [ShiftController::class, 'index'])
         ->name('admin.shifts.index');
-    Route::post('/shifts/open', [\App\Http\Controllers\ShiftController::class, 'openShift'])
+    Route::post('/shifts/open', [ShiftController::class, 'openShift'])
         ->name('admin.shifts.open');
-    Route::post('/shifts/close', [\App\Http\Controllers\ShiftController::class, 'closeShift'])
+    Route::post('/shifts/close', [ShiftController::class, 'closeShift'])
         ->name('admin.shifts.close');
-    Route::get('/shifts/{id}/orders', [\App\Http\Controllers\ShiftController::class, 'getShiftOrders'])
+    Route::get('/shifts/{id}/orders', [ShiftController::class, 'getShiftOrders'])
         ->name('admin.shifts.orders');
 
     // Reset Request
@@ -665,15 +691,15 @@ Route::middleware(['admin.staff'])->group(function () {
 |--------------------------------------------------------------------------
 */
 Route::prefix('api')->group(function () {
-    Route::post('/login', [\App\Http\Controllers\Api\LoginApiController::class, 'login']);
+    Route::post('/login', [LoginApiController::class, 'login']);
 });
 
 Route::prefix('api/pos')->group(function () {
-    Route::post('/verify-pin', [\App\Http\Controllers\ShiftController::class, 'verifyPin']);
-    Route::get('/pegawai-list', [\App\Http\Controllers\ShiftController::class, 'getEmployees']);
-    Route::post('/shift/open', [\App\Http\Controllers\ShiftController::class, 'openShift']);
-    Route::post('/shift/close', [\App\Http\Controllers\ShiftController::class, 'closeShift']);
+    Route::post('/verify-pin', [ShiftController::class, 'verifyPin']);
+    Route::get('/pegawai-list', [ShiftController::class, 'getEmployees']);
+    Route::post('/shift/open', [ShiftController::class, 'openShift']);
+    Route::post('/shift/close', [ShiftController::class, 'closeShift']);
 });
 
-require __DIR__ . '/settings.php';
-require __DIR__ . '/auth.php';
+require __DIR__.'/settings.php';
+require __DIR__.'/auth.php';

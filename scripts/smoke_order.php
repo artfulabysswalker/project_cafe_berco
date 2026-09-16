@@ -1,25 +1,26 @@
 <?php
-require __DIR__ . '/../vendor/autoload.php';
-$app = require __DIR__ . '/../bootstrap/app.php';
-$kernel = $app->make(Illuminate\Contracts\Console\Kernel::class);
+
+require __DIR__.'/../vendor/autoload.php';
+$app = require __DIR__.'/../bootstrap/app.php';
+$kernel = $app->make(Kernel::class);
 $kernel->bootstrap();
 
-use App\Models\User;
-use App\Models\Menu;
 use App\Models\CartItem;
+use App\Models\Menu;
 use App\Models\Order;
 use App\Models\OrderItem;
-use Illuminate\Support\Facades\DB;
+use App\Models\User;
+use Illuminate\Contracts\Console\Kernel;
 
 try {
     $user = User::first();
-    if (!$user) {
+    if (! $user) {
         echo "No users found, aborting smoke test\n";
         exit(1);
     }
 
     $product = Menu::first();
-    if (!$product) {
+    if (! $product) {
         echo "No products found (Menu), aborting smoke test\n";
         exit(1);
     }
@@ -37,7 +38,9 @@ try {
 
     // Simulate checkout logic
     $cartItems = $user->cartItems()->with('menu')->get();
-    $subtotal = $cartItems->sum(function ($item) { return $item->menu->harga * $item->quantity; });
+    $subtotal = $cartItems->sum(function ($item) {
+        return $item->menu->harga * $item->quantity;
+    });
     $tax = 0;
     $total = $subtotal + $tax;
 
@@ -73,8 +76,8 @@ try {
 
     echo "Smoke order test passed and cleaned up.\n";
     exit(0);
-} catch (\Exception $e) {
-    echo "Smoke test failed: " . $e->getMessage() . PHP_EOL;
-    echo $e->getTraceAsString() . PHP_EOL;
+} catch (Exception $e) {
+    echo 'Smoke test failed: '.$e->getMessage().PHP_EOL;
+    echo $e->getTraceAsString().PHP_EOL;
     exit(2);
 }

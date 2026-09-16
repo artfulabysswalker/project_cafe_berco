@@ -7,7 +7,9 @@ use Illuminate\Database\Eloquent\Model;
 class Payment extends Model
 {
     protected $table = 'payments';
+
     protected $primaryKey = 'id_payment';
+
     public $timestamps = true;
 
     protected $fillable = [
