@@ -71,7 +71,7 @@
                                 <div class="text-[11px] text-stone-500">{{ $order->user?->email ?? 'Direct Counter' }}</div>
                             </td>
                             <td class="px-4 py-3">
-                                @if($order->service_type === 'take_away')
+                                @if(($order->service_type ?? '') === 'take_away')
                                     <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-stone-100 text-stone-700 border border-stone-200">TAKE AWAY</span>
                                 @else
                                     <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-stone-100 text-stone-700 border border-stone-200">DINE IN</span>
@@ -108,7 +108,7 @@
                                     <form method="POST" action="{{ route('admin.orders.complete', $order->id_order) }}" class="inline-block m-0">
                                         @csrf
                                         @method('PUT')
-                                        <button type="submit" class="p-1 text-emerald-700 border border-emerald-300 rounded hover:bg-emerald-50" title="Selesaikan Pesanan" onclick="return confirm('Tandai pesanan #{{ $order->id_order }} selesai?')">
+                                        <button type="submit" class="p-1 text-emerald-700 border border-emerald-300 rounded hover:bg-emerald-50 cursor-pointer" title="Selesaikan Pesanan" onclick="return confirm('Tandai pesanan #{{ $order->id_order }} selesai?')">
                                             <i class="fas fa-check text-xs"></i>
                                         </button>
                                     </form>
@@ -126,7 +126,6 @@
             </table>
         </div>
     </div>
-
 </div>
 
 <script>

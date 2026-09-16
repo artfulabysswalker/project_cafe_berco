@@ -26,6 +26,7 @@ use App\Models\Role;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
+
 /*
 |--------------------------------------------------------------------------
 | PUBLIC ROUTES
@@ -39,7 +40,7 @@ Route::get('/xendit/test', function () {
 
         return response()->json([
             'status' => 'success',
-            'message' => '✅ Xendit SDK berhasil diinisialisasi!',
+            'message' => 'Xendit SDK berhasil diinisialisasi!',
             'config' => [
                 'api_key_set' => !empty(config('services.xendit.secret_key')),
                 'public_key_set' => !empty(config('services.xendit.public_key')),
@@ -49,14 +50,20 @@ Route::get('/xendit/test', function () {
     } catch (\Exception $e) {
         return response()->json([
             'status' => 'error',
-            'message' => '❌ Error: ' . $e->getMessage(),
+            'message' => 'Error: ' . $e->getMessage(),
         ], 500);
     }
 })->name('xendit.test')->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class]);
 
 Route::get('/', function () {
-    if (Auth::check() && !Auth::user()->is_guest && (Auth::user()->isAdmin() || Auth::user()->isStaff())) {
-        return redirect()->route('control.dashboard');
+    if (Auth::check()) {
+        $user = Auth::user();
+        if (!$user->is_guest && ($user->isAdmin() || $user->isStaff())) {
+            return redirect()->route('dashboard');
+        }
+        if (!$user->is_guest) {
+            return redirect()->route('menu.index');
+        }
     }
 
     $favoriteMenus = \App\Models\Menu::where('status_tersedia', 1)->take(8)->get();
@@ -75,6 +82,8 @@ Route::middleware(['restore.guest'])->group(function () {
     Route::get('/menu/{menu}', [MenuController::class, 'showProduct'])
         ->name('menu.show');
 
+    Route::post('/password/request', [PasswordResetRequestController::class, 'store'])
+        ->name('password.request.text');
 
     /*
     |--------------------------------------------------------------------------
@@ -82,33 +91,33 @@ Route::middleware(['restore.guest'])->group(function () {
     |--------------------------------------------------------------------------
     */
 
-Route::post('/guest-login', function () {
-    // Ensure a guest role exists and use its id to satisfy FK
-    $role = Role::firstOrCreate([
-        'role_name' => 'Guest',
-    ]);
+    Route::post('/guest-login', function () {
+        // Ensure a guest role exists and use its id to satisfy FK
+        $role = Role::firstOrCreate([
+            'role_name' => 'Guest',
+        ]);
 
-    $guest = User::firstOrCreate(
-        ['is_guest' => true],
-        [
-            'name' => 'Guest User',
-            'username' => 'guest',
-            'email' => 'guest@local.test',
-            'password' => Hash::make(Str::random(16)),
-            'id_role' => $role->id_role,
+        $guest = User::firstOrCreate(
+            ['is_guest' => true],
+            [
+                'name' => 'Guest User',
+                'username' => 'guest',
+                'email' => 'guest@local.test',
+                'password' => Hash::make(Str::random(16)),
+                'id_role' => $role->id_role,
+                'is_guest' => true,
+            ]
+        );
+
+        Auth::login($guest);
+
+        session([
             'is_guest' => true,
-        ]
-    );
+            'guest_name' => 'Guest',
+        ]);
 
-    Auth::login($guest);
-
-    session([
-        'is_guest' => true,
-        'guest_name' => 'Guest',
-    ]);
-
-    return redirect()->route('menu.index');
-})->name('guest.login');
+        return redirect()->route('menu.index');
+    })->name('guest.login');
 
 });
 
@@ -158,7 +167,7 @@ Route::middleware(['customer'])->group(function () {
 
     Route::get('/home', function () {
         return view('Customerviews.home');
-    })->name('home');
+    })->name('customer.home');
 
     // Orders
     Route::get('/orders', [OrderController::class, 'history'])
@@ -350,10 +359,13 @@ Route::middleware(['restore.guest'])->group(function () {
 |--------------------------------------------------------------------------
 */
 
-Route::middleware(['admin.staff'])->prefix('admin')->group(function () {
+Route::middleware(['admin.staff'])->group(function () {
 
     // Dashboard
     Route::get('/dashboard', [DashboardController::class, 'index'])
+        ->name('dashboard');
+
+    Route::get('/control/dashboard', [DashboardController::class, 'index'])
         ->name('control.dashboard');
 
     // Staff Directory (Viewable by Staff, modifications Admin only)
@@ -390,17 +402,48 @@ Route::middleware(['admin.staff'])->prefix('admin')->group(function () {
     Route::get('/orders', [OrderController::class, 'index'])
         ->name('admin.orders');
 
+    Route::get('/admin/orders', [OrderController::class, 'index'])
+        ->name('orders.index');
+
     Route::put('/orders/{id_order}/complete', [OrderController::class, 'complete'])
         ->name('admin.orders.complete');
+
+    Route::patch('/admin/orders/{id_order}/complete', [OrderController::class, 'complete'])
+        ->name('order.complete');
 
     Route::put('/orders/{id_order}/cancel', [OrderController::class, 'cancel'])
         ->name('admin.orders.cancel');
 
+    Route::patch('/admin/orders/{id_order}/cancel', [OrderController::class, 'cancel'])
+        ->name('order.cancel');
+
+    Route::post('/order/{id_order}/finish', [OrderController::class, 'finishOrder'])
+        ->name('order.finish');
+
+    // Password Management
+    Route::put('/password/update', [StaffController::class, 'updateOwnPassword'])
+        ->name('admin.password.update');
+
+    Route::get('/staff/{id}/password', [StaffController::class, 'editPassword'])
+        ->name('admin.staff.password.edit');
+
+    Route::put('/staff/{id}/password', [StaffController::class, 'updatePassword'])
+        ->name('admin.staff.password.update');
+ 
     // History
     Route::get('/history', [OrderController::class, 'historyAdmin'])
         ->name('admin.history');
 
-    // Menu CRUD
+    Route::get('/order-history/{id}/receipt', [ReceiptController::class, 'viewHistory'])
+        ->name('admin.history.receipt');
+
+    // Menu CRUD & Discount
+    Route::get('/menu/{id}/discount', [MenuController::class, 'discountForm'])
+        ->name('admin.menu.discount');
+
+    Route::post('/menu/{id}/discount', [MenuController::class, 'setDiscount'])
+        ->name('admin.menu.discount.store');
+
     Route::get('/menu', [MenuController::class, 'index'])
         ->name('admin.menu');
 

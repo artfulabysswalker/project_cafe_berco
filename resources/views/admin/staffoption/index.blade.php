@@ -28,7 +28,7 @@
     @endif
 
     {{-- Non-Admin Notice Banner --}}
-    @if(!$isAdmin)
+    @if(!($isAdmin ?? false))
         <div class="bg-amber-50/60 border border-amber-200 rounded-lg p-3.5 flex items-center justify-between text-xs text-amber-900">
             <div class="flex items-center space-x-2.5">
                 <i class="fas fa-shield-halved text-amber-600 text-sm"></i>
@@ -39,7 +39,7 @@
     @endif
 
     @php
-        $allUsers = $admins->concat($staffs)->concat($users);
+        $allUsers = collect($admins ?? [])->concat($staffs ?? [])->concat($users ?? []);
     @endphp
 
     {{-- SINGLE UNIFIED CARD CONTAINER --}}
@@ -69,7 +69,7 @@
                     <i class="fas fa-magnifying-glass text-neutral-400 text-xs absolute left-2.5 top-2.5"></i>
                 </div>
 
-                @if($isAdmin)
+                @if($isAdmin ?? false)
                     <a href="{{ route('admin.staffoption.create') }}" class="text-xs font-mono font-medium bg-[#18181B] hover:bg-black text-white px-3.5 py-1.5 rounded-md transition-colors shadow-2xs inline-flex items-center space-x-1.5 shrink-0">
                         <i class="fas fa-plus text-[10px]"></i>
                         <span>Tambah Pegawai</span>
@@ -92,19 +92,19 @@
                     type="button" 
                     onclick="selectRoleTab('admin', this)" 
                     class="role-tab px-3 py-1 rounded-md font-medium text-xs text-neutral-600 hover:text-neutral-900 hover:bg-white/80 transition-colors">
-                    Admin / Owner ({{ $admins->count() }})
+                    Admin / Owner ({{ count($admins ?? []) }})
                 </button>
                 <button 
                     type="button" 
                     onclick="selectRoleTab('staff', this)" 
                     class="role-tab px-3 py-1 rounded-md font-medium text-xs text-neutral-600 hover:text-neutral-900 hover:bg-white/80 transition-colors">
-                    Kasir & Staff ({{ $staffs->count() }})
+                    Kasir & Staff ({{ count($staffs ?? []) }})
                 </button>
                 <button 
                     type="button" 
                     onclick="selectRoleTab('customer', this)" 
                     class="role-tab px-3 py-1 rounded-md font-medium text-xs text-neutral-600 hover:text-neutral-900 hover:bg-white/80 transition-colors">
-                    Pelanggan ({{ $users->count() }})
+                    Pelanggan ({{ count($users ?? []) }})
                 </button>
             </div>
 
@@ -128,7 +128,7 @@
                         <th class="px-5 py-3 font-semibold">Role / Akses</th>
                         <th class="px-5 py-3 font-semibold text-center">Status</th>
                         <th class="px-5 py-3 font-semibold">Bergabung</th>
-                        @if($isAdmin)
+                        @if($isAdmin ?? false)
                             <th class="px-5 py-3 font-semibold text-right">Aksi</th>
                         @endif
                     </tr>
@@ -145,7 +145,7 @@
                             }
 
                             $status = strtolower($person->status ?? 'active');
-                            $isSelf = $person->id_user === auth()->id();
+                            $isSelf = ($person->id_user ?? $person->id) === auth()->id();
                         @endphp
                         <tr class="staff-row hover:bg-neutral-50/75 transition-colors" data-role="{{ $roleGroup }}" data-status="{{ $status }}">
                             
@@ -214,7 +214,7 @@
                             </td>
 
                             {{-- Actions Column --}}
-                            @if($isAdmin)
+                            @if($isAdmin ?? false)
                                 <td class="px-5 py-3 text-right">
                                     <div class="inline-flex items-center space-x-1.5 relative">
                                         {{-- Primary Edit Button --}}
@@ -276,7 +276,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="{{ $isAdmin ? 5 : 4 }}" class="px-5 py-12 text-center text-xs font-mono text-neutral-400">
+                            <td colspan="{{ ($isAdmin ?? false) ? 5 : 4 }}" class="px-5 py-12 text-center text-xs font-mono text-neutral-400">
                                 Belum ada data pengguna yang terdaftar.
                             </td>
                         </tr>
@@ -288,15 +288,6 @@
         {{-- 4. Clean Footer & Pagination Controls --}}
         <div class="px-5 py-3 border-t border-neutral-200 bg-neutral-50/50 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs font-mono text-neutral-500">
             <span id="tablePaginationInfo">Menampilkan 1-{{ $allUsers->count() }} dari {{ $allUsers->count() }} pengguna</span>
-            
-            <div class="flex items-center space-x-1.5">
-                <button type="button" class="px-2.5 py-1 rounded border border-neutral-200 bg-white text-neutral-400 cursor-not-allowed" disabled>
-                    &larr; Prev
-                </button>
-                <button type="button" class="px-2.5 py-1 rounded border border-neutral-200 bg-white text-neutral-700 hover:bg-neutral-50">
-                    Next &rarr;
-                </button>
-            </div>
         </div>
 
     </div>

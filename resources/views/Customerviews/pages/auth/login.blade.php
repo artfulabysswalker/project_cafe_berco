@@ -56,16 +56,6 @@
             <p class="text-zinc-600 mt-2 text-sm md:text-base">Sistem Pemesanan Online & Loyalty Program</p>
         </div>
 
-        {{-- Status Alert --}}
-        <div class="w-full max-w-lg bg-gradient-to-r from-[#FEF3C7] to-[#FFFBEC] border-l-4 border-[#F59E0B] rounded-lg p-4 mb-6 text-center shadow-sm animate-slideIn">
-            <div class="flex items-center justify-center gap-2">
-                <i class="fas fa-clock text-[#F59E0B]"></i>
-                <p class="text-[#92400E] text-sm font-medium">
-                    Buka: <span class="font-bold">16.00 - 22.00 WIB</span>
-                </p>
-            </div>
-        </div>
-
         {{-- Login Card --}}
         <div class="w-full max-w-lg bg-white p-8 md:p-10 rounded-3xl shadow-2xl border border-orange-100/50 animate-slideIn" style="animation-delay: 0.1s;">
             

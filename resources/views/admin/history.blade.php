@@ -11,8 +11,8 @@
         <div>
             <h2 class="text-xl font-bold text-stone-800">Riwayat & Laporan Penjualan</h2>
             <p class="text-stone-500 text-sm mt-1">
-                Total Pendapatan Valid: <span class="font-bold text-emerald-600">Rp {{ number_format($totalRevenue, 0, ',', '.') }}</span>
-                • {{ $totalOrders }} Transaksi tercatat
+                Total Pendapatan Valid: <span class="font-bold text-emerald-600">Rp {{ number_format($totalRevenue ?? 0, 0, ',', '.') }}</span>
+                • {{ $totalOrders ?? 0 }} Transaksi tercatat
             </p>
         </div>
 
@@ -30,7 +30,7 @@
     {{-- Unified Filter Toolbar --}}
     <div class="bg-white p-5 rounded-xl shadow-sm border border-stone-200 mb-6">
         <form method="GET" action="{{ route('admin.history') }}" class="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
-            {{-- Range Quick Picker (Optional if needed, but we use manual range) --}}
+            {{-- Range Quick Picker --}}
             <div class="md:col-span-3 flex flex-col gap-1.5">
                 <label class="text-[10px] font-bold text-stone-400 uppercase tracking-wider">Rentang Tanggal</label>
                 <div class="flex items-center gap-2">
@@ -45,9 +45,11 @@
                 <label class="text-[10px] font-bold text-stone-400 uppercase tracking-wider">Staff / Kasir</label>
                 <select name="staff" class="w-full bg-stone-50 border border-stone-200 rounded-lg text-xs py-2 px-3 outline-none focus:border-[#C87D38] cursor-pointer">
                     <option value="all">Semua Pegawai</option>
-                    @foreach($staffList as $staff)
-                        <option value="{{ $staff->name }}" {{ request('staff') == $staff->name ? 'selected' : '' }}>{{ $staff->name }}</option>
-                    @endforeach
+                    @if(isset($staffList))
+                        @foreach($staffList as $staff)
+                            <option value="{{ $staff->name }}" {{ request('staff') == $staff->name ? 'selected' : '' }}>{{ $staff->name }}</option>
+                        @endforeach
+                    @endif
                 </select>
             </div>
 
@@ -100,18 +102,18 @@
                 </thead>
                 <tbody class="divide-y divide-stone-100">
                     @forelse($historyOrders as $index => $order)
-                        <tr class="hover:bg-stone-50/50 transition-colors group {{ $order->status_order === 'cancelled' ? 'bg-rose-50/20' : '' }}">
+                        <tr class="hover:bg-stone-50/50 transition-colors group {{ ($order->status_order ?? '') === 'cancelled' ? 'bg-rose-50/20' : '' }}">
                             <td class="px-6 py-4">
                                 <div class="flex flex-col">
                                     <span class="text-sm font-bold text-[#C87D38]">#ORD-{{ $order->id_order }}</span>
-                                    @if($order->status_order === 'cancelled')
+                                    @if(($order->status_order ?? '') === 'cancelled')
                                         <span class="text-[9px] font-black text-rose-500 uppercase tracking-tighter">CANCELLED / VOID</span>
                                     @endif
                                 </div>
                             </td>
                             <td class="px-6 py-4 text-stone-600 font-medium">
-                                <div class="text-sm">{{ $order->tanggal ? $order->tanggal->format('d/m/Y') : '-' }}</div>
-                                <div class="text-[11px] text-stone-400 font-normal">{{ $order->tanggal ? $order->tanggal->format('H:i') : '-' }} WIB</div>
+                                <div class="text-sm">{{ $order->tanggal ? $order->tanggal->format('d/m/Y') : ($order->created_at ? $order->created_at->format('d/m/Y') : '-') }}</div>
+                                <div class="text-[11px] text-stone-400 font-normal">{{ $order->tanggal ? $order->tanggal->format('H:i') : ($order->created_at ? $order->created_at->format('H:i') : '-') }} WIB</div>
                             </td>
                             <td class="px-6 py-4">
                                 @php
@@ -129,9 +131,13 @@
                             </td>
                             <td class="px-6 py-4">
                                 <p class="text-[11px] text-stone-600 leading-relaxed line-clamp-2 max-w-[240px]">
-                                    @foreach($order->items as $item)
-                                        <span class="font-bold">{{ $item->quantity }}x</span> {{ $item->menu?->nama_menu ?? 'Item' }}{{ !$loop->last ? ', ' : '' }}
-                                    @endforeach
+                                    @if($order->items)
+                                        @foreach($order->items as $item)
+                                            <span class="font-bold">{{ $item->quantity }}x</span> {{ $item->menu?->nama_menu ?? 'Item' }}{{ !$loop->last ? ', ' : '' }}
+                                        @endforeach
+                                    @else
+                                        -
+                                    @endif
                                 </p>
                             </td>
                             <td class="px-6 py-4 text-center">
@@ -149,8 +155,8 @@
                                 </div>
                             </td>
                             <td class="px-6 py-4 text-right">
-                                <span class="text-sm font-bold {{ $order->status_order === 'cancelled' ? 'text-stone-300 line-through' : 'text-stone-800' }}">
-                                    Rp {{ number_format($order->total_harga, 0, ',', '.') }}
+                                <span class="text-sm font-bold {{ ($order->status_order ?? '') === 'cancelled' ? 'text-stone-300 line-through' : 'text-stone-800' }}">
+                                    Rp {{ number_format($order->total_harga ?? 0, 0, ',', '.') }}
                                 </span>
                             </td>
                             <td class="px-6 py-4 text-center">
@@ -178,7 +184,7 @@
             </table>
         </div>
 
-        @if($historyOrders->hasPages())
+        @if(method_exists($historyOrders, 'hasPages') && $historyOrders->hasPages())
             <div class="px-6 py-5 bg-stone-50 border-t border-stone-200">
                 <div class="flex items-center justify-between">
                     <span class="text-xs text-stone-500 font-medium">Menampilkan {{ $historyOrders->firstItem() }} - {{ $historyOrders->lastItem() }} dari {{ $historyOrders->total() }} transaksi</span>

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Order;
+use App\Models\OrderHistory;
 use App\Models\OrderItem;
 use App\Models\Expense;
 use App\Models\User;
@@ -22,7 +23,7 @@ class StatsController extends Controller
         $currentUser = auth()->user();
         $isAdmin = $currentUser ? $currentUser->isAdmin() : true;
 
-        // Unique Staff & Cashier list for dropdown switcher (Admin, Cashiers Robin/Nikita/Dery, Staff)
+        // Unique Staff & Cashier list for dropdown switcher
         $staffList = User::whereHas('role', function ($q) {
             $q->whereIn('role_name', ['Admin', 'Staff', 'Cashier', 'kasir', 'pegawai']);
         })->orWhereIn('username', ['admin', 'robin', 'nikita', 'dery'])
@@ -83,7 +84,7 @@ class StatsController extends Controller
             $staffLabel = Shift::find($shiftId)?->nama_pegawai ?? 'Staff';
         }
 
-        // 1. Payment Breakdown Aggregation
+        // Payment Breakdown Aggregation
         $allOrders = $reportData['cashOrders']->concat($reportData['qrisOrders']);
         $totalOrdersCount = $allOrders->count();
 
@@ -111,11 +112,59 @@ class StatsController extends Controller
         $pdf = Pdf::loadView('admin.reports.financial_pdf', $pdfData);
         $pdf->setPaper('A4', 'portrait');
 
-        // Dynamic Filename: laporan-penjualan-Robin-2026-09-02.pdf
         $cleanStaffName = str_replace(' ', '-', $staffLabel);
         $fileName = 'laporan-penjualan-' . $cleanStaffName . '-' . now()->format('Y-m-d') . '.pdf';
 
         return $pdf->download($fileName);
+    }
+
+    /**
+     * Print View Financial Report
+     */
+    public function printReport(Request $request)
+    {
+        $staffId = $request->query('staff_id', 'all');
+        $shiftId = $request->query('shift_id');
+        $range = $request->query('range', 'today');
+        $customStart = $request->query('start_date');
+        $customEnd = $request->query('end_date');
+
+        [$startDate, $endDate, $periodeLabel] = $this->resolveDateRange($range, $customStart, $customEnd);
+
+        $reportData = $this->calculateFinancialReport($startDate, $endDate, $staffId, 'all', $shiftId);
+
+        $staffLabel = 'Semua Staff';
+        if ($staffId !== 'all') {
+            $staffLabel = User::find($staffId)?->name ?? 'Staff';
+        } elseif ($shiftId) {
+            $staffLabel = Shift::find($shiftId)?->nama_pegawai ?? 'Staff';
+        }
+
+        $allOrders = $reportData['cashOrders']->concat($reportData['qrisOrders']);
+        $totalOrdersCount = $allOrders->count();
+
+        $paymentBreakdown = $allOrders->groupBy('payment_method')->map(function ($orders, $method) use ($totalOrdersCount) {
+            $totalAmount = $orders->sum('total_harga');
+            $count = $orders->count();
+            return [
+                'method' => strtoupper($method ?: 'CASH'),
+                'count' => $count,
+                'total' => $totalAmount,
+                'percentage' => $totalOrdersCount > 0 ? round(($count / $totalOrdersCount) * 100, 1) : 0
+            ];
+        })->values();
+
+        $printData = array_merge($reportData, [
+            'startDate' => $startDate->format('d/m/Y'),
+            'endDate' => $endDate->format('d/m/Y'),
+            'periodeLabel' => $periodeLabel,
+            'selectedStaff' => $staffLabel,
+            'paymentBreakdown' => $paymentBreakdown,
+            'printedAt' => Carbon::now()->locale('id')->isoFormat('D MMMM Y, HH:mm'),
+            'allOrders' => $allOrders->sortByDesc('tanggal')
+        ]);
+
+        return view('admin.reports.financial_pdf', $printData);
     }
 
     /**

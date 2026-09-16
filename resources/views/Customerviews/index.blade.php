@@ -22,7 +22,6 @@
         <div class="container header-container">
 
             <div class="logo-area">
-                <i class="fas fa-coffee cup-icon"></i>
                 <div class="logo-text">
                     <h1 class="brand-name">BERCO</h1>
 

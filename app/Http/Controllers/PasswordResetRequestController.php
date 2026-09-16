@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\PasswordResetRequest;
+use App\Models\User;
 use Illuminate\Http\Request;
 
 class PasswordResetRequestController extends Controller
@@ -20,6 +21,40 @@ class PasswordResetRequestController extends Controller
     }
 
     /**
+     * Show form for creating reset request
+     */
+    public function create()
+    {
+        return view('auth.login');
+    }
+
+    /**
+     * Store password reset request
+     */
+    public function store(Request $request)
+    {
+        $usernameOrEmail = $request->input('username') ?? $request->input('email');
+
+        $user = null;
+        if ($usernameOrEmail) {
+            $user = User::where('username', $usernameOrEmail)
+                ->orWhere('email', $usernameOrEmail)
+                ->first();
+        } elseif (auth()->check()) {
+            $user = auth()->user();
+        }
+
+        if ($user) {
+            PasswordResetRequest::create([
+                'id_user' => $user->id_user,
+                'status' => 'pending',
+            ]);
+        }
+
+        return back()->with('success', 'Permintaan reset password telah dikirim ke administrator.');
+    }
+
+    /**
      * Reset user password to default
      */
     public function resetDefault(Request $request, $id_user)
@@ -32,7 +67,9 @@ class PasswordResetRequestController extends Controller
 
         // Reset password to default (123456)
         $user = $passwordResetRequest->user;
-        $user->update(['password' => bcrypt('123456')]);
+        if ($user) {
+            $user->update(['password' => bcrypt('123456')]);
+        }
 
         // Mark request as processed
         $passwordResetRequest->update(['status' => 'processed']);
@@ -40,4 +77,3 @@ class PasswordResetRequestController extends Controller
         return back()->with('success', 'Password user berhasil direset ke default (123456)');
     }
 }
-

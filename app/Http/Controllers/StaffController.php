@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use App\Models\Role;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
 
@@ -115,6 +116,7 @@ class StaffController extends Controller
         if ($roles->isEmpty()) {
             $roles = Role::all();
         }
+
         return view('admin.staffoption.edit', compact('staff', 'roles'));
     }
 
@@ -257,5 +259,56 @@ class StaffController extends Controller
 
         return redirect()->route('admin.staffoption.index')
             ->with('success', 'Akun "' . $name . '" berhasil dihapus.');
+    }
+
+    /**
+     * Update own password (from main)
+     */
+    public function updateOwnPassword(Request $request)
+    {
+        $request->validate([
+            'current_password' => 'required',
+            'password' => 'required|min:6|confirmed',
+        ]);
+
+        $user = Auth::user();
+
+        if (!Hash::check($request->current_password, $user->password)) {
+            return back()->withErrors(['current_password' => 'Current password is wrong']);
+        }
+
+        $user->update([
+            'password' => Hash::make($request->password)
+        ]);
+
+        return back()->with('success', 'Password updated successfully');
+    }
+
+    /**
+     * Edit staff password view (from main)
+     */
+    public function editPassword($id_user)
+    {
+        $user = User::where('id_user', $id_user)->orWhere('id', $id_user)->firstOrFail();
+
+        return view('admin.staffoption.password', compact('user'));
+    }
+
+    /**
+     * Update staff password (from main)
+     */
+    public function updatePassword(Request $request, $id_user)
+    {
+        $request->validate([
+            'password' => 'required|min:6|confirmed',
+        ]);
+
+        $user = User::where('id_user', $id_user)->orWhere('id', $id_user)->firstOrFail();
+        $user->update([
+            'password' => Hash::make($request->password)
+        ]);
+
+        return redirect()->route('admin.staffoption.index')
+            ->with('success', 'Password updated successfully');
     }
 }

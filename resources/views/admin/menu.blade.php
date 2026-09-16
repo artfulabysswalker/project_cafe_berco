@@ -55,14 +55,16 @@
             </form>
 
             {{-- Category Filter --}}
+            @if(isset($categories))
             <select onchange="window.location.href=this.value" class="bg-white border border-stone-200 rounded-lg text-xs py-2 px-3 outline-none focus:border-[#C87D38] shadow-sm cursor-pointer text-stone-700">
                 <option value="{{ route('admin.menu') }}">Semua Kategori ({{ $categories->sum('menus_count') }})</option>
                 @foreach($categories as $cat)
-                    <option value="{{ route('admin.menu', ['category' => $cat->id]) }}" {{ $selectedCategory == $cat->id ? 'selected' : '' }}>
+                    <option value="{{ route('admin.menu', ['category' => $cat->id]) }}" {{ ($selectedCategory ?? '') == $cat->id ? 'selected' : '' }}>
                         {{ $cat->nama_kategori }} ({{ $cat->menus_count }})
                     </option>
                 @endforeach
             </select>
+            @endif
 
             {{-- Kelola Kategori Button --}}
             <button type="button" onclick="openCategoryModal()" class="bg-stone-100 hover:bg-stone-200 text-stone-700 border border-stone-200 px-3.5 py-2 rounded-lg text-xs font-semibold shadow-sm transition-all flex items-center gap-1.5 cursor-pointer">
@@ -117,7 +119,7 @@
                             <td class="px-5 py-3.5">
                                 <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200 uppercase tracking-wide">
                                     <i class="fas fa-tag text-[9px] mr-1 opacity-70"></i>
-                                    {{ $menu->categoryRelation?->nama_kategori ?? 'UMUM' }}
+                                    {{ $menu->categoryRelation?->nama_kategori ?? ($menu->kategori ?? 'UMUM') }}
                                 </span>
                             </td>
                             <td class="px-5 py-3.5">
@@ -148,14 +150,14 @@
                             </td>
                             <td class="px-5 py-3.5 text-center">
                                 <div class="flex flex-col items-center gap-1">
-                                    <span class="text-xs font-bold {{ $menu->stok <= 5 ? 'text-rose-600' : ($menu->stok <= 15 ? 'text-amber-600' : 'text-stone-700') }}">
-                                        {{ $menu->stok }} Unit
+                                    <span class="text-xs font-bold {{ ($menu->stok ?? 0) <= 5 ? 'text-rose-600' : (($menu->stok ?? 0) <= 15 ? 'text-amber-600' : 'text-stone-700') }}">
+                                        {{ $menu->stok ?? 0 }} Unit
                                     </span>
-                                    @if(!$menu->status_tersedia || $menu->stok <= 0)
+                                    @if(!$menu->status_tersedia || ($menu->stok ?? 0) <= 0)
                                         <span class="px-2 py-0.5 rounded-full text-[9px] font-bold bg-rose-50 text-rose-600 border border-rose-200 uppercase">
                                             <i class="fas fa-ban text-[8px] mr-0.5"></i> Habis
                                         </span>
-                                    @elseif($menu->stok <= 10)
+                                    @elseif(($menu->stok ?? 0) <= 10)
                                         <span class="px-2 py-0.5 rounded-full text-[9px] font-bold bg-amber-50 text-amber-700 border border-amber-200 uppercase">
                                             <i class="fas fa-triangle-exclamation text-[8px] mr-0.5"></i> Menipis
                                         </span>
@@ -248,9 +250,11 @@
                 <select id="modal_id_kategori" name="id_kategori" required
                     class="w-full px-3.5 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-xs text-stone-800 focus:bg-white focus:ring-2 focus:ring-[#C87D38]/20 focus:border-[#C87D38] outline-none transition-all">
                     <option value="" disabled selected>-- Pilih Kategori --</option>
-                    @foreach($categories as $cat)
-                        <option value="{{ $cat->id }}">{{ $cat->nama_kategori }}</option>
-                    @endforeach
+                    @if(isset($categories))
+                        @foreach($categories as $cat)
+                            <option value="{{ $cat->id }}">{{ $cat->nama_kategori }}</option>
+                        @endforeach
+                    @endif
                 </select>
             </div>
 
@@ -355,27 +359,29 @@
                     <span>Jumlah Menu</span>
                 </div>
                 <div class="max-h-60 overflow-y-auto divide-y divide-stone-100">
-                    @forelse($categories as $cat)
-                        <div class="px-3.5 py-2.5 flex items-center justify-between text-xs hover:bg-stone-50 transition-colors">
-                            <span class="font-semibold text-stone-700">{{ $cat->nama_kategori }}</span>
-                            <div class="flex items-center gap-3">
-                                <span class="text-[11px] font-bold text-stone-400 bg-stone-100 px-2 py-0.5 rounded-full">
-                                    {{ $cat->menus_count ?? $cat->menus()->count() }}
-                                </span>
-                                <form method="POST" action="{{ route('admin.categories.destroy', $cat->id) }}" class="inline" onsubmit="return confirm('Hapus kategori {{ $cat->nama_kategori }}?')">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" class="text-stone-300 hover:text-rose-600 transition-colors cursor-pointer" title="Hapus Kategori">
-                                        <i class="fas fa-trash-alt text-xs"></i>
-                                    </button>
-                                </form>
+                    @if(isset($categories))
+                        @forelse($categories as $cat)
+                            <div class="px-3.5 py-2.5 flex items-center justify-between text-xs hover:bg-stone-50 transition-colors">
+                                <span class="font-semibold text-stone-700">{{ $cat->nama_kategori }}</span>
+                                <div class="flex items-center gap-3">
+                                    <span class="text-[11px] font-bold text-stone-400 bg-stone-100 px-2 py-0.5 rounded-full">
+                                        {{ $cat->menus_count ?? (method_exists($cat, 'menus') ? $cat->menus()->count() : 0) }}
+                                    </span>
+                                    <form method="POST" action="{{ route('admin.categories.destroy', $cat->id) }}" class="inline" onsubmit="return confirm('Hapus kategori {{ $cat->nama_kategori }}?')">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="text-stone-300 hover:text-rose-600 transition-colors cursor-pointer" title="Hapus Kategori">
+                                            <i class="fas fa-trash-alt text-xs"></i>
+                                        </button>
+                                    </form>
+                                </div>
                             </div>
-                        </div>
-                    @empty
-                        <div class="px-3.5 py-4 text-center text-xs text-stone-400">
-                            Belum ada kategori
-                        </div>
-                    @endforelse
+                        @empty
+                            <div class="px-3.5 py-4 text-center text-xs text-stone-400">
+                                Belum ada kategori
+                            </div>
+                        @endforelse
+                    @endif
                 </div>
             </div>
         </div>
@@ -404,8 +410,6 @@
     function closeCategoryModal() {
         document.getElementById('categoryModal').classList.add('hidden');
     }
-
-
 
     // Close modal when clicking on backdrop
     window.addEventListener('click', function(e) {

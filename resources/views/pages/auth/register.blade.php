@@ -53,11 +53,6 @@
     <div class="relative flex flex-col items-center pt-8 md:pt-12 px-4 min-h-screen">
         {{-- Header Logo --}}
         <div class="animate-slideIn flex flex-col items-center mb-8 text-center">
-            <a href="{{ route('home') }}" class="mb-4 inline-block hover:scale-105 transition">
-                <div class="w-20 h-20 bg-gradient-to-br from-[#78350F] to-[#5a2308] rounded-full flex items-center justify-center shadow-lg hover:shadow-xl transition">
-                    <span class="text-3xl">☕</span>
-                </div>
-            </a>
             <h1 class="text-4xl md:text-5xl font-bold tracking-tight text-[#78350F]">BERCO CAFE</h1>
             <p class="text-zinc-600 mt-2 text-sm md:text-base">Sistem Pemesanan Online & Loyalty Program</p>
         </div>

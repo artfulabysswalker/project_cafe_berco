@@ -52,7 +52,7 @@
                 </div>
                 <div class="meta-row">
                     <span>Kasir / Staff:</span>
-                    <span>{{ $order->user?->name ?? 'Kasir Berco' }}</span>
+                    <span>{{ $order->user?->name ?? ($order->cashier_name ?? 'Kasir Berco') }}</span>
                 </div>
                 <div class="meta-row">
                     <span>Pelanggan:</span>
@@ -68,23 +68,25 @@
 
             {{-- Items Table --}}
             <div class="receipt-items-list">
-                @forelse($order->items as $item)
-                    @php
-                        $menuName = $item->menu?->nama_menu ?? ($item->menu?->name ?? 'Menu Produk');
-                        $unitPrice = $item->harga_satuan ?? ($item->menu?->harga ?? ($item->subtotal / max(1, $item->quantity)));
-                    @endphp
-                    <div class="item-entry">
-                        <div class="item-top-row">
-                            <span class="item-name">{{ $menuName }}</span>
-                            <span class="item-subtotal">Rp {{ number_format($item->subtotal ?? ($unitPrice * $item->quantity), 0, ',', '.') }}</span>
+                @if($order->items && $order->items->count() > 0)
+                    @foreach($order->items as $item)
+                        @php
+                            $menuName = $item->menu?->nama_menu ?? ($item->menu?->name ?? 'Menu Produk');
+                            $unitPrice = $item->harga_satuan ?? ($item->menu?->harga ?? ($item->subtotal / max(1, $item->quantity)));
+                        @endphp
+                        <div class="item-entry">
+                            <div class="item-top-row">
+                                <span class="item-name">{{ $menuName }}</span>
+                                <span class="item-subtotal">Rp {{ number_format($item->subtotal ?? ($unitPrice * $item->quantity), 0, ',', '.') }}</span>
+                            </div>
+                            <div class="item-calc">
+                                {{ $item->quantity }} x Rp {{ number_format($unitPrice, 0, ',', '.') }}
+                            </div>
                         </div>
-                        <div class="item-calc">
-                            {{ $item->quantity }} x Rp {{ number_format($unitPrice, 0, ',', '.') }}
-                        </div>
-                    </div>
-                @empty
-                    <div style="text-align:center; padding: 8px; color: #94a3b8; font-size: 11px;">Tidak ada item detail</div>
-                @endforelse
+                    @endforeach
+                @else
+                    <div style="text-align:center; padding: 8px; color: #94a3b8; font-size: 11px;">Item detail riwayat</div>
+                @endif
             </div>
 
             <div class="receipt-dashed-line"></div>
@@ -367,6 +369,24 @@
         letter-spacing: 1px;
         color: #94a3b8;
         margin: 4px 0 0 0;
+    }
+
+    @media print {
+        body * {
+            visibility: hidden;
+        }
+        .thermal-paper, .thermal-paper * {
+            visibility: visible;
+        }
+        .thermal-paper {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            box-shadow: none;
+            border: none;
+            padding: 0;
+        }
     }
 </style>
 @endsection

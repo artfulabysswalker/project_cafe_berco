@@ -5,6 +5,12 @@
 @section('content')
 <div class="receipt-page">
     <main class="container receipt-container">
+        @if(session('success'))
+            <div class="toast-message" role="status">
+                <i class="fas fa-check-circle"></i>
+                {{ session('success') }}
+            </div>
+        @endif
         <div class="receipt-box">
             <div class="receipt-header">
                 <div class="logo-area" style="text-align: center;">
@@ -46,7 +52,7 @@
                 <div class="info-row">
                     <span class="label">Status Pembayaran</span>
                     <span class="value">
-                        <span class="badge" style="background: {{ $order->status_pembayaran === 'paid' ? '#27ae60' : '#e74c3c' }}; color: white; padding: 4px 8px; border-radius: 3px;">{{ ucfirst($order->status_pembayaran) }}</span>
+                        <span class="badge {{ $order->status_pembayaran === 'paid' ? 'badge-paid' : 'badge-pending' }}">{{ ucfirst($order->status_pembayaran) }}</span>
                     </span>
                 </div>
                 <div class="info-row">
@@ -103,6 +109,14 @@
             </div>
         </div>
 
+        @php
+            $paymentStatus = strtolower(trim((string) $order->status_pembayaran));
+            $orderStatus = strtolower(trim((string) $order->status_order));
+            $reviewAllowed = in_array($paymentStatus, ['paid', 'sudah', 'lunas'])
+                || in_array($orderStatus, ['completed', 'selesai'])
+                || ($paymentStatus === 'pending' && $orderStatus !== 'cancelled');
+        @endphp
+
         <div class="receipt-actions">
             <button onclick="window.print()" class="btn-print">
                 <i class="fas fa-print"></i> Cetak Struk
@@ -113,12 +127,91 @@
             <a href="{{ route('order.history') }}" class="btn-history">
                 <i class="fas fa-history"></i> Lihat Riwayat Pesanan
             </a>
+            @if($reviewAllowed)
+                <button type="button" onclick="openReviewModal()" class="btn-review-now">
+                    <i class="fas fa-star"></i> Beri Review Sekarang
+                </button>
+            @endif
         </div>
+
+        @if($reviewAllowed)
+            <div id="review-modal" class="review-modal hidden">
+                <div class="review-modal-backdrop" onclick="closeReviewModal()"></div>
+                <div class="review-modal-card">
+                    <button type="button" class="review-modal-close" onclick="closeReviewModal()">×</button>
+                    <div class="review-modal-header">
+                        <i class="fas fa-star"></i>
+                        <div>
+                            <h2>Bagikan Review Menu</h2>
+                            <p>Pilih item yang Anda pesan dan tuliskan pengalaman singkat Anda.</p>
+                        </div>
+                    </div>
+                    <form id="receipt-review-form" method="POST" action="{{ route('reviews.store', $order->items->first()->menu) }}">
+                        @csrf
+                        <div class="review-modal-field">
+                            <label>Pilih Menu</label>
+                            <select id="receipt-review-product-select" class="review-select" required>
+                                @foreach($order->items as $item)
+                                    <option value="{{ route('reviews.store', $item->menu) }}">{{ $item->menu->name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="review-modal-field">
+                            <label>Rating</label>
+                            <select name="rating" required class="review-select">
+                                <option value="">Pilih rating</option>
+                                @for($i = 1; $i <= 5; $i++)
+                                    <option value="{{ $i }}">{{ $i }} bintang</option>
+                                @endfor
+                            </select>
+                        </div>
+                        <div class="review-modal-field">
+                            <label>Ulasan</label>
+                            <textarea name="comment" class="review-textarea" rows="4" placeholder="Bagikan ceritamu tentang menu ini..." required></textarea>
+                        </div>
+                        <div class="review-modal-actions">
+                            <button type="button" class="review-modal-secondary" onclick="closeReviewModal()">Nanti</button>
+                            <button type="submit" class="review-modal-primary">Kirim Review</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        @endif
     </main>
 </div>
 
 <style>
-    .receipt-page {
+.toast-message {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #16a34a;
+            color: white;
+            padding: 14px 24px;
+            border-radius: 18px;
+            box-shadow: 0 18px 50px rgba(15, 23, 42, 0.2);
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            z-index: 1050;
+            font-weight: 600;
+            animation: fade-in 0.35s ease-out;
+        }
+
+        .toast-message.hidden {
+            opacity: 0;
+            transform: translateX(-50%) translateY(-10px);
+            transition: opacity 0.25s ease, transform 0.25s ease;
+            pointer-events: none;
+        }
+
+        @keyframes fade-in {
+            from { opacity: 0; transform: translateX(-50%) translateY(-10px); }
+            to { opacity: 1; transform: translateX(-50%) translateY(0); }
+        }
+
+        .receipt-page {
         background: #f5f5f5;
         padding: 40px 20px;
         min-height: calc(100vh - 100px);
@@ -170,15 +263,21 @@
         text-align: right;
     }
 
-    .receipt-items {
-        font-size: 14px;
+    .badge {
+        display: inline-block;
+        padding: 4px 10px;
+        border-radius: 3px;
+        color: white;
+        font-size: 12px;
+        font-weight: 700;
     }
 
-    .receipt-item {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 12px;
+    .badge-paid {
+        background: #27ae60;
+    }
+
+    .badge-pending {
+        background: #e74c3c;
     }
 
     .item-name-qty {
@@ -216,6 +315,156 @@
 
     .total-row span {
         color: #666;
+    }
+
+    .btn-review-now {
+        background: #f39c12;
+        color: white;
+        border: none;
+        padding: 12px 18px;
+        border-radius: 12px;
+        margin-top: 10px;
+        font-weight: 700;
+        cursor: pointer;
+        transition: background 0.2s ease, transform 0.2s ease;
+    }
+
+    .btn-review-now:hover {
+        background: #d68910;
+        transform: translateY(-1px);
+    }
+
+    .review-modal.hidden {
+        display: none;
+    }
+
+    .review-modal {
+        position: fixed;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+        padding: 20px;
+    }
+
+    .review-modal-backdrop {
+        position: absolute;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.5);
+    }
+
+    .review-modal-card {
+        position: relative;
+        z-index: 1;
+        width: 100%;
+        max-width: 540px;
+        background: white;
+        border-radius: 24px;
+        padding: 28px;
+        box-shadow: 0 30px 80px rgba(0, 0, 0, 0.16);
+    }
+
+    .review-modal-close {
+        position: absolute;
+        top: 18px;
+        right: 18px;
+        background: transparent;
+        border: none;
+        font-size: 28px;
+        color: #7a5b42;
+        cursor: pointer;
+        line-height: 1;
+    }
+
+    .review-modal-header {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        margin-bottom: 22px;
+    }
+
+    .review-modal-header i {
+        color: #f6b93b;
+        font-size: 1.6rem;
+    }
+
+    .review-modal-header h2 {
+        margin: 0;
+        font-size: 1.5rem;
+        color: #6b4b2c;
+    }
+
+    .review-modal-header p {
+        margin: 6px 0 0;
+        color: #7a5b42;
+        line-height: 1.6;
+    }
+
+    .review-modal-field {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        margin-bottom: 18px;
+    }
+
+    .review-modal-field label {
+        color: #5b4632;
+        font-weight: 700;
+        font-size: 0.95rem;
+    }
+
+    .review-modal .review-select,
+    .review-modal .review-textarea {
+        width: 100%;
+        border: 1px solid #d7c0a7;
+        border-radius: 14px;
+        padding: 12px 14px;
+        font-size: 0.95rem;
+        color: #4a4036;
+        background: #fff;
+    }
+
+    .review-modal .review-select:focus,
+    .review-modal .review-textarea:focus {
+        outline: none;
+        border-color: #cd7e26;
+        box-shadow: 0 0 0 4px rgba(205, 126, 38, 0.12);
+    }
+
+    .review-modal-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 12px;
+        flex-wrap: wrap;
+    }
+
+    .review-modal-secondary,
+    .review-modal-primary {
+        border: none;
+        border-radius: 14px;
+        padding: 12px 18px;
+        cursor: pointer;
+        font-weight: 700;
+        min-width: 130px;
+    }
+
+    .review-modal-secondary {
+        background: #f3f3f3;
+        color: #5b4632;
+    }
+
+    .review-modal-secondary:hover {
+        background: #e0dfdc;
+    }
+
+    .review-modal-primary {
+        background: #bf4f08;
+        color: white;
+    }
+
+    .review-modal-primary:hover {
+        background: #a63f06;
     }
 
     .grand-total {
@@ -325,4 +574,36 @@
         }
     }
 </style>
+
+<script>
+    function openReviewModal() {
+        const modal = document.getElementById('review-modal');
+        if (modal) {
+            modal.classList.remove('hidden');
+        }
+    }
+
+    function closeReviewModal() {
+        const modal = document.getElementById('review-modal');
+        if (modal) {
+            modal.classList.add('hidden');
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        const receiptReviewSelector = document.getElementById('receipt-review-product-select');
+        const receiptReviewForm = document.getElementById('receipt-review-form');
+
+        if (receiptReviewSelector && receiptReviewForm) {
+            receiptReviewSelector.addEventListener('change', function () {
+                receiptReviewForm.action = this.value;
+            });
+        }
+
+        const toast = document.querySelector('.toast-message');
+        if (toast) {
+            setTimeout(() => toast.classList.add('hidden'), 3600);
+        }
+    });
+</script>
 @endsection
