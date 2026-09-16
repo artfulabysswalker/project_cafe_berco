@@ -2,14 +2,16 @@
 
 namespace App\Livewire;
 
-use Livewire\Component;
 use App\Models\Order;
 use Carbon\Carbon;
+use Livewire\Component;
 
 class SalesToday extends Component
 {
     public $date;
+
     public $todaySales = [];
+
     public $purchaseHistory = [];
 
     public function mount()
@@ -29,7 +31,7 @@ class SalesToday extends Component
         $totalTransactions = $orders->count();
         $totalRevenue = $orders->sum('final_total');
         $totalProfit = $orders->sum('profit_margin');
-        $totalTax = $orders->sum('tax_amount');
+        $totalCharge = $orders->sum('service_charge');
 
         $this->todaySales = [
             'date_display' => Carbon::parse($this->date)->format('d F Y'),
@@ -37,9 +39,10 @@ class SalesToday extends Component
             'total_transactions' => $totalTransactions,
             'total_revenue' => $totalRevenue,
             'total_profit' => $totalProfit,
-            'total_tax' => $totalTax,
+            // keep legacy key for compatibility while providing the new charge key
+            'total_tax' => $totalCharge,
             'avg_transaction' => $totalTransactions > 0 ? $totalRevenue / $totalTransactions : 0,
-            'total_charge' => $totalTax, // Charge = Tax
+            'total_charge' => $totalCharge,
         ];
 
         // Purchase history
@@ -55,7 +58,7 @@ class SalesToday extends Component
                     'customer' => $order->nama_pelanggan ?? 'Guest',
                     'items' => $order->items->map(fn ($item) => $item->menu->nama_menu)->implode(', '),
                     'subtotal' => $order->subtotal,
-                    'tax' => $order->tax_amount,
+                    'charge' => $order->service_charge,
                     'discount' => $order->discount_amount,
                     'total' => $order->final_total,
                     'profit' => $order->profit_margin,

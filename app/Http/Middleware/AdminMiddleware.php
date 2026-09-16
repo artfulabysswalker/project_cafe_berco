@@ -10,14 +10,14 @@ class AdminMiddleware
 {
     public function handle(Request $request, Closure $next)
     {
-        if (!Auth::check()) {
-            return redirect('/');
+        if (! Auth::check()) {
+            return redirect()->guest(route('login'));
         }
 
         $user = Auth::user();
 
-        // Check if user is Admin or Staff (based on role_name)
-        if ($user->role && in_array($user->role->role_name, ['Admin', 'Staff'])) {
+        // Check if user is Admin or Staff/Cashier
+        if ($user && ($user->isAdmin() || $user->isStaff())) {
             return $next($request);
         }
 

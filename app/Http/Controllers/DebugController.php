@@ -9,6 +9,7 @@ class DebugController extends Controller
     public function loginForm(Request $request)
     {
         $token = csrf_token();
+
         return view('auth.login', ['csrf_token' => $token]);
     }
 

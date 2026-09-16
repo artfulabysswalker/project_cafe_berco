@@ -16,8 +16,9 @@
         padding: 2.5rem;
         border-radius: 28px;
         box-shadow: 0 4px 20px rgba(107, 63, 31, 0.08);
-        max-width: 700px;
-        margin: 0 auto;
+        width: 100%;
+        max-width: 100%;
+        margin: 0;
     }
 
     .create-staff-header {
@@ -336,12 +337,22 @@
                 </div>
 
                 <div class="form-group">
+                    <label for="email" class="form-label">Email <span class="label-note">(Opsional)</span></label>
+                    <input type="email" class="form-control @error('email') is-invalid @enderror" 
+                           id="email" name="email" value="{{ old('email') }}" 
+                           placeholder="staff@bercocafe.com">
+                    @error('email')
+                        <span class="invalid-feedback">{{ $message }}</span>
+                    @enderror
+                </div>
+
+                <div class="form-group">
                     <label for="id_role" class="form-label">Role / Posisi</label>
                     <select class="form-control @error('id_role') is-invalid @enderror" 
                             id="id_role" name="id_role" required>
                         <option value="">-- Pilih Role --</option>
                         @foreach($roles as $role)
-                            @if(in_array($role->role_name, ['Admin', 'Staff']))
+                            @if(in_array($role->role_name, ['Admin', 'Staff', 'Cashier', 'Kasir']))
                                 <option value="{{ $role->id_role }}" 
                                         {{ old('id_role') == $role->id_role ? 'selected' : '' }}>
                                     {{ $role->role_name }}
@@ -350,6 +361,17 @@
                         @endforeach
                     </select>
                     @error('id_role')
+                        <span class="invalid-feedback">{{ $message }}</span>
+                    @enderror
+                </div>
+
+                <div class="form-group">
+                    <label for="status" class="form-label">Status Akun</label>
+                    <select class="form-control @error('status') is-invalid @enderror" id="status" name="status">
+                        <option value="active" {{ old('status', 'active') === 'active' ? 'selected' : '' }}>Aktif (Dapat Login)</option>
+                        <option value="inactive" {{ old('status') === 'inactive' ? 'selected' : '' }}>Nonaktif (Tidak Dapat Login)</option>
+                    </select>
+                    @error('status')
                         <span class="invalid-feedback">{{ $message }}</span>
                     @enderror
                 </div>

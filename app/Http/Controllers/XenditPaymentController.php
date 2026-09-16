@@ -4,13 +4,14 @@ namespace App\Http\Controllers;
 
 use App\Models\Order;
 use App\Models\Payment;
+use App\Notifications\PaymentConfirmationNotification;
+use Exception;
 use Illuminate\Http\Request;
 use Xendit\Configuration;
-use Xendit\Invoice\InvoiceApi;
 use Xendit\Invoice\CreateInvoiceRequest;
 use Xendit\Invoice\CustomerObject;
+use Xendit\Invoice\InvoiceApi;
 use Xendit\Invoice\InvoiceItem;
-use Exception;
 
 class XenditPaymentController extends Controller
 {
@@ -26,7 +27,7 @@ class XenditPaymentController extends Controller
     public function createInvoice(Order $order)
     {
         try {
-            $invoiceApi = new InvoiceApi();
+            $invoiceApi = new InvoiceApi;
 
             // Create customer object
             $customer = new CustomerObject([
@@ -47,27 +48,22 @@ class XenditPaymentController extends Controller
                 $items[] = $invoiceItem;
             }
 
-            // Add tax as item
-            $subtotal = $order->orderItems->sum(function ($item) {
-                return $item->menu->harga * $item->quantity;
-            });
-            $tax = $subtotal * 0.1;
-
-            if ($tax > 0) {
-                $taxItem = new InvoiceItem([
-                    'name' => 'PPN 10%',
+            // Add service charge item for take-away if present
+            if ($order->service_charge > 0) {
+                $serviceChargeItem = new InvoiceItem([
+                    'name' => 'Biaya Take-Away',
                     'quantity' => 1,
-                    'price' => (int) $tax,
-                    'category' => 'tax',
+                    'price' => (int) $order->service_charge,
+                    'category' => 'service_charge',
                 ]);
-                $items[] = $taxItem;
+                $items[] = $serviceChargeItem;
             }
 
             // Create invoice request
             $createInvoiceRequest = new CreateInvoiceRequest([
-                'external_id' => 'ORDER-' . $order->id_order . '-' . time(),
+                'external_id' => 'ORDER-'.$order->id_order.'-'.time(),
                 'amount' => (int) $order->total_harga,
-                'description' => 'Order #' . $order->id_order . ' - ' . $order->nama_pelanggan,
+                'description' => 'Order #'.$order->id_order.' - '.$order->nama_pelanggan,
                 'customer' => $customer,
                 'items' => $items,
                 'due_date' => now()->addMinutes(30)->toIso8601String(),
@@ -108,14 +104,13 @@ class XenditPaymentController extends Controller
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
             ]);
-            
+
             return response()->json([
                 'success' => false,
-                'message' => 'Gagal membuat invoice: ' . $e->getMessage(),
+                'message' => 'Gagal membuat invoice: '.$e->getMessage(),
             ], 500);
         }
     }
-
 
     /**
      * Get payment methods based on payment type
@@ -147,7 +142,7 @@ class XenditPaymentController extends Controller
             $invoiceResponse = $this->createInvoice($order);
             $invoiceData = json_decode($invoiceResponse->content(), true);
 
-            if (!$invoiceData['success']) {
+            if (! $invoiceData['success']) {
                 return redirect()->route('payment.show', ['order' => $order->id_order])
                     ->with('error', $invoiceData['message']);
             }
@@ -156,7 +151,7 @@ class XenditPaymentController extends Controller
             return redirect()->away($invoiceData['invoice_url']);
         } catch (Exception $e) {
             return redirect()->route('payment.show', ['order' => $order->id_order])
-                ->with('error', 'Gagal redirect ke pembayaran: ' . $e->getMessage());
+                ->with('error', 'Gagal redirect ke pembayaran: '.$e->getMessage());
         }
     }
 
@@ -171,7 +166,7 @@ class XenditPaymentController extends Controller
             \Log::info('Xendit Callback Received', $data);
 
             // Find order by external_id
-            if (!isset($data['external_id'])) {
+            if (! isset($data['external_id'])) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Invalid callback data',
@@ -182,7 +177,7 @@ class XenditPaymentController extends Controller
             $orderId = explode('-', $externalId)[1] ?? null;
 
             $order = Order::where('id_order', $orderId)->first();
-            if (!$order) {
+            if (! $order) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Order not found',
@@ -190,7 +185,7 @@ class XenditPaymentController extends Controller
             }
 
             $payment = Payment::where('id_order', $order->id_order)->first();
-            if (!$payment) {
+            if (! $payment) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Payment record not found',
@@ -212,7 +207,7 @@ class XenditPaymentController extends Controller
 
                 // Send payment confirmation email
                 if ($order->user) {
-                    $order->user->notify(new \App\Notifications\PaymentConfirmationNotification($order, $payment));
+                    $order->user->notify(new PaymentConfirmationNotification($order, $payment));
                 }
 
                 \Log::info('Payment marked as PAID', ['order_id' => $order->id_order]);
@@ -240,10 +235,10 @@ class XenditPaymentController extends Controller
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
             ]);
-            
+
             return response()->json([
                 'success' => false,
-                'message' => 'Error processing callback: ' . $e->getMessage(),
+                'message' => 'Error processing callback: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -256,7 +251,7 @@ class XenditPaymentController extends Controller
         try {
             $payment = Payment::where('id_order', $order->id_order)->first();
 
-            if (!$payment) {
+            if (! $payment) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Payment record not found',
@@ -273,7 +268,7 @@ class XenditPaymentController extends Controller
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Error checking status: ' . $e->getMessage(),
+                'message' => 'Error checking status: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -292,7 +287,7 @@ class XenditPaymentController extends Controller
 
             return redirect()->route('order.receipt', $order)->with('info', 'Pembayaran sedang diproses');
         } catch (Exception $e) {
-            return redirect()->route('cart.index')->with('error', 'Error: ' . $e->getMessage());
+            return redirect()->route('cart.index')->with('error', 'Error: '.$e->getMessage());
         }
     }
 
@@ -310,7 +305,7 @@ class XenditPaymentController extends Controller
 
             return redirect()->route('cart.index')->with('error', 'Pembayaran gagal. Silahkan coba lagi.');
         } catch (Exception $e) {
-            return redirect()->route('cart.index')->with('error', 'Error: ' . $e->getMessage());
+            return redirect()->route('cart.index')->with('error', 'Error: '.$e->getMessage());
         }
     }
 }

@@ -11,14 +11,14 @@ return new class extends Migration
      */
     public function up(): void
     {
-       Schema::create('payments', function (Illuminate\Database\Schema\Blueprint $table) {
-    $table->id('id_payment');
-    $table->foreignId('id_order')->constrained('orders', 'id_order');
-    $table->string('metode_pembayaran'); // Cash, QRIS
-    $table->integer('jumlah_bayar');
-    $table->dateTime('tanggal_bayar');
-    $table->timestamps();
-});
+        Schema::create('payments', function (Blueprint $table) {
+            $table->id('id_payment');
+            $table->foreignId('id_order')->constrained('orders', 'id_order');
+            $table->string('metode_pembayaran'); // Cash, QRIS
+            $table->integer('jumlah_bayar');
+            $table->dateTime('tanggal_bayar');
+            $table->timestamps();
+        });
     }
 
     /**

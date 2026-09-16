@@ -2,15 +2,16 @@
 
 namespace App\Console\Commands;
 
+use Exception;
 use Illuminate\Console\Command;
 use Xendit\Configuration;
-use Xendit\Invoice\InvoiceApi;
 use Xendit\Invoice\CreateInvoiceRequest;
-use Exception;
+use Xendit\Invoice\InvoiceApi;
 
 class TestXenditPayment extends Command
 {
     protected $signature = 'xendit:test {--amount=100000 : Amount in IDR} {--description="Test Payment" : Invoice description}';
+
     protected $description = 'Test Xendit payment integration by creating a test invoice';
 
     public function handle()
@@ -22,13 +23,13 @@ class TestXenditPayment extends Command
             $description = $this->option('description');
 
             $this->info('Creating test Xendit invoice...');
-            $this->line('Amount: Rp ' . number_format($amount, 0, ',', '.'));
-            $this->line('Description: ' . $description);
+            $this->line('Amount: Rp '.number_format($amount, 0, ',', '.'));
+            $this->line('Description: '.$description);
             $this->newLine();
 
-            $apiInstance = new InvoiceApi();
+            $apiInstance = new InvoiceApi;
             $createInvoiceRequest = new CreateInvoiceRequest([
-                'external_id' => 'TEST-' . time() . '-' . rand(1000, 9999),
+                'external_id' => 'TEST-'.time().'-'.rand(1000, 9999),
                 'amount' => (int) $amount,
                 'description' => $description,
                 'currency' => 'IDR',
@@ -40,7 +41,7 @@ class TestXenditPayment extends Command
                     'OVO',
                     'DANA',
                     'LINKAJA',
-                ]
+                ],
             ]);
 
             $invoice = $apiInstance->createInvoice($createInvoiceRequest);
@@ -53,7 +54,7 @@ class TestXenditPayment extends Command
                     ['Invoice ID', $invoice->getId()],
                     ['External ID', $invoice->getExternalId()],
                     ['Status', $invoice->getStatus()],
-                    ['Amount', 'Rp ' . number_format($invoice->getAmount(), 0, ',', '.')],
+                    ['Amount', 'Rp '.number_format($invoice->getAmount(), 0, ',', '.')],
                     ['Invoice URL', $invoice->getInvoiceUrl() ?? 'N/A'],
                 ]
             );
@@ -71,7 +72,8 @@ class TestXenditPayment extends Command
 
             return self::SUCCESS;
         } catch (Exception $e) {
-            $this->error('Error: ' . $e->getMessage());
+            $this->error('Error: '.$e->getMessage());
+
             return self::FAILURE;
         }
     }

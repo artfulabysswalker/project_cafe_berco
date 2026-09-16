@@ -4,8 +4,8 @@ namespace App\Notifications;
 
 use App\Models\Order;
 use Illuminate\Bus\Queueable;
-use Illuminate\Notifications\Notification;
 use Illuminate\Notifications\Messages\MailMessage;
+use Illuminate\Notifications\Notification;
 
 class OrderConfirmationNotification extends Notification
 {
@@ -29,38 +29,38 @@ class OrderConfirmationNotification extends Notification
         $subtotal = $items->sum(function ($item) {
             return $item->menu->harga * $item->quantity;
         });
-        $tax = $subtotal * 0.1;
+        $serviceCharge = $this->order->service_charge ?? 0;
 
         $mailMessage = (new MailMessage)
-            ->subject('🎉 Pesanan Diterima - Order #' . $this->order->id_order . ' - Berco Cafe')
-            ->greeting('Halo ' . $this->order->nama_pelanggan . '!')
+            ->subject('🎉 Pesanan Diterima - Order #'.$this->order->id_order.' - Berco Cafe')
+            ->greeting('Halo '.$this->order->nama_pelanggan.'!')
             ->line('Pesanan Anda telah berhasil kami terima!')
             ->line('Terima kasih telah memesan di Berco Cafe.')
             ->line('')
             ->line('📋 **Detail Pesanan:**')
-            ->line('Order ID: #' . $this->order->id_order)
-            ->line('Tanggal: ' . $this->order->tanggal->format('d M Y H:i'))
-            ->line('Tipe Layanan: ' . ($this->order->service_type === 'dine_in' ? '🍽️ Dine In' : '🛍️ Take Away'))
-            ->line('Metode Pembayaran: ' . ($this->order->payment_method === 'cash' ? '💵 Tunai' : '💳 Kartu'))
+            ->line('Order ID: #'.$this->order->id_order)
+            ->line('Tanggal: '.$this->order->tanggal->format('d M Y H:i'))
+            ->line('Tipe Layanan: '.($this->order->service_type === 'dine_in' ? '🍽️ Dine In' : '🛍️ Take Away'))
+            ->line('Metode Pembayaran: '.($this->order->payment_method === 'cash' ? '💵 Tunai' : '💳 Kartu'))
             ->line('')
             ->line('📦 **Item yang Dipesan:**');
 
         // Add items
         foreach ($items as $item) {
-            $mailMessage->line('  • ' . $item->menu->nama_menu . ' x' . $item->quantity . ' = Rp ' . number_format($item->subtotal, 0, ',', '.'));
+            $mailMessage->line('  • '.$item->menu->nama_menu.' x'.$item->quantity.' = Rp '.number_format($item->subtotal, 0, ',', '.'));
         }
 
         $mailMessage
             ->line('')
             ->line('💰 **Rincian Harga:**')
-            ->line('Subtotal: Rp ' . number_format($subtotal, 0, ',', '.'))
-            ->line('PPN (10%): Rp ' . number_format($tax, 0, ',', '.'))
+            ->line('Subtotal: Rp '.number_format($subtotal, 0, ',', '.'))
+            ->when($serviceCharge > 0, fn ($message) => $message->line('Biaya Take-away: Rp '.number_format($serviceCharge, 0, ',', '.')))
             ->line('')
-            ->line('🔴 **TOTAL: Rp ' . number_format($this->order->total_harga, 0, ',', '.') . '**')
+            ->line('🔴 **TOTAL: Rp '.number_format($this->order->total_harga, 0, ',', '.').'**')
             ->line('')
             ->line('⏳ **Status:** Pesanan sedang diproses')
             ->line('')
-            ->action('Lihat Detail Pesanan', url('/order/' . $this->order->id_order . '/receipt'))
+            ->action('Lihat Detail Pesanan', url('/order/'.$this->order->id_order.'/receipt'))
             ->line('')
             ->line('Pesanan Anda akan segera siap!')
             ->salutation('Salam Hangat,')

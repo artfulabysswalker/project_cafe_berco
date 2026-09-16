@@ -3,12 +3,11 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Menu;
 use App\Models\Order;
 use App\Models\OrderItem;
-use App\Models\Menu;
-use Illuminate\Http\Request;
 use Carbon\Carbon;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Http\Request;
 
 class AnalyticsController extends Controller
 {
@@ -22,16 +21,16 @@ class AnalyticsController extends Controller
 
         // Parse date for queries
         $selectedDate = Carbon::parse($date);
-        
+
         // Today's Sales Summary
         $todaySales = $this->getTodaysSales();
-        
+
         // Product Sales Analytics
         $productAnalytics = $this->getProductAnalytics($period, $selectedDate);
-        
+
         // Top selling products
         $topProducts = $this->getTopProducts($period, $selectedDate);
-        
+
         // Sales trend chart data
         $chartData = $this->getSalesTrendData($period, $selectedDate);
 
@@ -59,7 +58,7 @@ class AnalyticsController extends Controller
         $totalTransactions = $orders->count();
         $totalRevenue = $orders->sum('final_total');
         $totalProfit = $orders->sum('profit_margin');
-        $totalTax = $orders->sum('tax_amount');
+        $totalCharge = $orders->sum('service_charge');
 
         // Purchase history
         $purchaseHistory = Order::with(['user', 'items.menu'])
@@ -73,7 +72,7 @@ class AnalyticsController extends Controller
             'total_transactions' => $totalTransactions,
             'total_revenue' => $totalRevenue,
             'total_profit' => $totalProfit,
-            'total_tax' => $totalTax,
+            'total_charge' => $totalCharge,
             'avg_transaction' => $totalTransactions > 0 ? $totalRevenue / $totalTransactions : 0,
             'purchase_history' => $purchaseHistory,
         ];
@@ -158,10 +157,10 @@ class AnalyticsController extends Controller
             $item->rank = $index + 1;
             $item->menu_name = $menu->nama_menu ?? 'Unknown';
             $item->menu_price = $menu->harga ?? 0;
-            
+
             // Calculate simple margin (assuming cost is 40% of price)
             $item->total_margin = ($item->total_revenue * 0.6);
-            
+
             return $item;
         });
     }
@@ -204,7 +203,7 @@ class AnalyticsController extends Controller
 
         for ($i = 0; $i < 24; $i++) {
             $labels[] = sprintf('%02d:00', $i);
-            
+
             $order = $orders->where('hour', $i)->first();
             $revenues[] = $order->revenue ?? 0;
             $profits[] = $order->profit ?? 0;
@@ -244,7 +243,7 @@ class AnalyticsController extends Controller
 
         for ($day = 1; $day <= $daysInMonth; $day++) {
             $labels[] = $day;
-            
+
             $order = $orders->where('day', $day)->first();
             $revenues[] = $order->revenue ?? 0;
             $profits[] = $order->profit ?? 0;
@@ -283,7 +282,7 @@ class AnalyticsController extends Controller
 
         for ($month = 1; $month <= 12; $month++) {
             $labels[] = $months[$month - 1];
-            
+
             $order = $orders->where('month', $month)->first();
             $revenues[] = $order->revenue ?? 0;
             $profits[] = $order->profit ?? 0;
@@ -311,6 +310,7 @@ class AnalyticsController extends Controller
         $products = $products->map(function ($p) {
             $p->menu = Menu::find($p->id_menu);
             $p->margin = ($p->total_revenue * 0.6); // 60% margin
+
             return $p;
         });
 
@@ -328,13 +328,13 @@ class AnalyticsController extends Controller
 
         $products = $this->getProductAnalytics($period, $selectedDate);
 
-        $fileName = 'sales-report-' . $period . '-' . $date . '.csv';
-        $headers = array(
-            "Content-type" => "text/csv",
-            "Content-Disposition" => "attachment; filename=$fileName",
-        );
+        $fileName = 'sales-report-'.$period.'-'.$date.'.csv';
+        $headers = [
+            'Content-type' => 'text/csv',
+            'Content-Disposition' => "attachment; filename=$fileName",
+        ];
 
-        $callback = function() use ($products) {
+        $callback = function () use ($products) {
             $file = fopen('php://output', 'w');
             fputcsv($file, ['Menu', 'Total Quantity', 'Total Revenue', 'Avg Price', 'Number of Orders']);
 

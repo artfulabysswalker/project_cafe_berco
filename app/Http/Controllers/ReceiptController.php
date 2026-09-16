@@ -2,83 +2,109 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-
-namespace App\Http\Controllers;
-
-use Illuminate\Http\Request;
-use App\Models\ReceiptSetting;
-use App\Models\OrderHistory;
 use App\Models\Order;
+use App\Models\ReceiptSetting;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Http\Request;
 
 class ReceiptController extends Controller
 {
-   public function edit()
-   {
-       $settings = ReceiptSetting::first();
+    /**
+     * Show receipt settings form
+     */
+    public function edit()
+    {
+        $settings = ReceiptSetting::first();
 
-       if (!$settings) {
-           $settings = ReceiptSetting::create([]);
-       }
+        if (! $settings) {
+            $settings = ReceiptSetting::create([
+                'cafe_name' => 'BERCO CAFE',
+                'address' => 'Jl. SMA Negeri 1, Krajan, Purwoharjo, Banyuwangi',
+                'phone' => '+62 821 4103 1234',
+                'footer_message' => 'Terima kasih atas kunjungan Anda! Nikmati setiap seduhan kopi specialty Berco.',
+                'wifi_name' => 'BERCO_CAFE_GUEST',
+                'wifi_password' => 'kopiberco123',
+            ]);
+        }
 
-       return view('admin.receipt.edit', compact('settings')); // ✅ fixed
-   }
+        return view('admin.receipt.edit', compact('settings'));
+    }
 
-   public function update(Request $request)
-   {
-       $settings = ReceiptSetting::first();
+    /**
+     * Update receipt settings
+     */
+    public function update(Request $request)
+    {
+        $settings = ReceiptSetting::first();
 
-       if ($request->hasFile('logo')) {
-           $path = $request->file('logo')->store('logos', 'public');
-           $settings->logo = $path;
-       }
+        if (! $settings) {
+            $settings = new ReceiptSetting;
+        }
 
-       $settings->update([
-           'cafe_name' => $request->cafe_name,
-           'address' => $request->address,
-           'phone' => $request->phone,
-           'footer_message' => $request->footer_message,
-           'wifi_name' => $request->wifi_name,
-           'wifi_password' => $request->wifi_password,
-           'logo' => $settings->logo,
-       ]);
+        if ($request->hasFile('logo')) {
+            $path = $request->file('logo')->store('logos', 'public');
+            $settings->logo = $path;
+        }
 
-       return back()->with('success', 'Updated!');
-   }
+        $settings->cafe_name = $request->cafe_name ?? 'BERCO CAFE';
+        $settings->address = $request->address;
+        $settings->phone = $request->phone;
+        $settings->footer_message = $request->footer_message;
+        $settings->wifi_name = $request->wifi_name;
+        $settings->wifi_password = $request->wifi_password;
+        $settings->save();
 
-   public function print($id)
-   {
-       $order = Order::with('items.menu')->findOrFail($id);
-       $settings = ReceiptSetting::first();
+        return back()->with('success', 'Pengaturan struk berhasil diperbarui.');
+    }
 
-       return view('admin.receipt.print', compact('order', 'settings')); // ✅ fixed
-   }
+    /**
+     * View receipt preview for an order
+     */
+    public function view($id)
+    {
+        $order = Order::with(['items.menu', 'user'])->findOrFail($id);
+        $settings = ReceiptSetting::first() ?? new ReceiptSetting([
+            'cafe_name' => 'BERCO CAFE',
+            'address' => 'Jl. SMA Negeri 1, Krajan, Purwoharjo, Banyuwangi',
+            'phone' => '+62 821 4103 1234',
+            'footer_message' => 'Terima kasih atas kunjungan Anda!',
+        ]);
 
-public function pdf(Request $request)
-{
-    $file = $request->file;
+        return view('admin.receipt.preview', compact('order', 'settings'));
+    }
 
-    return response()->download(storage_path('app/' . $file));
-}
-public function view($id)
-{
-    $order = Order::with('items.menu')
-        ->where('id_order', $id)
-        ->firstOrFail();
+    /**
+     * Print thermal receipt for an order
+     */
+    public function print($id)
+    {
+        $order = Order::with(['items.menu', 'user'])->findOrFail($id);
+        $settings = ReceiptSetting::first() ?? new ReceiptSetting([
+            'cafe_name' => 'BERCO CAFE',
+            'address' => 'Jl. SMA Negeri 1, Krajan, Purwoharjo, Banyuwangi',
+            'phone' => '+62 821 4103 1234',
+            'footer_message' => 'Terima kasih atas kunjungan Anda!',
+        ]);
 
-    $settings = ReceiptSetting::first();
+        return view('admin.receipt.print', compact('order', 'settings'));
+    }
 
-    return view('admin.receipt.preview', compact('order', 'settings'));
-}
+    /**
+     * Download receipt as PDF
+     */
+    public function pdf($id)
+    {
+        $order = Order::with(['items.menu', 'user'])->findOrFail($id);
+        $settings = ReceiptSetting::first() ?? new ReceiptSetting([
+            'cafe_name' => 'BERCO CAFE',
+            'address' => 'Jl. SMA Negeri 1, Krajan, Purwoharjo, Banyuwangi',
+            'phone' => '+62 821 4103 1234',
+            'footer_message' => 'Terima kasih atas kunjungan Anda!',
+        ]);
 
-public function viewHistory($id)
-{
-    $order = OrderHistory::where('id_order', $id)
-        ->firstOrFail();
+        $pdf = Pdf::loadView('admin.receipt.pdf', compact('order', 'settings'))
+            ->setPaper([0, 0, 226.77, 650], 'portrait'); // 80mm thermal receipt roll size
 
-    $settings = ReceiptSetting::first();
-
-    return view('admin.receipt.preview', compact('order', 'settings'));
-}
+        return $pdf->download('Struk-Order-'.$order->id_order.'.pdf');
+    }
 }

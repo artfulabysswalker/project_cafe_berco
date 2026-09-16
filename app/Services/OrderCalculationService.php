@@ -2,9 +2,9 @@
 
 namespace App\Services;
 
+use App\Models\DiscountScheme;
 use App\Models\Order;
 use App\Models\TaxConfiguration;
-use App\Models\DiscountScheme;
 
 class OrderCalculationService
 {
@@ -14,7 +14,7 @@ class OrderCalculationService
     public function calculateOrderTotal($subtotal, $taxConfigId = null, $discountSchemeId = null, $costOfGoods = 0)
     {
         // Get active tax configuration if not provided
-        if (!$taxConfigId) {
+        if (! $taxConfigId) {
             $taxConfig = TaxConfiguration::getActiveConfiguration();
             $taxConfigId = $taxConfig?->id_tax_config;
         }

@@ -80,7 +80,23 @@
                         </div>
 
                         <div class="order-total">
-                            <div class="total-row">
+                            <div class="total-row" style="font-size: 0.9em; color: #666;">
+                                <span>Subtotal</span>
+                                <span>Rp {{ number_format($order->subtotal, 0, ',', '.') }}</span>
+                            </div>
+                            @if($order->service_charge > 0)
+                            <div class="total-row" style="font-size: 0.9em; color: #666;">
+                                <span>Biaya Take-away</span>
+                                <span>Rp {{ number_format($order->service_charge, 0, ',', '.') }}</span>
+                            </div>
+                            @endif
+                            @if($order->discount_amount > 0)
+                            <div class="total-row" style="font-size: 0.9em; color: #e74c3c;">
+                                <span>Diskon</span>
+                                <span>-Rp {{ number_format($order->discount_amount, 0, ',', '.') }}</span>
+                            </div>
+                            @endif
+                            <div class="total-row" style="font-weight: bold; border-top: 1px solid #eee; padding-top: 8px;">
                                 <span>Total</span>
                                 <span class="total-amount">Rp {{ number_format($order->total_harga, 0, ',', '.') }}</span>
                             </div>

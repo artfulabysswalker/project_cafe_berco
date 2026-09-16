@@ -31,5 +31,4 @@ class OrderHistory extends Model
 
     // Optional but useful
     public $timestamps = true;
-    
 }

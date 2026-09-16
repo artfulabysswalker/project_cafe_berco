@@ -5,8 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\Order;
 use App\Models\QrisTransaction;
 use App\Services\QrisPaymentService;
-use Illuminate\Http\Request;
 use Exception;
+use Illuminate\Http\Request;
 
 class QrisPaymentController extends Controller
 {
@@ -29,7 +29,7 @@ class QrisPaymentController extends Controller
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Gagal membuat invoice QRIS: ' . $e->getMessage(),
+                'message' => 'Gagal membuat invoice QRIS: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -43,7 +43,7 @@ class QrisPaymentController extends Controller
             $invoiceResponse = $this->createInvoice($order);
             $invoiceData = json_decode($invoiceResponse->content(), true);
 
-            if (!$invoiceData['success']) {
+            if (! $invoiceData['success']) {
                 return redirect()->route('xendit.qris.show', ['order' => $order->id_order])
                     ->with('error', $invoiceData['message']);
             }
@@ -52,7 +52,7 @@ class QrisPaymentController extends Controller
             return redirect()->away($invoiceData['invoice_url']);
         } catch (Exception $e) {
             return redirect()->route('xendit.qris.show', ['order' => $order->id_order])
-                ->with('error', 'Gagal redirect ke pembayaran: ' . $e->getMessage());
+                ->with('error', 'Gagal redirect ke pembayaran: '.$e->getMessage());
         }
     }
 
@@ -68,17 +68,14 @@ class QrisPaymentController extends Controller
                 return $item->menu->harga * $item->quantity;
             });
 
-            $tax = $subtotal * 0.1;
-
             return view('payment.qris', [
                 'order' => $order,
                 'qrisTransaction' => $qrisTransaction,
                 'subtotal' => $subtotal,
-                'tax' => $tax,
             ]);
         } catch (Exception $e) {
             return redirect()->route('cart.index')
-                ->with('error', 'Error: ' . $e->getMessage());
+                ->with('error', 'Error: '.$e->getMessage());
         }
     }
 
@@ -89,11 +86,12 @@ class QrisPaymentController extends Controller
     {
         try {
             $result = $this->qrisService->checkPaymentStatus($order);
+
             return response()->json($result);
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Error checking status: ' . $e->getMessage(),
+                'message' => 'Error checking status: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -122,7 +120,7 @@ class QrisPaymentController extends Controller
 
             return response()->json([
                 'success' => false,
-                'message' => 'Error processing callback: ' . $e->getMessage(),
+                'message' => 'Error processing callback: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -142,7 +140,7 @@ class QrisPaymentController extends Controller
                         'status' => 'paid',
                         'paid_at' => now(),
                     ]);
-                    
+
                     // Update order status to paid
                     $order->update([
                         'payment_status' => 'paid',
@@ -157,7 +155,7 @@ class QrisPaymentController extends Controller
                 ->with('error', 'Transaksi QRIS tidak ditemukan');
         } catch (Exception $e) {
             return redirect()->route('cart.index')
-                ->with('error', 'Error: ' . $e->getMessage());
+                ->with('error', 'Error: '.$e->getMessage());
         }
     }
 
@@ -177,7 +175,7 @@ class QrisPaymentController extends Controller
                 ->with('error', '❌ Pembayaran QRIS dibatalkan atau gagal. Silahkan coba lagi.');
         } catch (Exception $e) {
             return redirect()->route('cart.index')
-                ->with('error', 'Error: ' . $e->getMessage());
+                ->with('error', 'Error: '.$e->getMessage());
         }
     }
 }

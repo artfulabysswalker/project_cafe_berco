@@ -22,8 +22,9 @@ class TestQrisWebhook extends Command
         // Find the order
         $order = Order::find($orderId);
 
-        if (!$order) {
+        if (! $order) {
             $this->error("❌ Order #{$orderId} not found");
+
             return 1;
         }
 
@@ -32,9 +33,10 @@ class TestQrisWebhook extends Command
         // Find or create QRIS transaction
         $qrisTransaction = QrisTransaction::where('id_order', $orderId)->first();
 
-        if (!$qrisTransaction) {
+        if (! $qrisTransaction) {
             $this->error("❌ QRIS transaction not found for order #{$orderId}");
             $this->line('   Please create QRIS invoice first: php artisan qris:test {$orderId}');
+
             return 1;
         }
 
@@ -44,7 +46,7 @@ class TestQrisWebhook extends Command
             // Simulate webhook payload
             $webhookPayload = [
                 'id' => $qrisTransaction->invoice_id,
-                'external_id' => 'QRIS-ORDER-' . $orderId . '-' . time(),
+                'external_id' => 'QRIS-ORDER-'.$orderId.'-'.time(),
                 'status' => 'PAID',
                 'amount' => (int) $qrisTransaction->amount,
                 'currency' => 'IDR',
@@ -60,7 +62,7 @@ class TestQrisWebhook extends Command
             // Mark as paid
             $qrisTransaction->markAsPaid($webhookPayload['id']);
 
-            $this->info("✅ QRIS Transaction marked as PAID");
+            $this->info('✅ QRIS Transaction marked as PAID');
 
             // Update reconciliation
             $reconciliation = $qrisTransaction->reconciliation;
@@ -72,9 +74,9 @@ class TestQrisWebhook extends Command
 
                 if ($reconciliation->amountsMatch()) {
                     $reconciliation->markAsMatched(auth()->id());
-                    $this->info("✅ Reconciliation: MATCHED");
+                    $this->info('✅ Reconciliation: MATCHED');
                 } else {
-                    $this->warn("⚠️ Reconciliation: MISMATCH");
+                    $this->warn('⚠️ Reconciliation: MISMATCH');
                 }
             }
 
@@ -88,7 +90,7 @@ class TestQrisWebhook extends Command
                     ['Order ID', "#$order->id_order"],
                     ['Payment Status', $order->status_pembayaran],
                     ['Order Status', $order->status_order],
-                    ['Total Amount', 'Rp ' . number_format($order->total_harga, 0)],
+                    ['Total Amount', 'Rp '.number_format($order->total_harga, 0)],
                 ]
             );
 
@@ -97,13 +99,14 @@ class TestQrisWebhook extends Command
 
             $this->line('');
             $this->info('🔍 Verification:');
-            $this->line('   Check QRIS transaction: php artisan qris:check ' . $orderId);
-            $this->line('   Check order receipt: http://localhost:8000/order/' . $orderId . '/receipt');
+            $this->line('   Check QRIS transaction: php artisan qris:check '.$orderId);
+            $this->line('   Check order receipt: http://localhost:8000/order/'.$orderId.'/receipt');
 
             return 0;
         } catch (\Exception $e) {
-            $this->error('❌ Error simulating webhook: ' . $e->getMessage());
+            $this->error('❌ Error simulating webhook: '.$e->getMessage());
             \Log::error('Test Webhook Error', ['error' => $e->getMessage()]);
+
             return 1;
         }
     }

@@ -4,7 +4,8 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration {
+return new class extends Migration
+{
     /**
      * Run the migrations.
      */
@@ -22,13 +23,13 @@ return new class extends Migration {
 
             $table->enum('status_pembayaran', ['pending', 'paid'])->default('pending');
             $table->enum('service_type', ['dine_in', 'take_away'])->default('dine_in');
-            $table->enum('payment_method', ['cash','credit'])->default('cash');
+            $table->enum('payment_method', ['cash', 'credit'])->default('cash');
             $table->text('notes')->nullable();
 
             $table->enum('status_order', [
                 'pending',
                 'completed',
-                'cancelled'
+                'cancelled',
             ])->default('pending');
 
             $table->foreignId('id_user')

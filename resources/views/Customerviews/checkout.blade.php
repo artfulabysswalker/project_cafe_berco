@@ -93,8 +93,12 @@
                             <span>Rp {{ number_format($subtotal, 0, ',', '.') }}</span>
                         </div>
                         <div class="calc-row">
-                            <span>Pajak (10%)</span>
-                            <span>Rp {{ number_format($tax, 0, ',', '.') }}</span>
+                            <span id="service-charge-label">Biaya layanan</span>
+                            <span id="service-charge-amount">Rp {{ number_format($serviceCharge, 0, ',', '.') }}</span>
+                        </div>
+                        <div class="calc-row" id="discount-row">
+                            <span id="discount-label">Diskon pagi 5%</span>
+                            <span id="discount-amount">Rp {{ number_format($discount, 0, ',', '.') }}</span>
                         </div>
                         <div class="calc-row total">
                             <span>Total</span>
@@ -354,42 +358,41 @@
 </style>
 
 <script>
-const cartItems = @json($cartItems);
+const cartItems = @json($cartItemsData ?? []);
 
 function calculatePrice() {
     const serviceType = document.querySelector('input[name="service_type"]:checked').value;
     
-    // Calculate subtotal
     let subtotal = 0;
     cartItems.forEach(item => {
         subtotal += item.menu.harga * item.quantity;
     });
-    
-    let tax = 0;
-    let total = 0;
-    let taxLabel = '';
-    
+
+    let serviceCharge = 0;
     if (serviceType === 'take_away') {
-        // Take away: 1000 per item
         const itemCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
-        tax = itemCount * 1000;
-        taxLabel = `Charge/Item (${itemCount}x @ 1k)`;
+        serviceCharge = itemCount * 1000;
+        document.getElementById('service-charge-label').textContent = `Biaya Take-away (${itemCount}x @ 1k)`;
     } else {
-        // Dine in: 5% tax
-        tax = subtotal * 0.05;
-        taxLabel = 'Pajak (5%)';
+        document.getElementById('service-charge-label').textContent = 'Biaya layanan';
     }
-    
-    total = subtotal + tax;
-    
-    // Update display
-    document.querySelector('.calc-row:nth-child(2) span:first-child').textContent = taxLabel;
-    document.querySelector('.calc-row:nth-child(2) span:last-child').textContent = 
-        'Rp ' + number_format(tax, 0, ',', '.');
-    document.querySelector('.calc-row.total span:last-child').textContent = 
-        'Rp ' + number_format(total, 0, ',', '.');
-    document.getElementById('total-amount').textContent = 
-        'Rp ' + number_format(total, 0, ',', '.');
+
+    const currentHour = new Date().getHours();
+    const discount = (currentHour >= 6 && currentHour < 11) ? Math.round(subtotal * 0.05) : 0;
+    const total = subtotal + serviceCharge - discount;
+
+    document.getElementById('service-charge-amount').textContent = 'Rp ' + number_format(serviceCharge, 0, ',', '.');
+
+    const discountRow = document.getElementById('discount-row');
+    if (discount > 0) {
+        discountRow.style.display = 'flex';
+        document.getElementById('discount-label').textContent = 'Diskon pagi 5%';
+        document.getElementById('discount-amount').textContent = 'Rp -' + number_format(discount, 0, ',', '.');
+    } else {
+        discountRow.style.display = 'none';
+    }
+
+    document.getElementById('total-amount').textContent = 'Rp ' + number_format(total, 0, ',', '.');
 }
 
 function number_format(number, decimals, dec_point, thousands_sep) {

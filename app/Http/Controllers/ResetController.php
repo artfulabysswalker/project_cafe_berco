@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\User;
 use App\Models\PasswordResetRequest;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 
@@ -15,7 +15,6 @@ class PasswordResetRequestController extends Controller
         return view('admin.reset.request');
     }
 
-
     // Submit reset request
     public function store(Request $request)
     {
@@ -23,7 +22,7 @@ class PasswordResetRequestController extends Controller
             'id_user' => 'required|exists:users,id_user',
             'full_name' => 'required',
             'email' => 'required|email',
-            'reason' => 'required'
+            'reason' => 'required',
         ]);
 
         PasswordResetRequest::create([
@@ -31,14 +30,13 @@ class PasswordResetRequestController extends Controller
             'full_name' => $request->full_name,
             'email' => $request->email,
             'reason' => $request->reason,
-            'status' => 'pending'
+            'status' => 'pending',
         ]);
 
         return redirect()
             ->back()
-            ->with('success','Request submitted.');
+            ->with('success', 'Request submitted.');
     }
-
 
     // Admin sees requests
     public function index()
@@ -54,7 +52,6 @@ class PasswordResetRequestController extends Controller
         );
     }
 
-
     // Admin resets password
     public function resetDefault($id_user)
     {
@@ -64,14 +61,12 @@ class PasswordResetRequestController extends Controller
 
         $user->save();
 
-
         PasswordResetRequest::where(
             'id_user',
             $id_user
         )->update([
-            'status' => 'resolved'
+            'status' => 'resolved',
         ]);
-
 
         return back()->with(
             'success',

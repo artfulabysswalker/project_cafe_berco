@@ -7,7 +7,9 @@ use Illuminate\Database\Eloquent\Model;
 class QrisTransaction extends Model
 {
     protected $table = 'qris_transactions';
+
     protected $primaryKey = 'id_qris_transaction';
+
     public $timestamps = true;
 
     protected $fillable = [

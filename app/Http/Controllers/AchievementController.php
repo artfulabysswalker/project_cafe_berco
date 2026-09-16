@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Models\Achievement;
 use App\Models\User;
 use App\Models\UserAchievement;
-use Illuminate\Http\Request;
 
 class AchievementController extends Controller
 {
@@ -15,7 +14,7 @@ class AchievementController extends Controller
     public function index()
     {
         $user = auth()->user();
-        
+
         $achievements = Achievement::where('is_active', true)
             ->get()
             ->map(function ($achievement) use ($user) {
@@ -47,7 +46,7 @@ class AchievementController extends Controller
     {
         $user = User::find($userId);
 
-        if (!$user) {
+        if (! $user) {
             return response()->json(['error' => 'User not found'], 404);
         }
 

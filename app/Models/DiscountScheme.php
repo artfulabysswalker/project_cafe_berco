@@ -7,7 +7,9 @@ use Illuminate\Database\Eloquent\Model;
 class DiscountScheme extends Model
 {
     protected $table = 'discount_schemes';
+
     protected $primaryKey = 'id_discount_scheme';
+
     protected $keyType = 'int';
 
     protected $fillable = [
@@ -49,7 +51,7 @@ class DiscountScheme extends Model
         $now = now();
 
         // Check if active
-        if (!$this->is_active) {
+        if (! $this->is_active) {
             return ['valid' => false, 'reason' => 'Skema diskon tidak aktif'];
         }
 
@@ -65,7 +67,7 @@ class DiscountScheme extends Model
 
         // Check minimum purchase
         if ($this->min_purchase && $subtotal < $this->min_purchase) {
-            return ['valid' => false, 'reason' => 'Pembelian minimal Rp' . number_format($this->min_purchase, 0, ',', '.')];
+            return ['valid' => false, 'reason' => 'Pembelian minimal Rp'.number_format($this->min_purchase, 0, ',', '.')];
         }
 
         return ['valid' => true];
@@ -81,6 +83,7 @@ class DiscountScheme extends Model
             if ($this->max_discount && $discountAmount > $this->max_discount) {
                 $discountAmount = $this->max_discount;
             }
+
             return $discountAmount;
         } else {
             // Fixed amount
@@ -101,9 +104,10 @@ class DiscountScheme extends Model
             ->get();
 
         return $schemes->filter(function ($scheme) use ($subtotal) {
-            if (!$scheme->min_purchase) {
+            if (! $scheme->min_purchase) {
                 return true;
             }
+
             return $subtotal >= $scheme->min_purchase;
         });
     }

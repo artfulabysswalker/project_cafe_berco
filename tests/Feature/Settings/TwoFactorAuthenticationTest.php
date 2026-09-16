@@ -63,7 +63,7 @@ test('two factor authentication disabled when confirmation abandoned between req
     $component->assertSet('twoFactorEnabled', false);
 
     $this->assertDatabaseHas('users', [
-        'id' => $user->id,
+        'id_user' => $user->id_user,
         'two_factor_secret' => null,
         'two_factor_recovery_codes' => null,
     ]);

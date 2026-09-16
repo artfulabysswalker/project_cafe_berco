@@ -2,14 +2,15 @@
 
 namespace App\Console\Commands;
 
-use Illuminate\Console\Command;
 use App\Models\Payment;
 use App\Services\XenditPaymentService;
 use Exception;
+use Illuminate\Console\Command;
 
 class CheckXenditPaymentStatus extends Command
 {
     protected $signature = 'xendit:check-payment {order_id : Order ID to check}';
+
     protected $description = 'Check payment status for a specific order';
 
     public function handle()
@@ -17,13 +18,14 @@ class CheckXenditPaymentStatus extends Command
         try {
             $orderId = $this->argument('order_id');
 
-            $this->info('Checking payment status for Order #' . $orderId);
+            $this->info('Checking payment status for Order #'.$orderId);
             $this->newLine();
 
             $payment = Payment::where('id_order', $orderId)->first();
 
-            if (!$payment) {
-                $this->error('Payment record not found for Order #' . $orderId);
+            if (! $payment) {
+                $this->error('Payment record not found for Order #'.$orderId);
+
                 return self::FAILURE;
             }
 
@@ -34,7 +36,7 @@ class CheckXenditPaymentStatus extends Command
                     ['Payment ID', $payment->id_payment],
                     ['Invoice ID', $payment->transaction_id],
                     ['Status', $payment->status],
-                    ['Amount', 'Rp ' . number_format($payment->amount, 0, ',', '.')],
+                    ['Amount', 'Rp '.number_format($payment->amount, 0, ',', '.')],
                     ['Created', $payment->created_at],
                     ['Updated', $payment->updated_at],
                 ]
@@ -52,8 +54,8 @@ class CheckXenditPaymentStatus extends Command
                         [
                             ['Xendit Invoice ID', $status['id']],
                             ['Xendit Status', $status['status']],
-                            ['Amount', 'Rp ' . number_format($status['amount'], 0, ',', '.')],
-                            ['Paid Amount', 'Rp ' . number_format($status['paid_amount'] ?? 0, 0, ',', '.')],
+                            ['Amount', 'Rp '.number_format($status['amount'], 0, ',', '.')],
+                            ['Paid Amount', 'Rp '.number_format($status['paid_amount'] ?? 0, 0, ',', '.')],
                             ['Created', $status['created'] ?? 'N/A'],
                             ['Updated', $status['updated'] ?? 'N/A'],
                         ]
@@ -61,19 +63,20 @@ class CheckXenditPaymentStatus extends Command
 
                     if ($status['status'] !== $payment->status) {
                         $this->warn('⚠️  Status mismatch detected!');
-                        $this->line('Local: ' . $payment->status);
-                        $this->line('Xendit: ' . $status['status']);
+                        $this->line('Local: '.$payment->status);
+                        $this->line('Xendit: '.$status['status']);
                     } else {
                         $this->info('✓ Status is in sync');
                     }
                 } catch (Exception $e) {
-                    $this->error('Failed to fetch Xendit status: ' . $e->getMessage());
+                    $this->error('Failed to fetch Xendit status: '.$e->getMessage());
                 }
             }
 
             return self::SUCCESS;
         } catch (Exception $e) {
-            $this->error('Error: ' . $e->getMessage());
+            $this->error('Error: '.$e->getMessage());
+
             return self::FAILURE;
         }
     }

@@ -2,11 +2,11 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
+use App\Models\Menu;
 use App\Models\Order;
 use App\Models\OrderItem;
-use App\Models\Menu;
 use Carbon\Carbon;
+use Illuminate\Database\Seeder;
 
 class StatsTestSeeder extends Seeder
 {
@@ -41,7 +41,7 @@ class StatsTestSeeder extends Seeder
 
             $order = Order::create([
                 'id_order' => $i,
-                'nama_pelanggan' => 'Customer ' . $i,
+                'nama_pelanggan' => 'Customer '.$i,
                 'status_order' => 'completed',
                 'total_harga' => 0,
                 'tanggal' => $date,
@@ -70,7 +70,7 @@ class StatsTestSeeder extends Seeder
 
             // update total
             $order->update([
-                'total_harga' => $total
+                'total_harga' => $total,
             ]);
         }
     }

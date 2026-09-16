@@ -27,7 +27,7 @@ class Voucher extends Model
             ->withPivot([
                 'status',
                 'notified_at',
-                'used_at'
+                'used_at',
             ])
             ->withTimestamps();
     }

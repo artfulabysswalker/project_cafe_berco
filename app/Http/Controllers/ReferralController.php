@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Models\Referral;
 use App\Models\User;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
 
 class ReferralController extends Controller
 {
@@ -79,7 +78,7 @@ class ReferralController extends Controller
         $user = auth()->user();
 
         // Create or update referral code
-        if (!$user->referral_code) {
+        if (! $user->referral_code) {
             $user->update([
                 'referral_code' => Referral::generateReferralCode(),
             ]);

@@ -1,4 +1,4 @@
-<div class="space-y-6">
+<div class="space-y-6" wire:poll.5s="loadTodaysSales">
     <!-- Header -->
     <div class="flex items-center justify-between">
         <div>
@@ -86,7 +86,7 @@
                         <th class="px-6 py-3 text-left text-sm font-semibold text-neutral-900 dark:text-white">Pelanggan</th>
                         <th class="px-6 py-3 text-left text-sm font-semibold text-neutral-900 dark:text-white">Produk</th>
                         <th class="px-6 py-3 text-right text-sm font-semibold text-neutral-900 dark:text-white">Subtotal</th>
-                        <th class="px-6 py-3 text-right text-sm font-semibold text-neutral-900 dark:text-white">Tax</th>
+                        <th class="px-6 py-3 text-right text-sm font-semibold text-neutral-900 dark:text-white">Charge</th>
                         <th class="px-6 py-3 text-right text-sm font-semibold text-neutral-900 dark:text-white">Diskon</th>
                         <th class="px-6 py-3 text-right text-sm font-semibold text-neutral-900 dark:text-white">Total</th>
                         <th class="px-6 py-3 text-right text-sm font-semibold text-neutral-900 dark:text-white">Profit</th>
@@ -99,7 +99,7 @@
                         <td class="px-6 py-3 text-sm font-medium text-neutral-900 dark:text-white">{{ $order['customer'] }}</td>
                         <td class="px-6 py-3 text-sm text-neutral-600 dark:text-neutral-300">{{ Str::limit($order['items'], 30) }}</td>
                         <td class="px-6 py-3 text-right text-sm text-neutral-900 dark:text-white">Rp {{ number_format($order['subtotal'], 0, ',', '.') }}</td>
-                        <td class="px-6 py-3 text-right text-sm text-orange-600 dark:text-orange-400">Rp {{ number_format($order['tax'], 0, ',', '.') }}</td>
+                        <td class="px-6 py-3 text-right text-sm text-orange-600 dark:text-orange-400">Rp {{ number_format($order['charge'] ?? 0, 0, ',', '.') }}</td>
                         <td class="px-6 py-3 text-right text-sm text-red-600 dark:text-red-400">Rp {{ number_format($order['discount'], 0, ',', '.') }}</td>
                         <td class="px-6 py-3 text-right text-sm font-semibold text-green-600 dark:text-green-400">Rp {{ number_format($order['total'], 0, ',', '.') }}</td>
                         <td class="px-6 py-3 text-right text-sm font-semibold text-blue-600 dark:text-blue-400">Rp {{ number_format($order['profit'], 0, ',', '.') }}</td>

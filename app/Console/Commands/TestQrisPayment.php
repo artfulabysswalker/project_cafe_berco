@@ -2,12 +2,11 @@
 
 namespace App\Console\Commands;
 
-use App\Models\Order;
-use App\Models\User;
 use App\Models\Menu;
+use App\Models\Order;
 use App\Models\OrderItem;
+use App\Models\User;
 use Illuminate\Console\Command;
-use Carbon\Carbon;
 
 class TestQrisPayment extends Command
 {
@@ -24,8 +23,9 @@ class TestQrisPayment extends Command
         $userId = $this->option('user-id');
         $user = User::find($userId);
 
-        if (!$user) {
+        if (! $user) {
             $this->error("❌ User with ID $userId not found");
+
             return 1;
         }
 
@@ -34,12 +34,13 @@ class TestQrisPayment extends Command
         // Step 2: Get a menu item
         $menu = Menu::first();
 
-        if (!$menu) {
+        if (! $menu) {
             $this->error('❌ No menu items found in database');
+
             return 1;
         }
 
-        $this->info("✅ Menu item found: {$menu->nama_menu} (Rp " . number_format($menu->harga, 0) . ")");
+        $this->info("✅ Menu item found: {$menu->nama_menu} (Rp ".number_format($menu->harga, 0).')');
 
         // Step 3: Create test order
         $subtotal = $menu->harga * 2;
@@ -81,10 +82,10 @@ class TestQrisPayment extends Command
                     ['Customer', $user->name],
                     ['Menu Item', $menu->nama_menu],
                     ['Quantity', '2'],
-                    ['Unit Price', 'Rp ' . number_format($menu->harga, 0)],
-                    ['Subtotal', 'Rp ' . number_format($subtotal, 0)],
-                    ['Tax (10%)', 'Rp ' . number_format($tax, 0)],
-                    ['Total', 'Rp ' . number_format($total, 0)],
+                    ['Unit Price', 'Rp '.number_format($menu->harga, 0)],
+                    ['Subtotal', 'Rp '.number_format($subtotal, 0)],
+                    ['Tax (10%)', 'Rp '.number_format($tax, 0)],
+                    ['Total', 'Rp '.number_format($total, 0)],
                     ['Payment Method', 'QRIS'],
                     ['Status', 'Pending'],
                 ]
@@ -114,7 +115,8 @@ class TestQrisPayment extends Command
 
             return 0;
         } catch (\Exception $e) {
-            $this->error('❌ Error creating test order: ' . $e->getMessage());
+            $this->error('❌ Error creating test order: '.$e->getMessage());
+
             return 1;
         }
     }

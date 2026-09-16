@@ -3,8 +3,8 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
-use App\Models\User;
 use App\Models\Role;
+use App\Models\User;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -19,8 +19,12 @@ class RegisteredUserController extends Controller
     /**
      * Display the registration view.
      */
-    public function create(): View
+    public function create(): View|RedirectResponse
     {
+        if (Auth::check() && ! Auth::user()->is_guest) {
+            return redirect()->route('menu.index');
+        }
+
         return view('auth.register');
     }
 
@@ -44,7 +48,7 @@ class RegisteredUserController extends Controller
         $counter = 1;
         $originalUsername = $username;
         while (User::where('username', $username)->exists()) {
-            $username = $originalUsername . $counter;
+            $username = $originalUsername.$counter;
             $counter++;
         }
 
@@ -57,13 +61,13 @@ class RegisteredUserController extends Controller
             'email' => $request->email,
             'phone' => $request->phone,
             'password' => Hash::make($request->password),
-            'id_role' => $customerRole?->id_role ?? 4, // Default to Customer role (id 4), fallback to 4
+            'id_role' => $customerRole?->id_role ?? null,
         ]);
 
         event(new Registered($user));
 
         Auth::login($user);
 
-        return redirect()->intended(route('menu.index', absolute: false));
+        return redirect()->intended(route('dashboard', absolute: false));
     }
 }

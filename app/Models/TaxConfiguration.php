@@ -7,7 +7,9 @@ use Illuminate\Database\Eloquent\Model;
 class TaxConfiguration extends Model
 {
     protected $table = 'tax_configurations';
+
     protected $primaryKey = 'id_tax_config';
+
     protected $keyType = 'int';
 
     protected $fillable = [
@@ -42,6 +44,7 @@ class TaxConfiguration extends Model
     public static function getActiveConfiguration()
     {
         $now = now();
+
         return self::where('is_active', true)
             ->where(function ($q) use ($now) {
                 $q->whereNull('effective_from')->orWhere('effective_from', '<=', $now);

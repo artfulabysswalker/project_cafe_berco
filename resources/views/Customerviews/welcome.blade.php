@@ -1,829 +1,364 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="scroll-smooth">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Berco Cafe - Home</title>
-    <link rel="preconnect" href="https://fonts.bunny.net">
-    <link href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600,700" rel="stylesheet" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <title>Berco Cafe — Specialty Coffee & Artisan Bites Banyuwangi</title>
+    <meta name="description" content="Kopi specialty lokal Tanah Blambangan Banyuwangi, suasana warm & cozy, hidangan lezat berkelas.">
+    
+    {{-- Fonts & Icons --}}
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;0,800;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+    {{-- Tailwind CSS CDN --}}
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+                        serif: ['"Playfair Display"', 'serif'],
+                        mono: ['"JetBrains Mono"', 'monospace'],
+                    },
+                    colors: {
+                        coffee: {
+                            900: '#140A04',
+                            800: '#1F1107',
+                            700: '#2E190B',
+                            primary: '#C26A26',
+                            'primary-dark': '#9A4C13',
+                            amber: '#E07A28',
+                            cream: '#FAF5EE',
+                            'cream-card': '#FFFFFF',
+                            border: '#E8DED2',
+                            text: '#241409',
+                            muted: '#7A6455',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+        /* Smooth Infinite Sliding Marquee Track */
+        @keyframes marqueeScrollLeft {
+            0% {
+                transform: translateX(0);
+            }
+            100% {
+                transform: translateX(-50%);
+            }
         }
 
-        html {
-            scroll-behavior: smooth;
-        }
-
-        body {
-            font-family: 'Poppins', sans-serif;
-            background: #fffaf3;
-            color: #2d1606;
-            overflow-x: hidden;
-        }
-
-        /* NAVBAR */
-        nav {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            padding: 18px 60px;
+        .marquee-track-auto {
             display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: rgba(120, 53, 15, 0.95);
-            backdrop-filter: blur(12px);
-            z-index: 1000;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            width: max-content;
+            animation: marqueeScrollLeft 32s linear infinite;
         }
 
-        nav a {
-            text-decoration: none;
-            color: white;
+        .marquee-viewport-wrap:hover .marquee-track-auto {
+            animation-play-state: paused;
         }
 
-        nav .hidden {
-            display: flex;
-            align-items: center;
-            gap: 35px;
+        /* Pop-up / Timbul Card Effect */
+        .favorite-card-pop {
+            transition: transform 0.28s cubic-bezier(0.34, 1.4, 0.64, 1), box-shadow 0.28s ease, border-color 0.28s ease;
         }
 
-        nav .hidden a {
-            font-size: 15px;
-            font-weight: 500;
-            position: relative;
-            transition: 0.3s ease;
-        }
-
-        nav .hidden a::after {
-            content: '';
-            position: absolute;
-            bottom: -6px;
-            left: 0;
-            width: 0%;
-            height: 2px;
-            background: #fb923c;
-            transition: 0.3s ease;
-        }
-
-        nav .hidden a:hover::after {
-            width: 100%;
-        }
-
-        nav .hidden a:hover {
-            color: #fdba74;
-        }
-
-        /* LOGIN BUTTON */
-        nav .bg-white {
-            background: white;
-            color: #78350F !important;
-            padding: 12px 24px;
-            border-radius: 14px;
-            font-weight: 700;
-            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
-            transition: all 0.3s ease;
-            cursor: pointer;
-        }
-
-        nav .bg-white:hover {
-            transform: translateY(-2px);
-            background: #fff1e3;
-            box-shadow: 0 12px 28px rgba(0, 0, 0, 0.2);
-        }
-
-        /* HERO SECTION */
-        .hero-container {
-            height: 100vh;
-            width: 100%;
-            position: relative;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-top: 60px;
-            overflow: hidden;
-        }
-
-        .hero-background {
-            position: absolute;
-            inset: 0;
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            z-index: 0;
-        }
-
-        .hero-overlay {
-            position: absolute;
-            inset: 0;
-            background: linear-gradient(to bottom, rgba(0, 0, 0, 0.45), rgba(0, 0, 0, 0.65));
-            z-index: 5;
-        }
-
-        .hero-content {
-            position: relative;
-            z-index: 10;
-            text-align: center;
-            max-width: 900px;
-            padding: 20px;
-            animation: fadeInUp 1s ease-out;
-        }
-
-        .hero-title {
-            font-size: clamp(2rem, 8vw, 6rem);
-            font-weight: 800;
-            letter-spacing: 3px;
-            margin-bottom: 20px;
-            text-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-            color: white;
-            animation: slideDown 1.2s ease-out;
-        }
-
-        .hero-subtitle {
-            font-size: clamp(1rem, 3vw, 1.3rem);
-            color: #ffe7cc;
-            line-height: 1.8;
-            margin-bottom: 40px;
-            animation: fadeInUp 1.4s ease-out;
-        }
-
-        /* BUTTONS */
-        .cta-button {
-            background: linear-gradient(135deg, #ea580c 0%, #c2410c 50%, #9a3412 100%);
-            color: white;
-            text-decoration: none;
-            display: inline-block;
-            padding: 18px 48px;
-            border-radius: 50px;
-            font-size: 1rem;
-            font-weight: 700;
-            box-shadow: 0 12px 30px rgba(194, 65, 12, 0.4);
-            transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
-            border: none;
-            cursor: pointer;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .cta-button::before {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 0;
-            height: 0;
-            background: rgba(255, 255, 255, 0.2);
-            border-radius: 50%;
-            transform: translate(-50%, -50%);
-            transition: width 0.6s, height 0.6s;
-        }
-
-        .cta-button:hover::before {
-            width: 300px;
-            height: 300px;
-        }
-
-        .cta-button:hover {
-            transform: translateY(-5px) scale(1.05);
-            box-shadow: 0 18px 45px rgba(194, 65, 12, 0.6);
-        }
-
-        .cta-button:active {
-            transform: translateY(-2px) scale(1.02);
-        }
-
-        /* MAIN */
-        main {
-            width: 100%;
-            max-width: 1300px;
-            margin: auto;
-            padding: 120px 40px;
-        }
-
-        /* STORY SECTION */
-        #story {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 60px;
-            align-items: flex-start;
-            margin-bottom: 180px;
-        }
-
-        .story-content {
-            display: flex;
-            flex-direction: column;
-        }
-
-        .story-images {
-            display: flex;
-            gap: 15px;
-            flex-wrap: wrap;
-        }
-
-        .story-images img {
-            flex: 1;
-            min-width: 150px;
-            height: auto;
-            max-height: 450px;
-        }
-
-        .story-images img:nth-child(2) {
-            margin-top: 30px;
-        }
-
-        #story h2 {
-            font-size: 4rem;
-            font-weight: 800;
-            margin-bottom: 40px;
-            color: #78350F;
-            position: relative;
-            display: inline-block;
-            letter-spacing: -1px;
-        }
-
-        #story h2::after {
-            content: '';
-            position: absolute;
-            bottom: -15px;
-            left: 0;
-            width: 100px;
-            height: 5px;
-            background: linear-gradient(to right, #ea580c, #9a3412);
-            border-radius: 3px;
-        }
-
-        #story p {
-            font-size: 1.05rem;
-            line-height: 1.8;
-            color: #5b3417;
-            margin-bottom: 20px;
-            font-weight: 400;
-        }
-
-        .story-highlights {
-            background: linear-gradient(135deg, #fff9f1 0%, #fffaf3 100%);
-            border-left: 4px solid #ea580c;
-            padding: 25px 25px;
-            border-radius: 12px;
-            margin-top: 30px;
-            margin-bottom: 0;
-        }
-
-        .story-highlights p {
-            margin-bottom: 12px;
-            font-size: 0.95rem;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            color: #78350F;
-            font-weight: 500;
-        }
-
-        .story-highlights p:last-child {
-            margin-bottom: 0;
-        }
-
-        .story-highlights p::before {
-            content: '✓';
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            width: 24px;
-            height: 24px;
-            background: linear-gradient(135deg, #ea580c 0%, #c2410c 100%);
-            color: white;
-            border-radius: 50%;
-            font-weight: bold;
-            font-size: 0.85rem;
-            flex-shrink: 0;
-        }
-
-        #story img {
-            width: 100%;
-            height: 500px;
-            object-fit: cover;
-            border-radius: 35px;
-            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.15);
-            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        #story img:hover {
-            transform: translateY(-15px) scale(1.02);
-            box-shadow: 0 30px 70px rgba(0, 0, 0, 0.25);
-        }
-
-        /* GALLERY SECTION */
-        .gallery-header {
-            text-align: center;
-            margin-bottom: 60px;
-        }
-
-        .gallery-header h2 {
-            font-size: 3.5rem;
-            font-weight: 800;
-            margin-bottom: 15px;
-            color: #78350F;
-        }
-
-        .gallery-divider {
-            height: 4px;
-            width: 80px;
-            background: linear-gradient(to right, #ea580c, #9a3412);
-            margin: 0 auto;
-            border-radius: 2px;
-        }
-
-        .gallery-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 30px;
-        }
-
-        .gallery-item {
-            position: relative;
-            overflow: hidden;
-            border-radius: 30px;
-            height: 350px;
-            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.12);
-            transition: all 0.4s ease;
-        }
-
-        .gallery-item img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1), filter 0.4s ease;
-        }
-
-        .gallery-item:hover img {
-            transform: scale(1.08) rotate(1deg);
-            filter: brightness(0.7);
-        }
-
-        .gallery-overlay {
-            position: absolute;
-            inset: 0;
-            background: rgba(0, 0, 0, 0.3);
-            opacity: 0;
-            transition: opacity 0.4s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .gallery-item:hover .gallery-overlay {
-            opacity: 1;
-        }
-
-        /* CONTACT CARD */
-        .contact-section {
-            background: linear-gradient(135deg, #ffffff 0%, #fef3c7 100%);
-            border-radius: 48px;
-            padding: 80px;
-            margin-bottom: 100px;
-            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.1);
-            border: 2px solid rgba(255, 255, 255, 0.5);
-            backdrop-filter: blur(10px);
-        }
-
-        .contact-title {
-            font-size: 2.5rem;
-            font-weight: 800;
-            text-align: center;
-            margin-bottom: 50px;
-            color: #78350F;
-        }
-
-        .contact-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 40px;
-        }
-
-        .contact-card {
-            text-align: center;
-            padding: 30px;
-            border-radius: 20px;
-            background: white;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
-            transition: all 0.4s ease;
-        }
-
-        .contact-card:hover {
-            transform: translateY(-8px);
-            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.15);
-            background: linear-gradient(135deg, #ffffff 0%, #fff7e6 100%);
-        }
-
-        .contact-icon {
-            font-size: 2.5rem;
-            margin-bottom: 15px;
-            line-height: 1;
-        }
-
-        .contact-card h4 {
-            font-size: 1.2rem;
-            font-weight: 700;
-            margin-bottom: 10px;
-            color: #78350F;
-        }
-
-        .contact-card p {
-            font-size: 0.95rem;
-            color: #6b5b4c;
-            line-height: 1.6;
-        }
-
-        /* FOOTER */
-        footer {
-            background: linear-gradient(135deg, #78350F 0%, #5a2308 100%);
-            color: white;
-            padding: 60px 20px;
-            text-align: center;
-            margin-top: 80px;
-            box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.1);
-        }
-
-        footer p {
-            opacity: 0.85;
-            letter-spacing: 1px;
-            font-size: 0.95rem;
-        }
-
-        /* ANIMATIONS */
-        @keyframes fadeUp {
-            from {
-                opacity: 0;
-                transform: translateY(30px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(50px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        @keyframes slideDown {
-            from {
-                opacity: 0;
-                transform: translateY(-30px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        /* RESPONSIVE MOBILE */
-        @media(max-width: 992px) {
-            nav {
-                padding: 15px 20px;
-                flex-wrap: wrap;
-            }
-
-            nav .hidden {
-                flex-wrap: wrap;
-                justify-content: center;
-                gap: 15px;
-                width: 100%;
-                order: 3;
-            }
-
-            .hero-title {
-                font-size: 2.5rem;
-                letter-spacing: 2px;
-            }
-
-            .hero-subtitle {
-                font-size: 1rem;
-            }
-
-            #story {
-                grid-template-columns: 1fr;
-                gap: 40px;
-            }
-
-            #story h2 {
-                font-size: 2.5rem;
-            }
-
-            .contact-section {
-                padding: 40px 25px;
-            }
-
-            .contact-title {
-                font-size: 2rem;
-            }
-
-            .contact-grid {
-                grid-template-columns: 1fr;
-                gap: 20px;
-            }
-
-            main {
-                padding: 60px 20px;
-            }
-        }
-
-        @media(max-width: 768px) {
-            nav {
-                padding: 12px 15px;
-            }
-
-            nav .hidden {
-                gap: 12px;
-            }
-
-            .cta-button {
-                padding: 15px 32px;
-                font-size: 0.95rem;
-            }
-
-            #story {
-                grid-template-columns: 1fr;
-                gap: 40px;
-                margin-bottom: 100px;
-            }
-
-            #story h2 {
-                font-size: 2.5rem;
-                margin-bottom: 25px;
-            }
-
-            #story p {
-                font-size: 0.95rem;
-                margin-bottom: 15px;
-            }
-
-            .story-highlights {
-                padding: 20px 15px;
-            }
-
-            .story-highlights p {
-                font-size: 0.9rem;
-                margin-bottom: 10px;
-            }
-
-            .story-images {
-                gap: 12px;
-            }
-
-            .story-images img {
-                height: auto;
-                max-height: 300px;
-            }
-
-            .story-images img:nth-child(2) {
-                margin-top: 0;
-            }
-
-            .gallery-item {
-                height: 280px;
-            }
-
-            main {
-                padding: 40px 15px;
-            }
-
-            .hero-content {
-                padding: 10px;
-            }
+        .favorite-card-pop:hover {
+            transform: translateY(-8px) scale(1.025);
+            box-shadow: 0 16px 32px -6px rgba(36, 20, 9, 0.18);
+            border-color: #C26A26;
+            z-index: 20;
         }
     </style>
 </head>
+<body class="bg-coffee-cream text-coffee-text antialiased font-sans selection:bg-stone-200">
 
-
-<body class="min-h-screen bg-[#FFFBEB] antialiased text-[#422006]">
-    {{-- Success Message Alert --}}
-    @if(session('success'))
-        <div class="fixed top-20 right-6 z-[60] bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg animate-bounce">
-            <i class="fas fa-check-circle mr-2"></i> {{ session('success') }}
-        </div>
-    @endif
-
-    {{-- Error Message Alert --}}
-    @if($errors->has('daily'))
-        <div class="fixed top-20 right-6 z-[60] bg-orange-500 text-white px-6 py-3 rounded-lg shadow-lg">
-            <i class="fas fa-info-circle mr-2"></i> {{ $errors->first('daily') }}
-        </div>
-    @endif
-
-    {{-- NAVBAR --}}
-    <nav class="bg-[#78350F] text-white px-6 py-4 flex justify-between items-center fixed top-0 w-full z-50 shadow-lg">
-        {{-- Logo --}}
-        <a href="{{ route('home') }}" class="flex items-center gap-3 hover:opacity-90 transition group relative cursor-pointer">
-            <span class="font-bold text-xl tracking-wider">🍵 BERCO</span>
-            
-            {{-- Status Indicator (Dot only) --}}
-            <span id="statusDot" class="w-3 h-3 rounded-full bg-[#22C55E] animate-pulse"></span>
-            
-            <!-- Tooltip on Hover -->
-            <div class="absolute left-0 top-full mt-2 hidden group-hover:block bg-gray-900 text-white text-xs px-3 py-2 rounded-lg whitespace-nowrap z-50 pointer-events-none">
-                <span id="tooltipText">🟢 Kafe sedang BUKA (16:00 - 22:00)</span>
-                <div class="absolute bottom-full left-8 border-4 border-transparent border-b-gray-900"></div>
-            </div>
-        </a>
-
-        {{-- Navigation Links --}}
-        <div class="hidden md:flex items-center gap-8 text-sm font-medium">
-            <a href="{{ route('home') }}" class="hover:text-orange-200 transition">Beranda</a>
-            <a href="{{ route('menu.index') }}" class="hover:text-orange-200 transition">Pesan Menu</a>
-            <a href="{{ route('cart.index') }}" class="hover:text-orange-200 transition">
-                <i class="fas fa-shopping-cart mr-2"></i>Keranjang
-            </a>
-
-            @guest
-                <a href="{{ route('login') }}" class="bg-white text-[#78350F] px-6 py-2 rounded-lg font-bold hover:bg-orange-50 transition shadow-sm">
-                    Masuk
-                </a>
-            @endguest
-
-            @auth
-                <div class="flex items-center gap-4 border-l border-orange-800 pl-4">
-                    <div class="text-right">
-                        <div class="font-bold text-xs">
-                            {{ Auth::user()->is_guest ? '👤 Guest' : Auth::user()->name }}
-                        </div>
-                        <div class="text-[10px] text-orange-200">{{ Auth::user()->exp ?? 0 }} EXP</div>
+    {{-- 1. NAVBAR (WARM DARK ESPRESSO) --}}
+    <nav class="sticky top-0 z-50 bg-coffee-900/95 backdrop-blur-xs border-b border-white/10 text-white">
+        <div class="max-w-7xl mx-auto px-6 h-18 flex items-center justify-between">
+            <div class="flex items-center space-x-8">
+                <a href="{{ route('home') }}" class="flex items-center space-x-3 group">
+                    <div class="w-9 h-9 rounded-lg bg-coffee-primary flex items-center justify-center text-white font-serif font-bold text-base shadow-sm">
+                        CB
                     </div>
+                    <div>
+                        <span class="text-xl font-serif tracking-wider font-bold text-white uppercase block leading-none">
+                            BERCO <span class="text-coffee-primary">CAFE</span>
+                        </span>
+                        <span class="text-[9px] font-mono tracking-widest text-amber-200/80 uppercase block mt-1">Specialty Coffee & Roastery</span>
+                    </div>
+                </a>
 
-                    {{-- Daily Claim Button --}}
-                    @if(Auth::user()->last_daily_claim === null || !Auth::user()->last_daily_claim->isToday())
-                        <form method="POST" action="{{ route('daily.claim') }}" class="inline">
-                            @csrf
-                            <button type="submit" class="text-yellow-400 hover:text-yellow-300 transition animate-bounce" title="Klaim Bonus Harian!">
-                                <i class="fas fa-gift text-lg"></i>
-                            </button>
-                        </form>
-                    @endif
-
-                    {{-- Admin Panel --}}
-                    @if(Auth::user()->is_admin)
-                        <a href="{{ route('admin.dashboard') }}" title="Panel Admin" class="text-yellow-400 hover:text-yellow-300 transition text-lg">
-                            <i class="fas fa-user-shield"></i>
-                        </a>
-                    @endif
-
-                    {{-- Logout --}}
-                    <form method="POST" action="{{ route('logout') }}" class="inline">
-                        @csrf
-                        <button type="submit" class="bg-red-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-red-700 transition flex items-center gap-2" title="Keluar dari akun">
-                            <i class="fas fa-sign-out-alt"></i>
-                            Logout
-                        </button>
-                    </form>
+                <div class="hidden md:flex items-center space-x-7 text-xs uppercase tracking-wider font-semibold text-stone-300">
+                    <a href="{{ route('home') }}" class="text-white hover:text-amber-300 transition-colors">Beranda</a>
+                    <a href="{{ route('menu.index') }}" class="hover:text-amber-300 transition-colors">Menu Specialty</a>
+                    <a href="#favorit" class="hover:text-amber-300 transition-colors">Menu Favorit</a>
+                    <a href="#cerita" class="hover:text-amber-300 transition-colors">Tentang Kami</a>
+                    <a href="#kontak" class="hover:text-amber-300 transition-colors">Lokasi</a>
                 </div>
-            @endauth
+            </div>
+
+            <div class="flex items-center space-x-3.5">
+                <div class="hidden sm:inline-flex items-center space-x-2 px-3 py-1 rounded-full border border-white/15 bg-white/5 text-[11px] font-mono text-stone-300">
+                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                    <span id="navStatusText">BUKA 10:00 - 22:30 WIB</span>
+                </div>
+
+                <a href="{{ route('cart.index') }}" class="inline-flex items-center space-x-2 text-xs font-mono text-white hover:text-amber-300 border border-white/20 px-3.5 py-2 rounded-md hover:bg-white/10 transition-colors bg-white/5">
+                    <i class="fas fa-bag-shopping text-coffee-primary"></i>
+                    <span>Keranjang</span>
+                </a>
+
+                @guest
+                    <a href="{{ route('login') }}" class="text-xs uppercase tracking-wider font-bold bg-coffee-primary hover:bg-coffee-primary-dark text-white px-5 py-2 rounded-md transition-colors shadow-sm">
+                        Masuk
+                    </a>
+                @endguest
+                @auth
+                    <a href="{{ Auth::user()->isAdmin() || Auth::user()->isStaff() ? route('control.dashboard') : route('menu.index') }}" class="text-xs font-mono font-semibold bg-white text-coffee-900 px-4 py-2 rounded-md hover:bg-stone-100 transition-colors shadow-sm inline-flex items-center space-x-2">
+                        <i class="fas fa-user-circle text-coffee-primary"></i>
+                        <span>{{ Str::limit(Auth::user()->name, 12) }}</span>
+                    </a>
+                @endauth
+            </div>
         </div>
     </nav>
 
-    {{-- HERO SECTION --}}
-    <div class="hero-container">
-        <img src="https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?q=80&w=1600" alt="Berco Cafe" class="hero-background">
-        <div class="hero-overlay"></div>
-        <div class="hero-content">
-            <h1 class="hero-title">BERCO CAFE</h1>
-            <p class="hero-subtitle">
-                Nikmati kopi dan makanan terbaik dalam suasana yang nyaman di Banyuwangi bagian selatan.
+    {{-- 2. HERO SECTION (ATMOSPHERIC DARK ROASTERY) --}}
+    <section class="relative min-h-[80vh] flex items-center justify-center text-center px-6 py-20 bg-coffee-900 overflow-hidden">
+        {{-- Background Image & Overlay --}}
+        <img src="https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?q=80&w=1920&auto=format&fit=crop" 
+             alt="Berco Cafe Ambiance" 
+             class="absolute inset-0 w-full h-full object-cover opacity-35 filter brightness-75">
+        <div class="absolute inset-0 bg-gradient-to-b from-coffee-900/85 via-coffee-900/70 to-coffee-900/95"></div>
+
+        <div class="relative z-10 max-w-3xl mx-auto space-y-6">
+            <div class="inline-flex items-center space-x-2 border border-amber-500/30 bg-amber-500/10 px-4 py-1.5 rounded-full text-xs font-mono text-amber-300">
+                <i class="fas fa-mug-hot text-coffee-primary"></i>
+                <span>ARTISAN COFFEE & MODERN BITES • BANYUWANGI</span>
+            </div>
+
+            <h1 class="text-4xl sm:text-5xl lg:text-6xl font-serif font-bold tracking-tight text-white leading-tight">
+                Sensasi Kopi Terbaik di <span class="text-coffee-primary">Berco Cafe</span>
+            </h1>
+
+            <p class="text-base sm:text-lg text-stone-200 font-normal leading-relaxed max-w-2xl mx-auto">
+                Nikmati perpaduan biji kopi specialty pilihan Tanah Blambangan, hidangan lezat berkelas, dan atmosfer hangat yang nyaman untuk setiap momen Anda.
             </p>
-            <div class="flex flex-col md:flex-row gap-6 justify-center">
-                <a href="{{ route('menu.index') }}" class="cta-button">
-                    <i class="fas fa-shopping-bag mr-2"></i>Pesan Sekarang
+
+            <div class="pt-2 flex flex-wrap items-center justify-center gap-4">
+                <a href="{{ route('menu.index') }}" class="text-sm font-semibold bg-coffee-primary hover:bg-coffee-primary-dark text-white px-7 py-3 rounded-md transition-colors shadow-md inline-flex items-center space-x-2">
+                    <i class="fas fa-mug-hot text-xs"></i>
+                    <span>Pesan Menu Sekarang</span>
                 </a>
-                <a href="#story" class="cta-button" style="background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.2) 100%); border: 2px solid white;">
-                    <i class="fas fa-arrow-down mr-2"></i>Pelajari Lebih
+                <a href="#favorit" class="text-sm font-semibold border border-white/30 hover:border-white text-white hover:bg-white/10 px-7 py-3 rounded-md transition-colors backdrop-blur-xs">
+                    Lihat Menu Favorit
                 </a>
             </div>
         </div>
-    </div>
+    </section>
 
-    {{-- MAIN CONTENT --}}
-    <main>
-        {{-- STORY SECTION --}}
-        <section id="story" class="py-20">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-16 items-start mb-32">
-                <div class="story-content">
-                    <h2>Cerita Berco</h2>
-                    <p>
-                        <span style="color: #C2410C; font-weight: 700; font-size: 1.1rem;">Sejak 2018,</span> 
-                        Berco Cafe lahir dari kecintaan kami terhadap kekayaan kopi lokal Tanah Blambangan.
-                    </p>
-                    <p>
-                        Kami menghadirkan kualitas kopi specialty yang bisa dinikmati semua kalangan. Setiap seduhan adalah bentuk apresiasi kami terhadap petani lokal dan semangat eksplorasi anak muda Banyuwangi.
-                    </p>
-                    <div class="story-highlights">
-                        <p>Kopi specialty berkualitas tinggi dari petani lokal Tanah Blambangan</p>
-                        <p>Suasana nyaman untuk bersantai dan berkumpul</p>
-                        <p>Menu makanan pilihan yang melengkapi pengalaman coffee break Anda</p>
-                    </div>
+    {{-- 3. FAVORITE MENU CONTINUOUS SLIDER (GESER KE KIRI DENGAN EFEK TIMBUL & UKURAN LEBIH KOMPAK) --}}
+    <section id="favorit" class="py-16 overflow-hidden">
+        <div class="max-w-7xl mx-auto px-6">
+            <div class="flex flex-col sm:flex-row sm:items-end justify-between mb-8 border-b border-coffee-border pb-5 gap-4">
+                <div>
+                    <span class="text-xs font-mono text-coffee-primary uppercase tracking-widest font-semibold">Paling Diminati</span>
+                    <h2 class="text-2xl sm:text-3xl font-serif font-bold text-coffee-text mt-0.5">Menu Favorit Pilihan Berco</h2>
+                    <p class="text-xs text-coffee-muted mt-1">Arahkan kursor untuk menahan animasi dan melihat detail menu.</p>
                 </div>
-                <div class="story-images">
-                    <img src="https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=500" alt="Coffee Specialty" class="rounded-[2rem] shadow-2xl">
-                    <img src="https://images.unsplash.com/photo-1511920170033-f8396924c348?w=500" alt="Coffee Interior" class="rounded-[2rem] shadow-2xl">
+                <div class="flex items-center space-x-3">
+                    <button id="btnSlidePrev" class="w-8 h-8 rounded-full border border-coffee-border bg-white text-coffee-text hover:bg-coffee-primary hover:text-white hover:border-coffee-primary transition-colors flex items-center justify-center text-xs" title="Geser Kiri">
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                    <button id="btnSlideNext" class="w-8 h-8 rounded-full border border-coffee-border bg-white text-coffee-text hover:bg-coffee-primary hover:text-white hover:border-coffee-primary transition-colors flex items-center justify-center text-xs" title="Geser Kanan">
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                    <a href="{{ route('menu.index') }}" class="text-xs font-mono text-coffee-primary hover:underline font-semibold ml-2">
+                        Semua Menu →
+                    </a>
                 </div>
             </div>
-        </section>
+        </div>
 
-        {{-- GALLERY SECTION --}}
-        <section class="py-20 mb-32">
-            <div class="gallery-header">
-                <h2>Galeri Berco</h2>
-                <div class="gallery-divider"></div>
+        @php
+            $demoFavorites = [
+                ['name' => 'Kopi Susu Gula Aren Berco', 'cat' => 'Signature Coffee', 'price' => 18000, 'img' => 'https://images.unsplash.com/photo-1541167760496-1628856ab772?q=80&w=600&auto=format&fit=crop', 'badge' => 'Best Seller', 'desc' => 'Espresso blend pilihan dengan susu segar dan aren murni.'],
+                ['name' => 'Caramel Macchiato Gold', 'cat' => 'Espresso Based', 'price' => 24000, 'img' => 'https://images.unsplash.com/photo-1485808191679-5f86510681a2?q=80&w=600&auto=format&fit=crop', 'badge' => 'Favorit', 'desc' => 'Steamed milk, double shot espresso, dan drizzle karamel gurih.'],
+                ['name' => 'Matcha Latte Creamy', 'cat' => 'Non Coffee', 'price' => 22000, 'img' => 'https://images.unsplash.com/photo-1536256263959-770b48d82b0a?q=80&w=600&auto=format&fit=crop', 'badge' => 'Top Pick', 'desc' => 'Matcha ceremonial Uji dengan susu segar lembut.'],
+                ['name' => 'Croissant Butter Flaky', 'cat' => 'Bakery & Pastry', 'price' => 20000, 'img' => 'https://images.unsplash.com/photo-1555507036-ab1f4038808a?q=80&w=600&auto=format&fit=crop', 'badge' => 'Fresh Daily', 'desc' => 'Pastry renyah berlapis dengan mentega Prancis aromatik.'],
+                ['name' => 'Manual Brew Ijen V60', 'cat' => 'Filter Coffee', 'price' => 22000, 'img' => 'https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?q=80&w=600&auto=format&fit=crop', 'badge' => 'Single Origin', 'desc' => 'Seduhan pour-over aroma melati dan keasaman sitrus segar.'],
+                ['name' => 'Beef Rice Bowl Teriyaki', 'cat' => 'Main Course', 'price' => 28000, 'img' => 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?q=80&w=600&auto=format&fit=crop', 'badge' => 'Chef Choice', 'desc' => 'Irisan daging sapi lembut saus teriyaki di atas nasi hangat.']
+            ];
+            $baseList = (!empty($favoriteMenus) && $favoriteMenus->count() > 0) ? $favoriteMenus : collect($demoFavorites);
+            // Duplikat 2x untuk loop infinite yang mulus tanpa jeda
+            $slidingList = $baseList->concat($baseList)->concat($baseList);
+        @endphp
+
+        {{-- Marquee Viewport --}}
+        <div id="marqueeViewport" class="marquee-viewport-wrap w-full overflow-hidden py-4 cursor-grab active:cursor-grabbing">
+            <div id="marqueeTrack" class="marquee-track-auto flex gap-5 px-6">
+                @foreach($slidingList as $item)
+                    @php
+                        $isObj = is_object($item);
+                        $name = $isObj ? ($item->nama_menu ?? $item['name']) : $item['name'];
+                        $price = $isObj ? ($item->harga ?? $item['price']) : $item['price'];
+                        $img = ($isObj && !empty($item->gambar_menu)) ? asset('storage/' . $item->gambar_menu) : ($isObj ? ($item['img'] ?? 'https://images.unsplash.com/photo-1541167760496-1628856ab772?q=80&w=600&auto=format&fit=crop') : $item['img']);
+                        $cat = $isObj ? ($item->kategori?->nama_kategori ?? 'Specialty') : $item['cat'];
+                        $badge = $isObj ? ($item['badge'] ?? 'Specialty') : $item['badge'];
+                        $desc = $isObj ? ($item->deskripsi ?? ($item['desc'] ?? 'Racikan menu barista dengan bahan baku premium.')) : $item['desc'];
+                    @endphp
+
+                    {{-- Compact Card (Width: 245px) with Pop-up / Timbul Hover Effect --}}
+                    <div class="favorite-card-pop w-[245px] shrink-0 bg-white border border-coffee-border rounded-lg overflow-hidden flex flex-col justify-between shadow-xs select-none">
+                        {{-- Thumbnail Compact (Height 135px) --}}
+                        <div class="relative h-[135px] bg-stone-100 overflow-hidden">
+                            <img src="{{ $img }}" alt="{{ $name }}" class="w-full h-full object-cover" loading="lazy">
+                            <span class="absolute top-2 left-2 bg-white/95 border border-coffee-border px-1.5 py-0.2 rounded text-[9.5px] font-mono font-bold text-coffee-primary">
+                                {{ $badge }}
+                            </span>
+                            <span class="absolute bottom-2 right-2 bg-coffee-900/90 text-white px-1.5 py-0.2 rounded text-[9.5px] font-mono font-medium">
+                                {{ $cat }}
+                            </span>
+                        </div>
+
+                        {{-- Body Compact --}}
+                        <div class="p-3.5 flex-1 flex flex-col justify-between space-y-2.5">
+                            <div>
+                                <h3 class="text-xs font-bold text-coffee-text leading-snug line-clamp-1" title="{{ $name }}">{{ $name }}</h3>
+                                <p class="text-[11px] text-coffee-muted mt-0.5 line-clamp-2 leading-relaxed">{{ $desc }}</p>
+                            </div>
+
+                            <div class="flex items-center justify-between pt-2 border-t border-coffee-border/50">
+                                <span class="font-mono text-xs font-bold text-coffee-text">Rp {{ number_format($price, 0, ',', '.') }}</span>
+                                <a href="{{ route('menu.index') }}" class="text-[11px] font-mono font-semibold bg-coffee-cream hover:bg-coffee-900 hover:text-white text-coffee-text px-2.5 py-1 rounded border border-coffee-border transition-colors">
+                                    + Pesan
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                @endforeach
             </div>
-            <div class="gallery-grid">
-                <div class="gallery-item">
-                    <img src="https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=600" alt="Coffee Latte">
-                    <div class="gallery-overlay">
-                        <span style="color: white; font-weight: 700;">Specialty Coffee</span>
+        </div>
+    </section>
+
+    {{-- 4. STORY & ABOUT SECTION --}}
+    <section id="cerita" class="border-t border-coffee-border bg-white/70 py-20">
+        <div class="max-w-6xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+            <div class="lg:col-span-6 space-y-5">
+                <span class="text-xs font-mono text-coffee-primary uppercase tracking-widest font-semibold">Cerita Kami</span>
+                <h2 class="text-3xl font-serif font-bold text-coffee-text leading-tight">Kecintaan Terhadap Kopi Lokal Specialty Sejak 2018</h2>
+                <p class="text-sm text-coffee-muted leading-relaxed">
+                    Berco Cafe hadir dari hasrat untuk mengangkat kekayaan biji kopi lokal Tanah Blambangan Banyuwangi menjadi seduhan berstandar specialty yang elegan dan dapat dinikmati oleh semua kalangan.
+                </p>
+                <div class="space-y-3 pt-2 text-xs font-semibold text-coffee-text">
+                    <div class="flex items-center space-x-3">
+                        <span class="w-5 h-5 rounded-full bg-coffee-primary/10 text-coffee-primary flex items-center justify-center font-mono text-xs">✓</span>
+                        <span>100% Biji Kopi Specialty Berkualitas dari Petani Lokal Tanah Blambangan</span>
+                    </div>
+                    <div class="flex items-center space-x-3">
+                        <span class="w-5 h-5 rounded-full bg-coffee-primary/10 text-coffee-primary flex items-center justify-center font-mono text-xs">✓</span>
+                        <span>Suasana Warm & Cozy dengan Fasilitas Nyaman untuk WFC & Nongkrong</span>
+                    </div>
+                    <div class="flex items-center space-x-3">
+                        <span class="w-5 h-5 rounded-full bg-coffee-primary/10 text-coffee-primary flex items-center justify-center font-mono text-xs">✓</span>
+                        <span>Ragam Pastry, Makanan Berat, dan Minuman Non-Coffee Segar</span>
                     </div>
                 </div>
-                <div class="gallery-item">
-                    <img src="https://images.unsplash.com/photo-1559925393-8be0ec41b50d?w=600" alt="Coffee Setup">
-                    <div class="gallery-overlay">
-                        <span style="color: white; font-weight: 700;">Brewing Perfection</span>
-                    </div>
+            </div>
+
+            <div class="lg:col-span-6 grid grid-cols-2 gap-4">
+                <div class="rounded-lg overflow-hidden border border-coffee-border bg-white h-60 shadow-sm">
+                    <img src="https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?q=80&w=800" alt="Specialty Coffee Brewing" class="w-full h-full object-cover">
                 </div>
-                <div class="gallery-item">
-                    <img src="https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=600" alt="Cafe Ambiance">
-                    <div class="gallery-overlay">
-                        <span style="color: white; font-weight: 700;">Cozy Atmosphere</span>
-                    </div>
+                <div class="rounded-lg overflow-hidden border border-coffee-border bg-white h-60 shadow-sm mt-6">
+                    <img src="https://images.unsplash.com/photo-1554118811-1e0d58224f24?q=80&w=800" alt="Latte Art Berco" class="w-full h-full object-cover">
                 </div>
             </div>
-        </section>
+        </div>
+    </section>
 
-        {{-- CONTACT SECTION --}}
-        <section class="contact-section">
-            <h2 class="contact-title">Kunjungi Kami</h2>
-            <div class="contact-grid">
-                <div class="contact-card">
-                    <div class="contact-icon">📍</div>
-                    <h4>Lokasi</h4>
-                    <p>Jl. SMA Negeri 1, Krajan, Purwoharjo, Banyuwangi</p>
+    {{-- 5. LOCATION & CONTACT CARDS --}}
+    <section id="kontak" class="border-t border-coffee-border py-16">
+        <div class="max-w-6xl mx-auto px-6 grid grid-cols-1 md:grid-cols-4 gap-6 text-center">
+            <div class="bg-white border border-coffee-border rounded-lg p-6 shadow-sm space-y-2">
+                <div class="w-10 h-10 rounded-lg bg-coffee-cream text-coffee-primary flex items-center justify-center mx-auto text-lg">
+                    <i class="fas fa-location-dot"></i>
                 </div>
-                <div class="contact-card">
-                    <div class="contact-icon">📞</div>
-                    <h4>Telepon</h4>
-                    <p>+62 821 4103 1234</p>
-                </div>
-                <div class="contact-card">
-                    <div class="contact-icon">✉️</div>
-                    <h4>Email</h4>
-                    <p>bercocafe.bwi@gmail.com</p>
-                </div>
-                <div class="contact-card">
-                    <div class="contact-icon">⏰</div>
-                    <h4>Jam Buka</h4>
-                    <p>16.00 - 22.00 WIB</p>
-                </div>
+                <h4 class="text-xs font-mono uppercase tracking-wider font-bold text-coffee-text">LOKASI CAFE</h4>
+                <p class="text-xs text-coffee-muted">Jl. SMA Negeri 1, Krajan, Purwoharjo, Banyuwangi</p>
             </div>
-        </section>
-    </main>
 
-    {{-- FOOTER --}}
-    <footer>
-        <p><i class="fas fa-copyright mr-2"></i>2026 Berco Cafe Banyuwangi. All Rights Reserved.</p>
-        <p style="margin-top: 10px; font-size: 0.9rem;">Crafted with ❤️ for Coffee Lovers</p>
+            <div class="bg-white border border-coffee-border rounded-lg p-6 shadow-sm space-y-2">
+                <div class="w-10 h-10 rounded-lg bg-coffee-cream text-coffee-primary flex items-center justify-center mx-auto text-lg">
+                    <i class="fas fa-clock"></i>
+                </div>
+                <h4 class="text-xs font-mono uppercase tracking-wider font-bold text-coffee-text">JAM LAYANAN</h4>
+                <p class="text-xs text-coffee-muted">Setiap Hari<br><strong class="text-coffee-text font-mono">10:00 – 22:30 WIB</strong></p>
+            </div>
+
+            <div class="bg-white border border-coffee-border rounded-lg p-6 shadow-sm space-y-2">
+                <div class="w-10 h-10 rounded-lg bg-coffee-cream text-coffee-primary flex items-center justify-center mx-auto text-lg">
+                    <i class="fas fa-phone"></i>
+                </div>
+                <h4 class="text-xs font-mono uppercase tracking-wider font-bold text-coffee-text">WHATSAPP</h4>
+                <p class="text-xs font-mono text-coffee-text font-semibold">+62 821 4103 1234</p>
+            </div>
+
+            <div class="bg-white border border-coffee-border rounded-lg p-6 shadow-sm space-y-2">
+                <div class="w-10 h-10 rounded-lg bg-coffee-cream text-coffee-primary flex items-center justify-center mx-auto text-lg">
+                    <i class="fas fa-envelope"></i>
+                </div>
+                <h4 class="text-xs font-mono uppercase tracking-wider font-bold text-coffee-text">EMAIL RESMI</h4>
+                <p class="text-xs font-mono text-coffee-muted">bercocafe.bwi@gmail.com</p>
+            </div>
+        </div>
+    </section>
+
+    {{-- 6. FOOTER --}}
+    <footer class="border-t border-white/10 py-8 text-xs font-mono text-stone-400 bg-coffee-900 text-center">
+        <div class="max-w-6xl mx-auto px-6 flex flex-col sm:flex-row justify-between items-center gap-4">
+            <span>© 2026 BERCO CAFE BANYUWANGI. ALL RIGHTS RESERVED.</span>
+            <span class="text-stone-500">CRAFTED FOR COFFEE LOVERS</span>
+        </div>
     </footer>
 
-    {{-- Real-time Status Update Script --}}
+    {{-- Real-time Status & Carousel Control Script --}}
     <script>
-        function updateStatusIndicator() {
-            const now = new Date();
-            const hour = now.getHours();
-            const isOpen = hour >= 16 && hour < 22;
-
-            const statusDot = document.getElementById('statusDot');
-            const tooltipText = document.getElementById('tooltipText');
-
-            if (isOpen) {
-                statusDot.className = 'w-3 h-3 rounded-full bg-[#22C55E] animate-pulse';
-                tooltipText.innerHTML = '🟢 Kafe sedang BUKA (16:00 - 22:00)';
-            } else {
-                statusDot.className = 'w-3 h-3 rounded-full bg-[#EF4444] animate-pulse';
-                tooltipText.innerHTML = '🔴 Kafe sedang TUTUP (Buka 16:00 - 22:00)';
+        document.addEventListener('DOMContentLoaded', () => {
+            // Status Jam Buka
+            const statusText = document.getElementById('navStatusText');
+            if (statusText) {
+                const now = new Date();
+                const hour = now.getHours();
+                const min = now.getMinutes();
+                const isOpen = (hour > 10 && hour < 22) || (hour === 10 && min >= 0) || (hour === 22 && min <= 30);
+                statusText.textContent = isOpen ? 'BUKA 10:00 - 22:30 WIB' : 'TUTUP (10:00 - 22:30)';
             }
-        }
 
-        setInterval(updateStatusIndicator, 60000);
-        updateStatusIndicator();
+            // Slider Navigation Buttons
+            const track = document.getElementById('marqueeTrack');
+            const prevBtn = document.getElementById('btnSlidePrev');
+            const nextBtn = document.getElementById('btnSlideNext');
+
+            if (prevBtn && nextBtn && track) {
+                prevBtn.addEventListener('click', () => {
+                    track.style.animationPlayState = 'paused';
+                    track.scrollBy({ left: -260, behavior: 'smooth' });
+                });
+
+                nextBtn.addEventListener('click', () => {
+                    track.style.animationPlayState = 'paused';
+                    track.scrollBy({ left: 260, behavior: 'smooth' });
+                });
+            }
+        });
     </script>
 </body>
 </html>

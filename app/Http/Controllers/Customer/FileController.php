@@ -13,19 +13,19 @@ class FileController extends Controller
         $allowed = ['pdf'];
         $ext = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
 
-        if (!in_array($ext, $allowed)) {
+        if (! in_array($ext, $allowed)) {
             abort(403, 'Tipe file tidak diizinkan.');
         }
 
-        $path = storage_path('app/laporan/' . $filename);
+        $path = storage_path('app/laporan/'.$filename);
         $realPath = realpath($path);
         $allowedDir = realpath(storage_path('app/laporan'));
 
-        if (!$realPath || !str_starts_with($realPath, $allowedDir)) {
+        if (! $realPath || ! str_starts_with($realPath, $allowedDir)) {
             abort(403, 'Akses ditolak.');
         }
 
-        if (!file_exists($realPath)) {
+        if (! file_exists($realPath)) {
             abort(404, 'File tidak ditemukan.');
         }
 

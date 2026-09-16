@@ -11,14 +11,14 @@ return new class extends Migration
      */
     public function up(): void
     {
-    Schema::create('order_items', function (Illuminate\Database\Schema\Blueprint $table) {
-    $table->id();
-    $table->foreignId('id_order')->constrained('orders', 'id_order')->onDelete('cascade');
-    $table->foreignId('id_menu')->constrained('menus', 'id_menu');
-    $table->integer('quantity');
-    $table->integer('subtotal');
-    $table->timestamps();
-});
+        Schema::create('order_items', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('id_order')->constrained('orders', 'id_order')->onDelete('cascade');
+            $table->foreignId('id_menu')->constrained('menus', 'id_menu');
+            $table->integer('quantity');
+            $table->integer('subtotal');
+            $table->timestamps();
+        });
     }
 
     /**
