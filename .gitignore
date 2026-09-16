@@ -6,6 +6,7 @@
 # Environment files (VERY IMPORTANT)
 .env
 .env.*
+!.env.example
 
 # Laravel storage
 /storage/*.key
