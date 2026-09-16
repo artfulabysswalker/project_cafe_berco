@@ -1,481 +1,429 @@
 @extends('dashboard')
 
-@push('styles')
-<style>
-    :root {
-        --berco-brown: #6B3F1F;
-        --berco-amber: #D4A574;
-        --berco-cream: #FFF8F0;
-        --berco-dark-brown: #4A2C1F;
-        --berco-light-brown: #A0683A;
-        --transition-smooth: 0.3s ease;
-    }
-
-    .staff-management-container {
-        background: linear-gradient(135deg, #FFFBF6 0%, #FFF8F0 100%);
-        padding: 2.5rem;
-        border-radius: 28px;
-        box-shadow: 0 4px 20px rgba(107, 63, 31, 0.08);
-    }
-
-    .staff-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        gap: 1.5rem;
-        margin-bottom: 2.5rem;
-        padding-bottom: 2rem;
-        border-bottom: 2px solid rgba(212, 165, 116, 0.2);
-    }
-
-    .staff-header h2 {
-        font-family: 'Playfair Display', serif;
-        font-size: 2.5rem;
-        font-weight: 700;
-        background: linear-gradient(135deg, var(--berco-dark-brown) 0%, var(--berco-light-brown) 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        margin: 0;
-        letter-spacing: -0.5px;
-    }
-
-    .btn-add-staff {
-        background: linear-gradient(135deg, var(--berco-light-brown) 0%, var(--berco-brown) 100%);
-        color: white !important;
-        padding: 0.75rem 1.75rem !important;
-        border-radius: 12px !important;
-        font-weight: 600 !important;
-        border: none !important;
-        transition: all var(--transition-smooth) !important;
-        box-shadow: 0 4px 15px rgba(160, 104, 58, 0.3) !important;
-        text-decoration: none !important;
-    }
-
-    .btn-add-staff:hover {
-        transform: translateY(-2px) !important;
-        box-shadow: 0 6px 25px rgba(160, 104, 58, 0.4) !important;
-        background: linear-gradient(135deg, var(--berco-brown) 0%, var(--berco-dark-brown) 100%) !important;
-        color: white !important;
-    }
-
-    .alert-success {
-        background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%) !important;
-        border: 1px solid rgba(21, 87, 36, 0.2) !important;
-        color: #155724 !important;
-        border-radius: 12px !important;
-        padding: 1rem 1.5rem !important;
-        font-weight: 500 !important;
-    }
-
-    .section-card {
-        background: white;
-        border-radius: 20px;
-        overflow: hidden;
-        box-shadow: 0 2px 12px rgba(107, 63, 31, 0.08);
-        border: 1px solid rgba(212, 165, 116, 0.15);
-        margin-bottom: 2rem;
-        transition: all var(--transition-smooth);
-    }
-
-    .section-card:hover {
-        box-shadow: 0 4px 20px rgba(107, 63, 31, 0.12);
-    }
-
-    .section-header {
-        padding: 1.25rem 1.75rem;
-        border-bottom: 2px solid rgba(212, 165, 116, 0.15);
-    }
-
-    .section-header h5 {
-        font-family: 'Playfair Display', serif;
-        font-size: 1.35rem;
-        font-weight: 700;
-        margin: 0;
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-        color: white;
-    }
-
-    .section-card.admins .section-header {
-        background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
-    }
-
-    .section-card.staffs .section-header {
-        background: linear-gradient(135deg, #0066cc 0%, #0052a3 100%);
-    }
-
-    .section-card.customers .section-header {
-        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
-    }
-
-    .section-body {
-        padding: 1.75rem;
-    }
-
-    .empty-message {
-        color: #8B7355;
-        font-size: 1rem;
-        font-weight: 500;
-        padding: 1rem 0;
-    }
-
-    .table-responsive table {
-        margin-bottom: 0;
-        border-collapse: collapse;
-    }
-
-    .table thead th {
-        background: rgba(212, 165, 116, 0.08) !important;
-        border-bottom: 2px solid rgba(212, 165, 116, 0.2) !important;
-        padding: 1rem 1.25rem !important;
-        font-family: 'DM Sans', sans-serif;
-        font-weight: 700 !important;
-        color: var(--berco-dark-brown) !important;
-        font-size: 0.95rem;
-        letter-spacing: 0.5px;
-        text-transform: uppercase;
-    }
-
-    .table tbody td {
-        padding: 1rem 1.25rem !important;
-        border-bottom: 1px solid rgba(212, 165, 116, 0.1) !important;
-        color: #3D2817;
-        font-family: 'DM Sans', sans-serif;
-        vertical-align: middle;
-    }
-
-    .table tbody tr {
-        transition: all var(--transition-smooth);
-    }
-
-    .table tbody tr:hover {
-        background: linear-gradient(90deg, rgba(212, 165, 116, 0.05) 0%, rgba(160, 104, 58, 0.03) 100%) !important;
-        box-shadow: inset 0 0 0 1px rgba(212, 165, 116, 0.1);
-    }
-
-    .table tbody tr td:first-child {
-        font-weight: 600;
-        color: var(--berco-dark-brown);
-    }
-
-    .staff-username {
-        font-family: 'JetBrains Mono', monospace;
-        color: #8B7355;
-        background: rgba(212, 165, 116, 0.08);
-        padding: 0.25rem 0.5rem;
-        border-radius: 4px;
-        font-size: 0.9rem;
-    }
-
-    .badge {
-        font-weight: 700 !important;
-        padding: 0.4rem 0.75rem !important;
-        border-radius: 20px !important;
-        font-size: 0.8rem !important;
-        letter-spacing: 0.3px;
-        border: 1px solid rgba(255, 255, 255, 0.3);
-    }
-
-    .badge.bg-danger {
-        background: linear-gradient(135deg, #dc3545 0%, #c82333 100%) !important;
-    }
-
-    .badge.bg-info {
-        background: linear-gradient(135deg, #0066cc 0%, #0052a3 100%) !important;
-    }
-
-    .badge.bg-success {
-        background: linear-gradient(135deg, #28a745 0%, #20c997 100%) !important;
-    }
-
-    /* Action Buttons */
-    .btn-sm {
-        padding: 0.5rem 0.75rem !important;
-        border-radius: 8px !important;
-        font-weight: 600 !important;
-        transition: all var(--transition-smooth) !important;
-        border: none !important;
-        font-family: 'DM Sans', sans-serif;
-    }
-
-    .btn-warning {
-        background: #0066cc !important;
-        color: white !important;
-    }
-
-    .btn-warning:hover {
-        background: #0052a3 !important;
-        transform: translateY(-1px);
-        box-shadow: 0 4px 10px rgba(0, 86, 179, 0.3);
-    }
-
-    .btn-danger {
-        background: #dc3545 !important;
-        color: white !important;
-    }
-
-    .btn-danger:hover {
-        background: #c82333 !important;
-        transform: translateY(-1px);
-        box-shadow: 0 4px 10px rgba(220, 53, 69, 0.3);
-    }
-
-    .btn-primary {
-        background: var(--berco-light-brown) !important;
-        color: white !important;
-    }
-
-    .btn-primary:hover {
-        background: var(--berco-dark-brown) !important;
-        transform: translateY(-1px);
-    }
-
-    .form-select {
-        border: 1px solid rgba(212, 165, 116, 0.3) !important;
-        border-radius: 8px !important;
-        padding: 0.4rem 0.75rem !important;
-        font-family: 'DM Sans', sans-serif !important;
-        transition: all var(--transition-smooth) !important;
-    }
-
-    .form-select:focus {
-        border-color: var(--berco-light-brown) !important;
-        box-shadow: 0 0 0 3px rgba(212, 165, 116, 0.1) !important;
-    }
-
-    @media (max-width: 980px) {
-        .staff-management-container {
-            padding: 1.5rem;
-        }
-
-        .staff-header {
-            flex-direction: column;
-            align-items: flex-start;
-        }
-
-        .staff-header h2 {
-            font-size: 2rem;
-        }
-
-        .btn-add-staff {
-            width: 100%;
-            text-align: center;
-        }
-    }
-
-    @media (max-width: 640px) {
-        .staff-management-container {
-            padding: 1rem;
-            border-radius: 16px;
-        }
-
-        .staff-header {
-            margin-bottom: 1.5rem;
-            padding-bottom: 1rem;
-        }
-
-        .staff-header h2 {
-            font-size: 1.75rem;
-        }
-
-        .table thead th {
-            padding: 0.75rem 0.5rem !important;
-            font-size: 0.8rem;
-        }
-
-        .table tbody td {
-            padding: 0.75rem 0.5rem !important;
-            font-size: 0.9rem;
-        }
-
-        .btn-sm {
-            padding: 0.4rem 0.6rem !important;
-            font-size: 0.8rem !important;
-        }
-
-        .form-select {
-            max-width: 120px !important;
-        }
-    }
-</style>
-@endpush
+@section('page-title', 'Manajemen Staff & Karyawan')
+@section('breadcrumb', 'Staff Directory')
 
 @section('content')
-    <div class="staff-header">
-        <h2>Manajemen Staff</h2>
-        <a href="{{ route('admin.staffoption.create') }}" class="btn btn-add-staff">
-            <i class="fas fa-plus"></i> Tambah Staff Baru
-        </a>
-    </div>
+<div class="space-y-5">
 
+    {{-- Flash Alerts --}}
     @if(session('success'))
-        <div class="alert alert-success alert-dismissible fade show" role="alert">
-            <i class="fas fa-check-circle" style="margin-right: 0.5rem;"></i>
-            {{ session('success') }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        <div class="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-lg text-xs font-mono flex items-center justify-between shadow-2xs">
+            <div class="flex items-center space-x-2">
+                <i class="fas fa-circle-check text-emerald-600"></i>
+                <span>{{ session('success') }}</span>
+            </div>
+            <button type="button" onclick="this.parentElement.remove()" class="text-emerald-600 hover:text-emerald-900">&times;</button>
         </div>
     @endif
 
-    <!-- Admins Section -->
-    <div class="section-card admins">
-        <div class="section-header">
-            <h5><i class="fas fa-crown"></i> Admin</h5>
+    @if(session('error'))
+        <div class="p-3 bg-rose-50 border border-rose-200 text-rose-800 rounded-lg text-xs font-mono flex items-center justify-between shadow-2xs">
+            <div class="flex items-center space-x-2">
+                <i class="fas fa-circle-exclamation text-rose-600"></i>
+                <span>{{ session('error') }}</span>
+            </div>
+            <button type="button" onclick="this.parentElement.remove()" class="text-rose-600 hover:text-rose-900">&times;</button>
         </div>
-        <div class="section-body">
-            @if($admins->isEmpty())
-                <p class="empty-message"><i class="fas fa-user-slash"></i> Tidak ada admin</p>
-            @else
-                <div class="table-responsive">
-                    <table class="table table-hover">
-                        <thead>
-                            <tr>
-                                <th>Nama</th>
-                                <th>Username</th>
-                                <th>Role</th>
-                                <th style="text-align: center; width: 120px;">Aksi</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach($admins as $person)
-                                <tr>
-                                    <td>{{ $person->name }}</td>
-                                    <td><span class="staff-username">{{ $person->username }}</span></td>
-                                    <td><span class="badge bg-danger"><i class="fas fa-star"></i> Admin</span></td>
-                                    <td style="text-align: center;">
-                                        <a href="{{ route('admin.staffoption.edit', $person->id_user) }}" 
-                                           class="btn btn-sm btn-warning">
-                                            <i class="fas fa-edit"></i> Edit
+    @endif
+
+    {{-- Non-Admin Notice Banner --}}
+    @if(!$isAdmin)
+        <div class="bg-amber-50/60 border border-amber-200 rounded-lg p-3.5 flex items-center justify-between text-xs text-amber-900">
+            <div class="flex items-center space-x-2.5">
+                <i class="fas fa-shield-halved text-amber-600 text-sm"></i>
+                <span>Anda sedang login sebagai <strong>{{ auth()->user()?->name ?? 'Staff' }}</strong> (Mode Direktori). Penambahan atau pengubahan data pengguna dibatasi untuk Administrator.</span>
+            </div>
+            <span class="text-[10px] font-mono uppercase bg-amber-100 px-2 py-0.5 rounded border border-amber-300 font-semibold">Lihat Saja</span>
+        </div>
+    @endif
+
+    @php
+        $allUsers = $admins->concat($staffs)->concat($users);
+    @endphp
+
+    {{-- SINGLE UNIFIED CARD CONTAINER --}}
+    <div class="bg-white border border-neutral-200 rounded-xl shadow-xs overflow-hidden">
+        
+        {{-- 1. Header Area --}}
+        <div class="p-5 border-b border-neutral-200 flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+                <div class="flex items-center space-x-2.5">
+                    <h2 class="text-sm font-semibold text-neutral-900 tracking-tight">Manajemen Staff & Pengguna</h2>
+                    <span class="text-[11px] font-mono text-neutral-600 bg-neutral-100 border border-neutral-200 px-2 py-0.5 rounded-full" id="userCountBadge">
+                        {{ $allUsers->count() }} Akun
+                    </span>
+                </div>
+                <p class="text-xs text-neutral-500 mt-0.5">Kelola hak akses peran, status keaktifan, dan kredensial akun tim operasional & pelanggan.</p>
+            </div>
+
+            <div class="flex items-center space-x-3">
+                <div class="relative w-full sm:w-64">
+                    <input 
+                        type="text" 
+                        id="staffSearchInput" 
+                        placeholder="Cari nama, username, email..." 
+                        onkeyup="applyStaffFilters()"
+                        class="w-full bg-neutral-50 border border-neutral-200 rounded-md pl-8 pr-3 py-1.5 text-xs text-neutral-900 placeholder:text-neutral-400 focus:bg-white focus:outline-none focus:ring-1 focus:ring-stone-800 focus:border-stone-800 transition-colors"
+                    />
+                    <i class="fas fa-magnifying-glass text-neutral-400 text-xs absolute left-2.5 top-2.5"></i>
+                </div>
+
+                @if($isAdmin)
+                    <a href="{{ route('admin.staffoption.create') }}" class="text-xs font-mono font-medium bg-[#18181B] hover:bg-black text-white px-3.5 py-1.5 rounded-md transition-colors shadow-2xs inline-flex items-center space-x-1.5 shrink-0">
+                        <i class="fas fa-plus text-[10px]"></i>
+                        <span>Tambah Pegawai</span>
+                    </a>
+                @endif
+            </div>
+        </div>
+
+        {{-- 2. Filter Bar (Segmented Role Tabs + Status Dropdown) --}}
+        <div class="px-5 py-3 border-b border-neutral-200 bg-neutral-50/50 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+            {{-- Role Filter Tabs --}}
+            <div class="flex items-center space-x-1.5 overflow-x-auto pb-1 sm:pb-0" id="roleTabGroup">
+                <button 
+                    type="button" 
+                    onclick="selectRoleTab('all', this)" 
+                    class="role-tab px-3 py-1 rounded-md font-medium text-xs bg-white text-neutral-900 border border-neutral-200 shadow-2xs transition-colors">
+                    Semua ({{ $allUsers->count() }})
+                </button>
+                <button 
+                    type="button" 
+                    onclick="selectRoleTab('admin', this)" 
+                    class="role-tab px-3 py-1 rounded-md font-medium text-xs text-neutral-600 hover:text-neutral-900 hover:bg-white/80 transition-colors">
+                    Admin / Owner ({{ $admins->count() }})
+                </button>
+                <button 
+                    type="button" 
+                    onclick="selectRoleTab('staff', this)" 
+                    class="role-tab px-3 py-1 rounded-md font-medium text-xs text-neutral-600 hover:text-neutral-900 hover:bg-white/80 transition-colors">
+                    Kasir & Staff ({{ $staffs->count() }})
+                </button>
+                <button 
+                    type="button" 
+                    onclick="selectRoleTab('customer', this)" 
+                    class="role-tab px-3 py-1 rounded-md font-medium text-xs text-neutral-600 hover:text-neutral-900 hover:bg-white/80 transition-colors">
+                    Pelanggan ({{ $users->count() }})
+                </button>
+            </div>
+
+            {{-- Status Dropdown --}}
+            <div class="flex items-center space-x-2">
+                <span class="text-neutral-500 text-[11px] font-mono">Status:</span>
+                <select id="statusFilterSelect" onchange="applyStaffFilters()" class="bg-white border border-neutral-200 rounded-md px-2.5 py-1 text-xs text-neutral-700 focus:outline-none focus:ring-1 focus:ring-stone-800">
+                    <option value="">Semua Status</option>
+                    <option value="active">Aktif</option>
+                    <option value="inactive">Nonaktif</option>
+                </select>
+            </div>
+        </div>
+
+        {{-- 3. Unified Data Table --}}
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs" id="staffUnifiedTable">
+                <thead class="bg-neutral-50 border-b border-neutral-200 text-neutral-500 text-[10px] font-mono uppercase tracking-wider">
+                    <tr>
+                        <th class="px-5 py-3 font-semibold">Pengguna & Akun</th>
+                        <th class="px-5 py-3 font-semibold">Role / Akses</th>
+                        <th class="px-5 py-3 font-semibold text-center">Status</th>
+                        <th class="px-5 py-3 font-semibold">Bergabung</th>
+                        @if($isAdmin)
+                            <th class="px-5 py-3 font-semibold text-right">Aksi</th>
+                        @endif
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-neutral-100 font-sans">
+                    @forelse($allUsers as $person)
+                        @php
+                            $roleName = strtolower($person->role?->role_name ?? 'customer');
+                            $roleGroup = 'customer';
+                            if (in_array($roleName, ['admin', 'owner'])) {
+                                $roleGroup = 'admin';
+                            } elseif (in_array($roleName, ['staff', 'cashier', 'kasir', 'pegawai'])) {
+                                $roleGroup = 'staff';
+                            }
+
+                            $status = strtolower($person->status ?? 'active');
+                            $isSelf = $person->id_user === auth()->id();
+                        @endphp
+                        <tr class="staff-row hover:bg-neutral-50/75 transition-colors" data-role="{{ $roleGroup }}" data-status="{{ $status }}">
+                            
+                            {{-- Combined User Avatar + Full Name + Username / Email --}}
+                            <td class="px-5 py-3">
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-8 h-8 rounded-md bg-neutral-100 border border-neutral-200 text-neutral-700 flex items-center justify-center font-mono font-semibold text-xs shrink-0">
+                                        {{ strtoupper(substr($person->name, 0, 1)) }}
+                                    </div>
+                                    <div class="min-w-0">
+                                        <div class="flex items-center space-x-1.5">
+                                            <span class="font-semibold text-neutral-900 truncate">{{ $person->name }}</span>
+                                            @if($isSelf)
+                                                <span class="text-[9.5px] font-mono bg-neutral-100 text-neutral-600 px-1.5 py-0.2 rounded border border-neutral-200">Anda</span>
+                                            @endif
+                                        </div>
+                                        <div class="text-[11px] text-neutral-500 font-mono truncate mt-0.5">
+                                            <span>&#64;{{ $person->username }}</span>
+                                            @if(!empty($person->email))
+                                                <span class="text-neutral-300 mx-1">•</span>
+                                                <span>{{ $person->email }}</span>
+                                            @endif
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+
+                            {{-- Role Column with Subtle Dot Indicator --}}
+                            <td class="px-5 py-3">
+                                @if($roleGroup === 'admin')
+                                    <span class="inline-flex items-center space-x-1.5 text-[11px] font-mono px-2 py-0.5 rounded-md bg-neutral-100 text-neutral-800 border border-neutral-200">
+                                        <span class="w-1.5 h-1.5 rounded-full bg-amber-600"></span>
+                                        <span class="font-medium">{{ $person->role?->role_name ?? 'Admin' }}</span>
+                                    </span>
+                                @elseif($roleGroup === 'staff')
+                                    <span class="inline-flex items-center space-x-1.5 text-[11px] font-mono px-2 py-0.5 rounded-md bg-neutral-100 text-neutral-700 border border-neutral-200">
+                                        <span class="w-1.5 h-1.5 rounded-full bg-sky-600"></span>
+                                        <span class="font-medium">{{ $person->role?->role_name ?? 'Staff' }}</span>
+                                    </span>
+                                @else
+                                    <span class="inline-flex items-center space-x-1.5 text-[11px] font-mono px-2 py-0.5 rounded-md bg-neutral-50 text-neutral-600 border border-neutral-200">
+                                        <span class="w-1.5 h-1.5 rounded-full bg-neutral-400"></span>
+                                        <span>Customer</span>
+                                    </span>
+                                @endif
+                            </td>
+
+                            {{-- Status Column --}}
+                            <td class="px-5 py-3 text-center">
+                                @if($status === 'active')
+                                    <span class="inline-flex items-center space-x-1.5 text-[11px] font-mono px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                                        <span>Aktif</span>
+                                    </span>
+                                @else
+                                    <span class="inline-flex items-center space-x-1.5 text-[11px] font-mono px-2 py-0.5 rounded-md bg-neutral-100 text-neutral-600 border border-neutral-200">
+                                        <span class="w-1.5 h-1.5 rounded-full bg-neutral-400"></span>
+                                        <span>Nonaktif</span>
+                                    </span>
+                                @endif
+                            </td>
+
+                            {{-- Created Date --}}
+                            <td class="px-5 py-3 text-[11px] font-mono text-neutral-500">
+                                {{ $person->created_at ? $person->created_at->format('d/m/Y') : '-' }}
+                            </td>
+
+                            {{-- Actions Column --}}
+                            @if($isAdmin)
+                                <td class="px-5 py-3 text-right">
+                                    <div class="inline-flex items-center space-x-1.5 relative">
+                                        {{-- Primary Edit Button --}}
+                                        <a href="{{ route('admin.staffoption.edit', $person->id_user ?? $person->id) }}" class="text-[11px] font-mono text-neutral-700 hover:text-neutral-900 border border-neutral-200 bg-white hover:bg-neutral-50 px-2.5 py-1 rounded transition-colors" title="Edit Akun">
+                                            Edit
                                         </a>
-                                        @if($person->id_user !== auth()->id())
-                                            <form method="POST" 
-                                                  action="{{ route('admin.staff.destroy', $person->id) }}" 
-                                                  style="display:inline;" 
-                                                  onsubmit="return confirm('Yakin hapus admin ini?');">
-                                                @csrf
-                                                @method('DELETE')
-                                                <button type="submit" class="btn btn-sm btn-danger">
-                                                    <i class="fas fa-trash"></i> Hapus
+
+                                        {{-- 3-Dot Dropdown Trigger --}}
+                                        <div class="relative inline-block text-left">
+                                            <button 
+                                                type="button" 
+                                                onclick="toggleActionDropdown('dropdown-{{ $person->id_user ?? $person->id }}', event)" 
+                                                class="w-7 h-6 rounded border border-neutral-200 bg-white hover:bg-neutral-50 text-neutral-500 hover:text-neutral-800 flex items-center justify-center transition-colors">
+                                                <i class="fas fa-ellipsis text-xs"></i>
+                                            </button>
+
+                                            {{-- Dropdown Menu --}}
+                                            <div id="dropdown-{{ $person->id_user ?? $person->id }}" class="action-dropdown hidden absolute right-0 mt-1 w-44 bg-white border border-neutral-200 rounded-md shadow-md py-1 z-30 font-sans text-xs">
+                                                
+                                                {{-- Reset Password --}}
+                                                <button 
+                                                    type="button" 
+                                                    onclick="openResetPasswordModal({{ $person->id_user ?? $person->id }}, '{{ addslashes($person->name) }}')" 
+                                                    class="w-full text-left px-3 py-1.5 text-neutral-700 hover:bg-neutral-50 flex items-center space-x-2">
+                                                    <i class="fas fa-key text-[10px] text-neutral-400 w-3.5"></i>
+                                                    <span>Reset Password</span>
                                                 </button>
-                                            </form>
-                                        @endif
-                                    </td>
-                                </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
-                </div>
-            @endif
+
+                                                {{-- Toggle Active/Inactive --}}
+                                                @if(!$isSelf)
+                                                    <form method="POST" action="{{ route('admin.staff.toggle-status', $person->id_user ?? $person->id) }}" class="m-0">
+                                                        @csrf
+                                                        <button type="submit" class="w-full text-left px-3 py-1.5 text-neutral-700 hover:bg-neutral-50 flex items-center space-x-2">
+                                                            <i class="fas {{ $status === 'active' ? 'fa-ban text-amber-500' : 'fa-check text-emerald-500' }} text-[10px] w-3.5"></i>
+                                                            <span>{{ $status === 'active' ? 'Nonaktifkan Akun' : 'Aktifkan Akun' }}</span>
+                                                        </button>
+                                                    </form>
+                                                @endif
+
+                                                <div class="border-t border-neutral-100 my-1"></div>
+
+                                                {{-- Delete Action --}}
+                                                @if(!$isSelf)
+                                                    <form method="POST" action="{{ route('admin.staff.destroy', $person->id_user ?? $person->id) }}" class="m-0" onsubmit="return confirm('Apakah Anda yakin ingin menghapus akun {{ addslashes($person->name) }}?')">
+                                                        @csrf
+                                                        @method('DELETE')
+                                                        <button type="submit" class="w-full text-left px-3 py-1.5 text-rose-600 hover:bg-rose-50 flex items-center space-x-2">
+                                                            <i class="fas fa-trash-can text-[10px] w-3.5"></i>
+                                                            <span>Hapus Akun</span>
+                                                        </button>
+                                                    </form>
+                                                @endif
+                                            </div>
+                                        </div>
+                                    </div>
+                                </td>
+                            @endif
+
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="{{ $isAdmin ? 5 : 4 }}" class="px-5 py-12 text-center text-xs font-mono text-neutral-400">
+                                Belum ada data pengguna yang terdaftar.
+                            </td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
         </div>
+
+        {{-- 4. Clean Footer & Pagination Controls --}}
+        <div class="px-5 py-3 border-t border-neutral-200 bg-neutral-50/50 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs font-mono text-neutral-500">
+            <span id="tablePaginationInfo">Menampilkan 1-{{ $allUsers->count() }} dari {{ $allUsers->count() }} pengguna</span>
+            
+            <div class="flex items-center space-x-1.5">
+                <button type="button" class="px-2.5 py-1 rounded border border-neutral-200 bg-white text-neutral-400 cursor-not-allowed" disabled>
+                    &larr; Prev
+                </button>
+                <button type="button" class="px-2.5 py-1 rounded border border-neutral-200 bg-white text-neutral-700 hover:bg-neutral-50">
+                    Next &rarr;
+                </button>
+            </div>
+        </div>
+
     </div>
 
-    <!-- Staff Section -->
-    <div class="section-card staffs">
-        <div class="section-header">
-            <h5><i class="fas fa-user-tie"></i> Staff / Kasir</h5>
-        </div>
-        <div class="section-body">
-            @if($staffs->isEmpty())
-                <p class="empty-message"><i class="fas fa-user-slash"></i> Tidak ada staff</p>
-            @else
-                <div class="table-responsive">
-                    <table class="table table-hover">
-                        <thead>
-                            <tr>
-                                <th>Nama</th>
-                                <th>Username</th>
-                                <th>Role</th>
-                                <th style="text-align: center; width: 150px;">Aksi</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach($staffs as $person)
-                                <tr>
-                                    <td>{{ $person->name }}</td>
-                                    <td><span class="staff-username">{{ $person->username }}</span></td>
-                                    <td><span class="badge bg-info"><i class="fas fa-user-check"></i> Staff</span></td>
-                                    <td style="text-align: center;">
-                                        <a href="{{ route('admin.staffoption.edit', $person->id_user) }}" 
-                                           class="btn btn-sm btn-warning">
-                                            <i class="fas fa-edit"></i> Edit
-                                        </a>
-                                        <form method="POST" 
-                                              action="{{ route('admin.staff.destroy', $person->id_user) }}" 
-                                              style="display:inline;" 
-                                              onsubmit="return confirm('Yakin hapus staff ini?');">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit" class="btn btn-sm btn-danger">
-                                                <i class="fas fa-trash"></i> Hapus
-                                            </button>
-                                        </form>
-                                    </td>
-                                </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
-                </div>
-            @endif
-        </div>
-    </div>
+</div>
 
-    <!-- Customers Section -->
-    <div class="section-card customers">
-        <div class="section-header">
-            <h5><i class="fas fa-user"></i> Customer</h5>
+{{-- MODAL RESET PASSWORD --}}
+<div id="resetPasswordModal" class="hidden fixed inset-0 z-50 bg-black/40 backdrop-blur-2xs flex items-center justify-center p-4">
+    <div class="bg-white border border-neutral-200 rounded-xl shadow-lg w-full max-w-sm overflow-hidden" onclick="event.stopPropagation()">
+        <div class="px-5 py-4 border-b border-neutral-200 flex items-center justify-between">
+            <div class="flex items-center space-x-2">
+                <i class="fas fa-key text-xs text-neutral-600"></i>
+                <h3 class="text-xs font-mono uppercase tracking-wider font-semibold text-neutral-900">Reset Password</h3>
+            </div>
+            <button type="button" onclick="closeResetPasswordModal()" class="text-neutral-400 hover:text-neutral-700 text-sm">&times;</button>
         </div>
-        <div class="section-body">
-            @if($users->isEmpty())
-                <p class="empty-message"><i class="fas fa-user-slash"></i> Tidak ada customer</p>
-            @else
-                <div class="table-responsive">
-                    <table class="table table-hover">
-                        <thead>
-                            <tr>
-                                <th>Nama</th>
-                                <th>Username</th>
-                                <th>Email</th>
-                                <th>Role</th>
-                                <th style="text-align: center; width: 180px;">Aksi</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach($users as $person)
-                                <tr>
-                                    <td>{{ $person->name }}</td>
-                                    <td><span class="staff-username">{{ $person->username }}</span></td>
-                                    <td><span class="staff-username">{{ $person->email }}</span></td>
-                                    <td><span class="badge bg-success"><i class="fas fa-user-circle"></i> Customer</span></td>
-                                    <td style="text-align: center;">
-                                        <form method="POST" 
-                                              action="{{ route('admin.staff.role', $person->id_user) }}" 
-                                              style="display:inline;">
-                                            @csrf
-                                            @method('PUT')
-                                            <select name="id_role" class="form-select form-select-sm" 
-                                                    style="max-width: 150px; display:inline-block;">
-                                                @foreach($roles as $role)
-                                                    @if(in_array($role->role_name, ['Customer', 'Staff', 'Admin']))
-                                                        <option value="{{ $role->id_role }}" 
-                                                                {{ $person->id_role == $role->id_role ? 'selected' : '' }}>
-                                                            {{ $role->role_name }}
-                                                        </option>
-                                                    @endif
-                                                @endforeach
-                                            </select>
-                                            <button type="submit" class="btn btn-sm btn-primary">
-                                                Ubah
-                                            </button>
-                                        </form>
-                                    </td>
-                                </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
+        
+        <form id="resetPasswordForm" method="POST" action="">
+            @csrf
+            <div class="p-5 space-y-4 text-xs">
+                <p class="text-neutral-600 text-xs">
+                    Reset password untuk akun: <strong class="text-neutral-900 font-semibold" id="resetTargetName">-</strong>
+                </p>
+                
+                <div class="space-y-1.5">
+                    <label class="font-medium text-neutral-700">Password Baru</label>
+                    <input type="password" name="new_password" required minlength="6" placeholder="Minimal 6 karakter" class="w-full bg-white border border-neutral-200 rounded-md px-3 py-1.5 text-xs text-neutral-900 focus:outline-none focus:ring-1 focus:ring-stone-800">
                 </div>
-            @endif
-        </div>
+
+                <div class="space-y-1.5">
+                    <label class="font-medium text-neutral-700">Konfirmasi Password Baru</label>
+                    <input type="password" name="new_password_confirmation" required minlength="6" placeholder="Ulangi password baru" class="w-full bg-white border border-neutral-200 rounded-md px-3 py-1.5 text-xs text-neutral-900 focus:outline-none focus:ring-1 focus:ring-stone-800">
+                </div>
+            </div>
+
+            <div class="px-5 py-3 border-t border-neutral-200 bg-neutral-50 flex justify-end space-x-2 text-xs font-mono">
+                <button type="button" onclick="closeResetPasswordModal()" class="px-3 py-1.5 rounded border border-neutral-200 bg-white text-neutral-600 hover:bg-neutral-50">
+                    Batal
+                </button>
+                <button type="submit" class="px-3.5 py-1.5 rounded bg-stone-900 text-white hover:bg-black font-medium">
+                    Simpan Password
+                </button>
+            </div>
+        </form>
     </div>
 </div>
 
+<script>
+let currentRoleFilter = 'all';
+
+function selectRoleTab(role, buttonElement) {
+    currentRoleFilter = role;
+
+    // Update active tab styles
+    document.querySelectorAll('#roleTabGroup .role-tab').forEach(tab => {
+        tab.className = 'role-tab px-3 py-1 rounded-md font-medium text-xs text-neutral-600 hover:text-neutral-900 hover:bg-white/80 transition-colors';
+    });
+    buttonElement.className = 'role-tab px-3 py-1 rounded-md font-medium text-xs bg-white text-neutral-900 border border-neutral-200 shadow-2xs transition-colors';
+
+    applyStaffFilters();
+}
+
+function applyStaffFilters() {
+    const searchVal = document.getElementById('staffSearchInput').value.toLowerCase();
+    const statusVal = document.getElementById('statusFilterSelect').value.toLowerCase();
+    const rows = document.querySelectorAll('#staffUnifiedTable tbody .staff-row');
+    let visibleCount = 0;
+
+    rows.forEach(row => {
+        const text = row.innerText.toLowerCase();
+        const role = row.getAttribute('data-role') || '';
+        const status = row.getAttribute('data-status') || '';
+
+        const matchSearch = text.includes(searchVal);
+        const matchRole = (currentRoleFilter === 'all') || (role === currentRoleFilter);
+        const matchStatus = !statusVal || (status === statusVal);
+
+        if (matchSearch && matchRole && matchStatus) {
+            row.style.display = '';
+            visibleCount++;
+        } else {
+            row.style.display = 'none';
+        }
+    });
+
+    const info = document.getElementById('tablePaginationInfo');
+    if (info) {
+        info.innerText = `Menampilkan ${visibleCount} dari ${rows.length} pengguna`;
+    }
+}
+
+// 3-Dot Dropdown Menu Handler
+function toggleActionDropdown(id, event) {
+    event.stopPropagation();
+    // Close other dropdowns
+    document.querySelectorAll('.action-dropdown').forEach(dropdown => {
+        if (dropdown.id !== id) dropdown.classList.add('hidden');
+    });
+
+    const target = document.getElementById(id);
+    if (target) {
+        target.classList.toggle('hidden');
+    }
+}
+
+// Close dropdowns on outside click
+window.addEventListener('click', function() {
+    document.querySelectorAll('.action-dropdown').forEach(dropdown => {
+        dropdown.classList.add('hidden');
+    });
+});
+
+// Modal Handlers
+function openResetPasswordModal(idUser, name) {
+    const modal = document.getElementById('resetPasswordModal');
+    const form = document.getElementById('resetPasswordForm');
+    document.getElementById('resetTargetName').innerText = name;
+    form.action = `/admin/staff/${idUser}/reset-password`;
+    modal.classList.remove('hidden');
+}
+
+function closeResetPasswordModal() {
+    document.getElementById('resetPasswordModal').classList.add('hidden');
+}
+
+document.getElementById('resetPasswordModal')?.addEventListener('click', function(e) {
+    if (e.target === this) closeResetPasswordModal();
+});
+</script>
 @endsection

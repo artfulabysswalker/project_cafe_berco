@@ -13,7 +13,6 @@ use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\PasswordResetRequestController;
 use App\Http\Controllers\ReceiptController;
 use App\Http\Controllers\StatsController;
-use App\Http\Controllers\RedeemController;
 use App\Http\Controllers\Customer\CartController;
 use App\Http\Controllers\Customer\FavoriteController;
 use App\Http\Controllers\ReviewController;
@@ -21,6 +20,7 @@ use App\Http\Controllers\VoucherController;
 use App\Http\Controllers\PlaylistController;
 use App\Http\Controllers\ReferralController;
 use App\Http\Controllers\AchievementController;
+use App\Http\Controllers\RedeemController;
 use App\Models\User;
 use App\Models\Role;
 use Illuminate\Support\Facades\Hash;
@@ -36,7 +36,7 @@ use Illuminate\Support\Str;
 Route::get('/xendit/test', function () {
     try {
         \Xendit\Configuration::setXenditKey(config('services.xendit.secret_key'));
-        
+
         return response()->json([
             'status' => 'success',
             'message' => '✅ Xendit SDK berhasil diinisialisasi!',
@@ -55,20 +55,17 @@ Route::get('/xendit/test', function () {
 })->name('xendit.test')->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class]);
 
 Route::get('/', function () {
-    if (Auth::check()) {
-        $user = Auth::user();
-        
-        // If admin or staff, redirect to admin dashboard
-        if ($user->isAdmin() || $user->isStaff()) {
-            return redirect()->route('control.dashboard');
-        }
-        
-        // Otherwise redirect to menu
-        return redirect()->route('menu.index');
+    if (Auth::check() && !Auth::user()->is_guest && (Auth::user()->isAdmin() || Auth::user()->isStaff())) {
+        return redirect()->route('control.dashboard');
     }
 
-    return view('Customerviews.welcome');
-});
+    $favoriteMenus = \App\Models\Menu::where('status_tersedia', 1)->take(8)->get();
+    if ($favoriteMenus->isEmpty()) {
+        $favoriteMenus = \App\Models\Menu::take(8)->get();
+    }
+
+    return view('Customerviews.welcome', compact('favoriteMenus'));
+})->name('home');
 
 Route::middleware(['restore.guest'])->group(function () {
 
@@ -163,32 +160,6 @@ Route::middleware(['customer'])->group(function () {
         return view('Customerviews.home');
     })->name('home');
 
-    // Loyalty
-    Route::view('/daily-quest', 'CustomerViews.daily-quest')
-        ->name('daily-quest');
-
-    Route::view('/rewards', 'CustomerViews.rewards')
-        ->name('rewards');
-
-    // Redeem
-    Route::get('/redeem', [RedeemController::class, 'index'])
-        ->name('redeem.index');
-
-    Route::post('/daily-claim', [RedeemController::class, 'claimDaily'])
-        ->name('daily.claim');
-
-    Route::get('/redeem/receipt/{redemption}', [RedeemController::class, 'receipt'])
-        ->name('redeem.receipt');
-
-    Route::get('/redeem/history', [RedeemController::class, 'history'])
-        ->name('redeem.history');
-
-    Route::get('/redeem/leaderboard', [RedeemController::class, 'leaderboard'])
-        ->name('redeem.leaderboard');
-
-    Route::post('/redeem/{reward}', [RedeemController::class, 'redeem'])
-        ->name('redeem.redeem');
-
     // Orders
     Route::get('/orders', [OrderController::class, 'history'])
         ->name('order.history');
@@ -205,33 +176,6 @@ Route::middleware(['customer'])->group(function () {
 
     Route::post('/favorites/toggle', [FavoriteController::class, 'toggle'])
         ->name('favorites.toggle');
-
-    // Achievements
-    Route::get('/achievements', [AchievementController::class, 'index'])
-        ->name('achievements.index');
-
-    Route::get('/achievements/list', [AchievementController::class, 'list'])
-        ->name('achievements.list');
-
-    Route::get('/achievement/{achievement}', [AchievementController::class, 'show'])
-        ->name('achievement.show');
-
-    // Referral
-    Route::get('/referral', [ReferralController::class, 'index'])
-        ->name('referral.index');
-
-    Route::post('/referral/apply', [ReferralController::class, 'apply'])
-        ->name('referral.apply');
-
-    Route::get('/referral/generate-code', [ReferralController::class, 'generateCode'])
-        ->name('referral.generateCode');
-
-    Route::get('/referral/stats', [ReferralController::class, 'stats'])
-        ->name('referral.stats');
-
-    // My Vouchers
-    Route::get('/my-vouchers', [VoucherController::class, 'myVouchers'])
-        ->name('vouchers.myVouchers');
 
     // Playlists
     Route::get('/playlists', [PlaylistController::class, 'index'])
@@ -264,6 +208,47 @@ Route::middleware(['customer'])->group(function () {
     Route::post('/playlists/{playlist}/vote', [PlaylistController::class, 'vote'])
         ->name('playlists.vote');
 
+    // EXP & Rewards (Tukar EXP)
+    Route::get('/redeem', [RedeemController::class, 'index'])
+        ->name('redeem.index');
+
+    Route::post('/redeem/{reward}', [RedeemController::class, 'redeem'])
+        ->name('redeem.redeem');
+
+    Route::get('/redeem/receipt/{redemption}', [RedeemController::class, 'receipt'])
+        ->name('redeem.receipt');
+
+    Route::get('/redeem/history', [RedeemController::class, 'history'])
+        ->name('redeem.history');
+
+    Route::post('/daily-claim', [RedeemController::class, 'claimDaily'])
+        ->name('daily.claim');
+
+    Route::get('/leaderboard', [RedeemController::class, 'leaderboard'])
+        ->name('leaderboard');
+
+    // Daily Quest & Rewards Center
+    Route::get('/daily-quest', function () {
+        return view('Customerviews.daily-quest');
+    })->name('daily.quest');
+
+    Route::get('/rewards', function () {
+        return view('Customerviews.rewards');
+    })->name('rewards');
+
+    Route::get('/achievements', [AchievementController::class, 'index'])
+        ->name('achievements.index');
+
+    // Referral System
+    Route::get('/referral', [ReferralController::class, 'index'])
+        ->name('referral.index');
+
+    Route::post('/referral/apply', [ReferralController::class, 'apply'])
+        ->name('referral.apply');
+
+    Route::post('/referral/generate', [ReferralController::class, 'generateCode'])
+        ->name('referral.generate');
+
 });
 
 
@@ -273,7 +258,7 @@ Route::middleware(['customer'])->group(function () {
 |--------------------------------------------------------------------------
 */
 
-Route::middleware(['auth'])->group(function () {
+Route::middleware(['restore.guest'])->group(function () {
 
     // Cart
     Route::get('/cart', [CartController::class, 'index'])
@@ -371,11 +356,11 @@ Route::middleware(['admin.staff'])->prefix('admin')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])
         ->name('control.dashboard');
 
-    // Staff (Admin only)
-    Route::middleware(['is_admin'])->group(function () {
-        Route::get('/staff', [StaffController::class, 'index'])
-            ->name('admin.staffoption.index');
+    // Staff Directory (Viewable by Staff, modifications Admin only)
+    Route::get('/staff', [StaffController::class, 'index'])
+        ->name('admin.staffoption.index');
 
+    Route::middleware(['is_admin'])->group(function () {
         Route::get('/staff/create', [StaffController::class, 'create'])
             ->name('admin.staffoption.create');
 
@@ -393,6 +378,12 @@ Route::middleware(['admin.staff'])->prefix('admin')->group(function () {
 
         Route::put('/staff/{id_user}/role', [StaffController::class, 'updateRole'])
             ->name('admin.staff.role');
+
+        Route::post('/staff/{id_user}/toggle-status', [StaffController::class, 'toggleStatus'])
+            ->name('admin.staff.toggle-status');
+
+        Route::post('/staff/{id_user}/reset-password', [StaffController::class, 'resetPassword'])
+            ->name('admin.staff.reset-password');
     });
 
     // Orders
@@ -413,6 +404,25 @@ Route::middleware(['admin.staff'])->prefix('admin')->group(function () {
     Route::get('/menu', [MenuController::class, 'index'])
         ->name('admin.menu');
 
+    // HPP & Resep Bahan Baku
+    Route::get('/hpp', [\App\Http\Controllers\Admin\HppController::class, 'index'])
+        ->name('admin.hpp');
+    Route::get('/hpp/recipe/{menuId}', [\App\Http\Controllers\Admin\HppController::class, 'getRecipe'])
+        ->name('admin.hpp.recipe.get');
+    Route::post('/hpp/recipe/{menuId}', [\App\Http\Controllers\Admin\HppController::class, 'saveRecipe'])
+        ->name('admin.hpp.recipe.save');
+    Route::post('/hpp/raw-material', [\App\Http\Controllers\Admin\HppController::class, 'storeRawMaterial'])
+        ->name('admin.hpp.raw-material.store');
+    Route::put('/hpp/raw-material/{id}', [\App\Http\Controllers\Admin\HppController::class, 'updateRawMaterial'])
+        ->name('admin.hpp.raw-material.update');
+    Route::delete('/hpp/raw-material/{id}', [\App\Http\Controllers\Admin\HppController::class, 'deleteRawMaterial'])
+        ->name('admin.hpp.raw-material.destroy');
+
+    // Stok Barang (Inventory Management)
+    Route::get('/inventory', function () {
+        return view('admin.inventory');
+    })->name('admin.inventory');
+
     Route::get('/menu/create', [MenuController::class, 'create'])
         ->name('admin.menu.create');
 
@@ -428,8 +438,24 @@ Route::middleware(['admin.staff'])->prefix('admin')->group(function () {
     Route::put('/menu/{id}', [MenuController::class, 'update'])
         ->name('admin.menu.update');
 
+    Route::put('/menu/{id}/toggle-status', [MenuController::class, 'toggleStatus'])
+        ->name('admin.menu.toggle-status');
+
     Route::delete('/menu/{id}', [MenuController::class, 'destroy'])
         ->name('admin.menu.delete');
+
+    // Categories Management
+    Route::get('/categories/list', [\App\Http\Controllers\Admin\CategoryController::class, 'listJson'])
+        ->name('admin.categories.list');
+
+    Route::post('/categories', [\App\Http\Controllers\Admin\CategoryController::class, 'store'])
+        ->name('admin.categories.store');
+
+    Route::put('/categories/{id}', [\App\Http\Controllers\Admin\CategoryController::class, 'update'])
+        ->name('admin.categories.update');
+
+    Route::delete('/categories/{id}', [\App\Http\Controllers\Admin\CategoryController::class, 'destroy'])
+        ->name('admin.categories.destroy');
 
     // Vouchers CRUD
     Route::get('/vouchers', [VoucherController::class, 'index'])
@@ -480,9 +506,31 @@ Route::middleware(['admin.staff'])->prefix('admin')->group(function () {
     Route::post('/settings/password', [SettingsController::class, 'updatePassword'])
         ->name('admin.password.update');
 
-    // Stats
+    // Stats & Financial Reports
     Route::get('/stats', [StatsController::class, 'index'])
         ->name('admin.stats');
+
+    Route::get('/stats/pdf', [StatsController::class, 'downloadPdf'])
+        ->name('admin.stats.pdf');
+
+    Route::get('/stats/print', [StatsController::class, 'printReport'])
+        ->name('admin.stats.print');
+
+    // Expense Management (Dedicated Page)
+    Route::get('/expenses', [\App\Http\Controllers\Admin\ExpenseController::class, 'index'])
+        ->name('admin.expenses.index');
+
+    Route::post('/expenses', [\App\Http\Controllers\Admin\ExpenseController::class, 'store'])
+        ->name('admin.expenses.store');
+
+    Route::put('/expenses/{id}', [\App\Http\Controllers\Admin\ExpenseController::class, 'update'])
+        ->name('admin.expenses.update');
+
+    Route::delete('/expenses/{id}', [\App\Http\Controllers\Admin\ExpenseController::class, 'destroy'])
+        ->name('admin.expenses.destroy');
+
+    Route::get('/expenses/pdf', [\App\Http\Controllers\Admin\ExpenseController::class, 'downloadPdf'])
+        ->name('admin.expenses.pdf');
 
     // Tax Configuration
     Route::prefix('tax')->name('admin.tax.')->group(function () {
@@ -543,6 +591,16 @@ Route::middleware(['admin.staff'])->prefix('admin')->group(function () {
             ->name('export');
     });
 
+    // Shift Monitoring
+    Route::get('/shifts', [\App\Http\Controllers\ShiftController::class, 'index'])
+        ->name('admin.shifts.index');
+    Route::post('/shifts/open', [\App\Http\Controllers\ShiftController::class, 'openShift'])
+        ->name('admin.shifts.open');
+    Route::post('/shifts/close', [\App\Http\Controllers\ShiftController::class, 'closeShift'])
+        ->name('admin.shifts.close');
+    Route::get('/shifts/{id}/orders', [\App\Http\Controllers\ShiftController::class, 'getShiftOrders'])
+        ->name('admin.shifts.orders');
+
     // Reset Request
     Route::get('/reset-request', [PasswordResetRequestController::class, 'create'])
         ->name('admin.reset.request');
@@ -556,6 +614,22 @@ Route::middleware(['admin.staff'])->prefix('admin')->group(function () {
     Route::put('/requests/{id_user}/reset', [PasswordResetRequestController::class, 'resetDefault'])
         ->name('admin.requests.reset');
 
+});
+
+/*
+|--------------------------------------------------------------------------
+| POS API ROUTES
+|--------------------------------------------------------------------------
+*/
+Route::prefix('api')->group(function () {
+    Route::post('/login', [\App\Http\Controllers\Api\LoginApiController::class, 'login']);
+});
+
+Route::prefix('api/pos')->group(function () {
+    Route::post('/verify-pin', [\App\Http\Controllers\ShiftController::class, 'verifyPin']);
+    Route::get('/pegawai-list', [\App\Http\Controllers\ShiftController::class, 'getEmployees']);
+    Route::post('/shift/open', [\App\Http\Controllers\ShiftController::class, 'openShift']);
+    Route::post('/shift/close', [\App\Http\Controllers\ShiftController::class, 'closeShift']);
 });
 
 require __DIR__ . '/settings.php';

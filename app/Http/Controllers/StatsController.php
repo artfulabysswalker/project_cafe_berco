@@ -4,139 +4,241 @@ namespace App\Http\Controllers;
 
 use App\Models\Order;
 use App\Models\OrderItem;
-use Illuminate\Support\Facades\DB;
+use App\Models\Expense;
+use App\Models\User;
+use App\Models\Shift;
+use Illuminate\Http\Request;
 use Carbon\Carbon;
+use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Support\Facades\DB;
 
 class StatsController extends Controller
 {
-    public function index()
+    /**
+     * Statistics & Financial Analytics Page
+     */
+    public function index(Request $request)
     {
-        // get selected tab (default = today)
-        $range = request('range', 'today');
+        $currentUser = auth()->user();
+        $isAdmin = $currentUser ? $currentUser->isAdmin() : true;
 
-        $startDate = match ($range) {
-            'today' => Carbon::today(),
-            'week' => Carbon::now()->startOfWeek(),
-            'month' => Carbon::now()->startOfMonth(),
-            'all' => Carbon::now()->subMonths(6), // ⚠️ limit "all"
-            default => Carbon::today(),
-        };
+        // Unique Staff & Cashier list for dropdown switcher (Admin, Cashiers Robin/Nikita/Dery, Staff)
+        $staffList = User::whereHas('role', function ($q) {
+            $q->whereIn('role_name', ['Admin', 'Staff', 'Cashier', 'kasir', 'pegawai']);
+        })->orWhereIn('username', ['admin', 'robin', 'nikita', 'dery'])
+          ->with('role')
+          ->get()
+          ->unique('name');
 
-        $stats = $this->getStats($startDate);
+        // Determine staff filter
+        $staffId = $request->query('staff_id');
+        if (!$isAdmin && !$staffId) {
+            $staffId = $currentUser ? $currentUser->id_user : 'all';
+        }
+        $staffId = $staffId ?: 'all';
 
-        return view('admin.stats.index', [
-            'stats' => $stats,
+        $shift = $request->query('shift', 'all');
+        $range = $request->query('range', 'today');
+        $customStart = $request->query('start_date');
+        $customEnd = $request->query('end_date');
+
+        [$startDate, $endDate, $periodeLabel] = $this->resolveDateRange($range, $customStart, $customEnd);
+
+        $selectedStaff = ($staffId !== 'all') ? User::find($staffId) : null;
+        $reportData = $this->calculateFinancialReport($startDate, $endDate, $staffId, $shift);
+
+        return view('admin.stats_page', array_merge($reportData, [
+            'staffList' => $staffList,
+            'selectedStaffId' => $staffId,
+            'selectedStaff' => $selectedStaff,
+            'selectedShift' => $shift,
             'range' => $range,
-        ]);
+            'startDate' => $startDate->format('Y-m-d'),
+            'endDate' => $endDate->format('Y-m-d'),
+            'periodeLabel' => $periodeLabel,
+            'isAdmin' => $isAdmin,
+        ]));
     }
 
-    private function getStats($startDate)
+    /**
+     * Download Financial Report as PDF
+     */
+    public function downloadPdf(Request $request)
     {
-        $orderQuery = Order::where('status_order', 'completed');
+        $staffId = $request->query('staff_id', 'all');
+        $shiftId = $request->query('shift_id'); // If filtering by specific shift
+        $range = $request->query('range', 'today');
+        $customStart = $request->query('start_date');
+        $customEnd = $request->query('end_date');
 
-        if ($startDate) {
-            $orderQuery->where('tanggal', '>=', $startDate);
+        [$startDate, $endDate, $periodeLabel] = $this->resolveDateRange($range, $customStart, $customEnd);
+
+        $reportData = $this->calculateFinancialReport($startDate, $endDate, $staffId, 'all', $shiftId);
+
+        // Determine Display Staff Name
+        $staffLabel = 'Semua Staff';
+        if ($staffId !== 'all') {
+            $staffLabel = User::find($staffId)?->name ?? 'Staff';
+        } elseif ($shiftId) {
+            $staffLabel = Shift::find($shiftId)?->nama_pegawai ?? 'Staff';
         }
 
-        // SAFE queries
-        $totalSales = (clone $orderQuery)->sum('total_harga');
-        $totalOrders = (clone $orderQuery)->count();
-        $avgOrder = $totalOrders ? $totalSales / $totalOrders : 0;
+        // 1. Payment Breakdown Aggregation
+        $allOrders = $reportData['cashOrders']->concat($reportData['qrisOrders']);
+        $totalOrdersCount = $allOrders->count();
 
-        // ✅ Best selling (with menu to avoid N+1)
-        $bestSelling = OrderItem::with('menu')
-            ->select('id_menu', DB::raw('SUM(quantity) as total'))
-            ->whereHas('order', function ($q) use ($startDate) {
-                $q->where('status_order', 'completed');
-                if ($startDate) {
-                    $q->where('tanggal', '>=', $startDate);
-                }
-            })
-            ->groupBy('id_menu')
-            ->orderByDesc('total')
+        $paymentBreakdown = $allOrders->groupBy('payment_method')->map(function ($orders, $method) use ($totalOrdersCount) {
+            $totalAmount = $orders->sum('total_harga');
+            $count = $orders->count();
+            return [
+                'method' => strtoupper($method ?: 'CASH'),
+                'count' => $count,
+                'total' => $totalAmount,
+                'percentage' => $totalOrdersCount > 0 ? round(($count / $totalOrdersCount) * 100, 1) : 0
+            ];
+        })->values();
+
+        $pdfData = array_merge($reportData, [
+            'startDate' => $startDate->format('d/m/Y'),
+            'endDate' => $endDate->format('d/m/Y'),
+            'periodeLabel' => $periodeLabel,
+            'selectedStaff' => $staffLabel,
+            'paymentBreakdown' => $paymentBreakdown,
+            'printedAt' => Carbon::now()->locale('id')->isoFormat('D MMMM Y, HH:mm'),
+            'allOrders' => $allOrders->sortByDesc('tanggal')
+        ]);
+
+        $pdf = Pdf::loadView('admin.reports.financial_pdf', $pdfData);
+        $pdf->setPaper('A4', 'portrait');
+
+        // Dynamic Filename: laporan-penjualan-Robin-2026-09-02.pdf
+        $cleanStaffName = str_replace(' ', '-', $staffLabel);
+        $fileName = 'laporan-penjualan-' . $cleanStaffName . '-' . now()->format('Y-m-d') . '.pdf';
+
+        return $pdf->download($fileName);
+    }
+
+    /**
+     * Helper: Resolve Start and End Dates
+     */
+    private function resolveDateRange($range, $customStart = null, $customEnd = null)
+    {
+        if ($range === 'custom' && $customStart && $customEnd) {
+            $start = Carbon::parse($customStart)->startOfDay();
+            $end = Carbon::parse($customEnd)->endOfDay();
+            $label = $start->format('d/m/Y') . ' - ' . $end->format('d/m/Y');
+            return [$start, $end, $label];
+        }
+
+        switch ($range) {
+            case 'yesterday':
+                $start = Carbon::yesterday()->startOfDay();
+                $end = Carbon::yesterday()->endOfDay();
+                $label = 'Kemarin (' . $start->format('d/m/Y') . ')';
+                break;
+            case 'month':
+                $start = Carbon::now()->startOfMonth();
+                $end = Carbon::now()->endOfMonth();
+                $label = 'Bulan Ini';
+                break;
+            default:
+                $start = Carbon::today()->startOfDay();
+                $end = Carbon::today()->endOfDay();
+                $label = 'Hari Ini (' . $start->format('d/m/Y') . ')';
+                break;
+        }
+
+        return [$start, $end, $label];
+    }
+
+    /**
+     * Helper: Calculate complete financial numbers
+     */
+    private function calculateFinancialReport($startDate, $endDate, $staffId = 'all', $shift = 'all', $shiftId = null)
+    {
+        $query = Order::with(['items.menu', 'user'])
+            ->where('status_order', 'completed')
+            ->whereBetween('tanggal', [$startDate, $endDate]);
+
+        if ($staffId !== 'all') {
+            $query->where('id_user', $staffId);
+        }
+
+        if ($shiftId) {
+            $query->where('id_shift', $shiftId);
+        }
+
+        $allOrders = $query->orderBy('tanggal', 'asc')->get();
+
+        $cashOrders = $allOrders->filter(fn($o) => in_array(strtolower($o->payment_method), ['cash', 'tunai', '']));
+        $qrisOrders = $allOrders->filter(fn($o) => in_array(strtolower($o->payment_method), ['qris', 'transfer', 'debit', 'credit']));
+
+        $totalCash = $cashOrders->sum('total_harga');
+        $totalQris = $qrisOrders->sum('total_harga');
+        $totalOmzet = $allOrders->sum('total_harga');
+
+        $totalHpp = 0;
+        foreach ($allOrders as $ord) {
+            foreach ($ord->items as $item) {
+                $itemHpp = ($item->hpp_at_sale > 0) ? $item->hpp_at_sale : (($item->hpp > 0) ? $item->hpp : ($item->menu?->hpp ?? 0));
+                $totalHpp += ($itemHpp * $item->quantity);
+            }
+        }
+
+        $labaKotor = max(0, $totalOmzet - $totalHpp);
+        $marginLabaKotor = ($totalOmzet > 0) ? round(($labaKotor / $totalOmzet) * 100, 1) : 0;
+
+        $expenseQuery = Expense::whereBetween('tanggal', [$startDate, $endDate]);
+        if ($staffId !== 'all') $expenseQuery->where('id_user', $staffId);
+
+        $expenses = $expenseQuery->orderBy('tanggal', 'asc')->get();
+        $totalExpenses = $expenses->sum('nominal');
+
+        // Top 5 Most Profitable Menus in the selected period
+        $completedOrderIds = $allOrders->pluck('id_order');
+        $topProfitableMenus = DB::table('order_items')
+            ->join('menus', 'order_items.id_menu', '=', 'menus.id_menu')
+            ->whereIn('order_items.id_order', $completedOrderIds)
+            ->select(
+                'menus.id_menu',
+                'menus.nama_menu',
+                'menus.foto',
+                'menus.harga',
+                'menus.hpp',
+                DB::raw('SUM(order_items.quantity) as total_qty'),
+                DB::raw('SUM(order_items.subtotal) as total_revenue'),
+                DB::raw('SUM(order_items.quantity * CASE 
+                    WHEN order_items.hpp_at_sale > 0 THEN order_items.hpp_at_sale 
+                    WHEN order_items.hpp > 0 THEN order_items.hpp 
+                    ELSE COALESCE(menus.hpp, 0) 
+                END) as total_cogs'),
+                DB::raw('SUM(order_items.subtotal - (order_items.quantity * CASE 
+                    WHEN order_items.hpp_at_sale > 0 THEN order_items.hpp_at_sale 
+                    WHEN order_items.hpp > 0 THEN order_items.hpp 
+                    ELSE COALESCE(menus.hpp, 0) 
+                END)) as total_profit')
+            )
+            ->groupBy('menus.id_menu', 'menus.nama_menu', 'menus.foto', 'menus.harga', 'menus.hpp')
+            ->orderByDesc('total_profit')
             ->limit(5)
-            ->get();
-
-        // ✅ Worst selling
-        $worstSelling = OrderItem::with('menu')
-            ->select('id_menu', DB::raw('SUM(quantity) as total'))
-            ->whereHas('order', function ($q) use ($startDate) {
-                $q->where('status_order', 'completed');
-                if ($startDate) {
-                    $q->where('tanggal', '>=', $startDate);
-                }
-            })
-            ->groupBy('id_menu')
-            ->orderBy('total')
-            ->limit(5)
-            ->get();
-
-        // ✅ Peak hours (LIMITED)
-        $peakHours = Order::select(
-                DB::raw('CAST(strftime("%H", tanggal) AS INTEGER) as hour'),
-                DB::raw('COUNT(*) as total')
-            )
-            ->where('status_order', 'completed')
-            ->when($startDate, fn($q) => $q->where('tanggal', '>=', $startDate))
-            ->groupBy('hour')
-            ->orderByDesc('total')
-            ->limit(24)
-            ->get();
-
-        // ✅ Customers per day (LIMITED - VERY IMPORTANT)
-        $customersPerDay = Order::select(
-                DB::raw('DATE(tanggal) as date'),
-                DB::raw('COUNT(DISTINCT nama_pelanggan) as total')
-            )
-            ->where('status_order', 'completed')
-            ->when($startDate, fn($q) => $q->where('tanggal', '>=', $startDate))
-            ->groupBy('date')
-            ->orderByDesc('date')
-            ->limit(30) // 🚨 prevents memory crash
-            ->get();
-
-        // ✅ Payment method statistics (CASH and QRIS only)
-        $paymentStats = Order::select('payment_method', DB::raw('COUNT(*) as total'))
-            ->where('status_order', 'completed')
-            ->when($startDate, fn($q) => $q->where('tanggal', '>=', $startDate))
-            ->groupBy('payment_method')
-            ->get()
-            ->pluck('total', 'payment_method');
-
-        $totalPayments = $paymentStats->sum();
-        $cashPayments = $paymentStats->get('cash', 0);
-        $qrisPayments = $paymentStats->get('qris', 0);
-
-        // ✅ Daily sales data for chart (last 7 days)
-        $dailySales = Order::select(
-                DB::raw('DATE(tanggal) as date'),
-                DB::raw('SUM(total_harga) as total')
-            )
-            ->where('status_order', 'completed')
-            ->where('tanggal', '>=', now()->subDays(7))
-            ->groupBy('date')
-            ->orderBy('date')
             ->get();
 
         return [
-            'total_revenue' => $totalSales,
-            'total_orders' => $totalOrders,
-            'completed_orders' => $totalOrders,
-            'avg_order' => round($avgOrder),
-
-            'best_selling' => $bestSelling,
-            'worst_selling' => $worstSelling,
-
-            'peak_hours' => $peakHours,
-            'customers_per_day' => $customersPerDay,
-            
-            // Payment methods
-            'cash_payments' => $cashPayments,
-            'qris_payments' => $qrisPayments,
-            'total_payments' => $totalPayments,
-            
-            // Daily sales for chart
-            'daily_sales' => $dailySales,
+            'cashOrders' => $cashOrders,
+            'qrisOrders' => $qrisOrders,
+            'expenses' => $expenses,
+            'totalCash' => $totalCash,
+            'countCash' => $cashOrders->count(),
+            'totalQris' => $totalQris,
+            'countQris' => $qrisOrders->count(),
+            'totalOmzet' => $totalOmzet,
+            'countTotal' => $allOrders->count(),
+            'totalHpp' => $totalHpp,
+            'labaKotor' => $labaKotor,
+            'marginLabaKotor' => $marginLabaKotor,
+            'topProfitableMenus' => $topProfitableMenus,
+            'totalExpenses' => $totalExpenses,
+            'labaBersih' => $labaKotor - $totalExpenses,
         ];
     }
 }

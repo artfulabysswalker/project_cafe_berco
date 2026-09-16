@@ -53,8 +53,8 @@
             </div>
 
             <div class="rounded-lg border border-neutral-200 bg-white p-6 dark:border-neutral-700 dark:bg-neutral-900">
-                <p class="text-sm text-neutral-600 dark:text-neutral-400">Total Pajak</p>
-                <p class="mt-2 text-3xl font-bold text-orange-600">Rp {{ number_format($todaySales['total_tax'], 0, ',', '.') }}</p>
+                <p class="text-sm text-neutral-600 dark:text-neutral-400">Total Biaya</p>
+                <p class="mt-2 text-3xl font-bold text-orange-600">Rp {{ number_format($todaySales['total_charge'] ?? 0, 0, ',', '.') }}</p>
                 <p class="mt-2 text-xs text-neutral-500 dark:text-neutral-400">PB1 & Charges</p>
             </div>
         </div>

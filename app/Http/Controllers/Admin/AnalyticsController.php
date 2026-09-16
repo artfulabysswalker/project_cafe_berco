@@ -59,7 +59,7 @@ class AnalyticsController extends Controller
         $totalTransactions = $orders->count();
         $totalRevenue = $orders->sum('final_total');
         $totalProfit = $orders->sum('profit_margin');
-        $totalTax = $orders->sum('tax_amount');
+        $totalCharge = $orders->sum('service_charge');
 
         // Purchase history
         $purchaseHistory = Order::with(['user', 'items.menu'])
@@ -73,7 +73,7 @@ class AnalyticsController extends Controller
             'total_transactions' => $totalTransactions,
             'total_revenue' => $totalRevenue,
             'total_profit' => $totalProfit,
-            'total_tax' => $totalTax,
+            'total_charge' => $totalCharge,
             'avg_transaction' => $totalTransactions > 0 ? $totalRevenue / $totalTransactions : 0,
             'purchase_history' => $purchaseHistory,
         ];
