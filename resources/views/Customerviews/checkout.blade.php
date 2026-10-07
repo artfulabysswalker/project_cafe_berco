@@ -75,12 +75,28 @@
                     <h3>Ringkasan Pesanan</h3>
                     <div class="order-items">
                         @foreach($cartItems as $item)
+                            @php
+                                $itemPrice = $item->price ?? ($item->unit_price ?? $item->menu->getPriceForTemperature($item->temperature ?? null));
+                                $itemSubtotal = $itemPrice * $item->quantity;
+                            @endphp
                             <div class="summary-item">
                                 <div class="item-info">
-                                    <span class="item-name">{{ $item->menu->name }}</span>
+                                    <span class="item-name" style="display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                                        {{ $item->name ?? $item->menu->name }}
+                                        @if(!empty($item->temperature))
+                                            <span style="font-size: 10px; padding: 1px 6px; border-radius: 4px; font-weight: 700; font-family: monospace; {{ $item->temperature === 'Hot' ? 'background: #FEF3C7; color: #92400E;' : 'background: #E0F2FE; color: #075985;' }}">
+                                                {{ $item->temperature === 'Hot' ? '🔥 Hot' : '🧊 Ice' }}
+                                            </span>
+                                        @endif
+                                    </span>
+                                    @if(!empty($item->note))
+                                        <div style="font-size: 11px; color: #78716C; margin-top: 2px;">
+                                            📝 {{ $item->note }}
+                                        </div>
+                                    @endif
                                     <span class="item-qty">x{{ $item->quantity }}</span>
                                 </div>
-                                <span class="item-total">Rp {{ number_format($item->menu->harga * $item->quantity, 0, ',', '.') }}</span>
+                                <span class="item-total">Rp {{ number_format($itemSubtotal, 0, ',', '.') }}</span>
                             </div>
                         @endforeach
                     </div>

@@ -13,6 +13,8 @@ class OrderItem extends Model
         'subtotal',
         'hpp',
         'hpp_at_sale',
+        'temperature',
+        'note',
     ];
 
     protected $casts = [

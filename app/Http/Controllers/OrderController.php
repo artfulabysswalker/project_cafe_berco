@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\OrderCreated;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Payment;
 use App\Models\User;
+use App\Services\CartSessionService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 
@@ -14,32 +16,36 @@ class OrderController extends Controller
     /**
      * Show checkout page
      */
+    /**
+     * Show checkout page
+     */
     public function checkout()
     {
         $user = auth()->user();
-        $cartItems = $user->cartItems()->with('menu')->get();
+        $cartItems = app(CartSessionService::class)->getCartItems();
 
         if ($cartItems->isEmpty()) {
             return redirect()->route('cart.index')
                 ->with('error', 'Keranjang Anda kosong');
         }
 
-        $subtotal = $cartItems->sum(function ($item) {
-            return $item->menu->harga * $item->quantity;
-        });
-
         $priceInfo = $this->calculateOrderPrice($cartItems, 'dine_in');
 
         $cartItemsArray = $cartItems->map(function ($item) {
             return [
                 'id' => $item->id,
+                'cart_item_key' => $item->cart_item_key,
                 'quantity' => $item->quantity,
+                'temperature' => $item->temperature,
+                'note' => $item->note,
+                'unit_price' => $item->price,
+                'subtotal' => $item->subtotal,
                 'menu' => [
                     'id_menu' => $item->menu->id_menu,
                     'nama_menu' => $item->menu->nama_menu,
-                    'harga' => $item->menu->harga,
+                    'harga' => $item->price,
                     'name' => $item->menu->name,
-                    'price' => $item->menu->price,
+                    'price' => $item->price,
                 ],
             ];
         })->toArray();
@@ -47,7 +53,7 @@ class OrderController extends Controller
         return view('Customerviews.checkout', [
             'cartItems' => $cartItems,
             'cartItemsData' => $cartItemsArray,
-            'subtotal' => $subtotal,
+            'subtotal' => $priceInfo['subtotal'],
             'serviceCharge' => $priceInfo['service_charge'],
             'discount' => $priceInfo['discount'],
             'total' => $priceInfo['total'],
@@ -59,7 +65,9 @@ class OrderController extends Controller
     {
         $dateTime = $dateTime ?? now();
         $subtotal = $cartItems->sum(function ($item) {
-            return $item->menu->harga * $item->quantity;
+            $price = isset($item->price) ? $item->price : (isset($item->unit_price) ? $item->unit_price : ($item->menu ? $item->menu->getPriceForTemperature($item->temperature ?? null) : 0));
+
+            return $price * $item->quantity;
         });
         $serviceCharge = 0;
 
@@ -92,7 +100,7 @@ class OrderController extends Controller
     public function store(Request $request)
     {
         $user = auth()->user();
-        $cartItems = $user->cartItems()->with('menu')->get();
+        $cartItems = app(CartSessionService::class)->getCartItems();
 
         if ($cartItems->isEmpty()) {
             return response()->json([
@@ -133,7 +141,9 @@ class OrderController extends Controller
         $total = $priceInfo['total'];
 
         $totalHpp = $cartItems->sum(function ($item) {
-            return ($item->menu->hpp ?? 0) * $item->quantity;
+            $hpp = $item->menu ? $item->menu->getHppForTemperature($item->temperature ?? null) : 0;
+
+            return $hpp * $item->quantity;
         });
         $profitMargin = max(0, $total - $totalHpp);
 
@@ -156,28 +166,34 @@ class OrderController extends Controller
             'id_user' => $user->id_user,
         ]);
 
-        // 4. Create OrderItems, record historical HPP, and deduct stock
+        // 4. Create OrderItems with temperature and note, record historical HPP, and deduct stock
         foreach ($cartItems as $item) {
             $menu = $item->menu;
-            $itemHpp = $menu->hpp ?? 0;
+            $itemUnitPrice = $menu->getPriceForTemperature($item->temperature ?? null);
+            $itemHpp = $menu->getHppForTemperature($item->temperature ?? null);
 
             OrderItem::create([
                 'id_order' => $order->id_order,
                 'id_menu' => $menu->id_menu,
                 'quantity' => $item->quantity,
-                'subtotal' => $menu->harga * $item->quantity,
+                'subtotal' => $itemUnitPrice * $item->quantity,
                 'hpp' => $itemHpp,
                 'hpp_at_sale' => $itemHpp,
+                'temperature' => $item->temperature ?? null,
+                'note' => $item->note ?? null,
             ]);
 
             // Deduct stock automatically
             $menu->decrementStock($item->quantity);
         }
 
-        // 5. Clear cart
-        $user->cartItems()->delete();
+        // 5. Clear cart session and database
+        app(CartSessionService::class)->clearCart();
 
-        // 6. Return response
+        // 6. Broadcast real-time event to cashier tablet
+        event(new OrderCreated($order));
+
+        // 7. Return response
         $redirectUrl = ($validated['payment_method'] === 'qris')
             ? route('xendit.qris.redirect', $order->id_order)
             : route('order.receipt', $order->id_order);
@@ -280,8 +296,85 @@ class OrderController extends Controller
 
     public function index()
     {
-        $orders = Order::where('status_pembayaran', 'pending')->with('user')->latest()->paginate(10);
+        $orders = Order::where(function ($q) {
+            $q->where('status_pembayaran', 'pending')
+                ->orWhere('status_order', 'pending');
+        })
+            ->with(['user', 'items.menu'])
+            ->latest()
+            ->paginate(15);
 
-        return view('admin.orders.index', compact('orders'));
+        return view('admin.orders', compact('orders'));
+    }
+
+    /**
+     * API for tablet cashier real-time polling fallback
+     */
+    public function liveOrders(Request $request)
+    {
+        $lastId = (int) $request->query('after_id', 0);
+
+        $newOrders = Order::where('id_order', '>', $lastId)
+            ->where(function ($q) {
+                $q->where('status_pembayaran', 'pending')
+                    ->orWhere('status_order', 'pending');
+            })
+            ->with(['user', 'items.menu'])
+            ->latest('id_order')
+            ->take(10)
+            ->get();
+
+        $formatted = $newOrders->map(function ($order) {
+            $tableNumber = 'Meja -';
+            if (preg_match('/meja\s*([0-9a-zA-Z_-]+)/i', $order->notes ?? '', $matches)) {
+                $tableNumber = 'Meja '.strtoupper($matches[1]);
+            } elseif ($order->service_type === 'dine_in') {
+                $tableNumber = 'Dine-In (Meja)';
+            } else {
+                $tableNumber = 'Take Away';
+            }
+
+            $itemsSummary = $order->items->map(function ($item) {
+                $temp = $item->temperature ? ' ('.ucfirst($item->temperature).')' : '';
+
+                return [
+                    'name' => ($item->menu->nama_menu ?? 'Menu').$temp,
+                    'quantity' => $item->quantity,
+                    'subtotal' => (float) $item->subtotal,
+                    'note' => $item->note ?? null,
+                ];
+            })->toArray();
+
+            return [
+                'id_order' => $order->id_order,
+                'order_code' => '#ORD-'.$order->id_order,
+                'table_number' => $tableNumber,
+                'customer_name' => $order->nama_pelanggan ?? ($order->user->name ?? 'Pelanggan Walk-In'),
+                'service_type' => $order->service_type ?? 'dine_in',
+                'payment_method' => strtoupper($order->payment_method ?? 'CASH'),
+                'payment_status' => strtolower($order->status_pembayaran ?? 'pending'),
+                'status_order' => strtolower($order->status_order ?? 'pending'),
+                'total_amount' => (float) $order->total_harga,
+                'total_formatted' => 'Rp '.number_format($order->total_harga ?? 0, 0, ',', '.'),
+                'notes' => $order->notes,
+                'items' => $itemsSummary,
+                'items_count' => $order->items->sum('quantity'),
+                'created_at_human' => $order->tanggal
+                    ? $order->tanggal->format('H:i')
+                    : ($order->created_at ? $order->created_at->format('H:i') : now()->format('H:i')),
+                'receipt_url' => route('admin.receipt.view', $order->id_order),
+                'complete_url' => route('admin.orders.complete', $order->id_order),
+            ];
+        });
+
+        $maxId = $newOrders->max('id_order') ?? $lastId;
+        $totalPending = Order::where('status_order', 'pending')->orWhere('status_pembayaran', 'pending')->count();
+
+        return response()->json([
+            'success' => true,
+            'orders' => $formatted,
+            'max_id' => $maxId,
+            'total_pending' => $totalPending,
+        ]);
     }
 }

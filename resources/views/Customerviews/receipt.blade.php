@@ -73,7 +73,19 @@
                 @foreach($order->items as $item)
                     <div class="receipt-item">
                         <div class="item-name-qty">
-                            <span class="item-name">{{ $item->menu?->nama_menu ?? ($item->menu?->name ?? 'Menu Produk') }}</span>
+                            <span class="item-name" style="display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                                {{ $item->menu?->nama_menu ?? ($item->menu?->name ?? 'Menu Produk') }}
+                                @if(!empty($item->temperature))
+                                    <span style="font-size: 10px; padding: 1px 5px; border-radius: 4px; font-weight: 700; font-family: monospace; {{ $item->temperature === 'Hot' ? 'background: #FEF3C7; color: #92400E;' : 'background: #E0F2FE; color: #075985;' }}">
+                                        {{ $item->temperature === 'Hot' ? '🔥 Hot' : '🧊 Ice' }}
+                                    </span>
+                                @endif
+                            </span>
+                            @if(!empty($item->note))
+                                <div style="font-size: 11px; color: #78716C; margin-top: 2px;">
+                                    📝 {{ $item->note }}
+                                </div>
+                            @endif
                             <span class="item-qty">x{{ $item->quantity }}</span>
                         </div>
                         <span class="item-price">Rp {{ number_format($item->subtotal ?? 0, 0, ',', '.') }}</span>
