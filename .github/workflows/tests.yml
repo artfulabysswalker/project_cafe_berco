@@ -56,5 +56,10 @@ jobs:
       - name: Build Assets
         run: npm run build
 
+      - name: Install ImageMagick
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y imagemagick
+
       - name: Run Tests
         run: ./vendor/bin/pest
