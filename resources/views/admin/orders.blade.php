@@ -64,7 +64,7 @@
                             $paymentStatus = strtolower($order->status_pembayaran ?? 'pending');
                             $orderStatus = strtolower($order->status_order ?? 'pending');
                         @endphp
-                        <tr class="order-row hover:bg-stone-50/70 transition-colors" data-status="{{ $orderStatus }}">
+                        <tr class="order-row hover:bg-stone-50/70 transition-colors" data-status="{{ $orderStatus }}" data-order-id="{{ $order->id_order }}">
                             <td class="px-4 py-3 font-semibold text-stone-900">#ORD-{{ $order->id_order }}</td>
                             <td class="px-4 py-3 font-sans">
                                 <div class="font-medium text-stone-900">{{ $order->nama_pelanggan ?? 'Tamu Walk-in' }}</div>

@@ -223,7 +223,11 @@
                                             $isFav = in_array($prodId, $favoriteIds ?? []);
                                         @endphp
 
-                                        <div class="bg-white border border-border rounded-xl overflow-hidden hover:border-stone-400 hover:shadow-md transition-all flex flex-col justify-between group">
+                                        <div class="bg-white border border-border rounded-xl overflow-hidden hover:border-stone-400 hover:shadow-md transition-all flex flex-col justify-between group product-card"
+                                             id="card-product-{{ $prodId }}"
+                                             data-id="{{ $prodId }}"
+                                             data-name="{{ $prodName }}"
+                                             data-is-beverage="{{ $product->is_beverage ? '1' : '0' }}">
                                             
                                             {{-- Thumbnail & Badges --}}
                                             <div class="relative h-44 bg-stone-100 overflow-hidden">
@@ -265,34 +269,74 @@
                                                         {{ $prodName }}
                                                     </h4>
 
-                                                    {{-- Temperature Option Badge --}}
-                                                    <div class="flex flex-wrap gap-1.5 mt-2">
-                                                        @if($product->has_temperature_option)
-                                                            <span class="inline-flex items-center text-[10px] font-mono bg-amber-50 text-amber-900 border border-amber-200/80 px-2 py-0.5 rounded" title="Tersedia Hot & Cold">
-                                                                <i class="fas fa-temperature-half text-[9px] mr-1 text-amber-600"></i> Hot / Cold
-                                                            </span>
-                                                        @elseif(!empty($product->temperature_options) && count($product->temperature_options) == 1)
-                                                            <span class="inline-flex items-center text-[10px] font-mono bg-stone-50 text-stone-700 border border-stone-200 px-2 py-0.5 rounded">
-                                                                <i class="fas {{ $product->temperature_options[0]['type'] === 'Hot' ? 'fa-fire text-amber-600' : 'fa-snowflake text-sky-600' }} text-[9px] mr-1"></i>
-                                                                {{ $product->temperature_options[0]['type'] }} Only
-                                                            </span>
-                                                        @endif
-                                                    </div>
-
                                                     {{-- Description --}}
-                                                    <p class="text-xs text-ink-muted mt-2 line-clamp-2 leading-relaxed">
+                                                    <p class="text-xs text-ink-muted mt-1.5 line-clamp-2 leading-relaxed">
                                                         {{ $prodDesc ?: 'Seduhan biji specialty terstandar dan racikan bahan pilihan khas Cafe Berco.' }}
                                                     </p>
+
+                                                    {{-- Interactive Temperature Selection Pills (Only for Beverages) --}}
+                                                    @if($product->is_beverage)
+                                                        @php
+                                                            $hotPrice = $product->getPriceForTemperature('Hot');
+                                                            $icePrice = $product->getPriceForTemperature('Ice');
+                                                            $defaultTemp = 'Ice';
+                                                            
+                                                            // If only hot is defined in temperature options
+                                                            if (!empty($product->temperature_options) && count($product->temperature_options) === 1) {
+                                                                $onlyType = strtolower($product->temperature_options[0]['type'] ?? '');
+                                                                if ($onlyType === 'hot') {
+                                                                    $defaultTemp = 'Hot';
+                                                                }
+                                                            }
+                                                            $initialDisplayPrice = ($defaultTemp === 'Hot') ? $hotPrice : $icePrice;
+                                                        @endphp
+
+                                                        <div class="mt-3 pt-2.5 border-t border-stone-100">
+                                                            <div class="flex items-center justify-between text-[10px] font-mono text-ink-muted mb-1.5">
+                                                                <span>Pilihan Suhu:</span>
+                                                                <span class="temp-selected-tag px-1.5 py-0.2 rounded font-semibold {{ $defaultTemp === 'Hot' ? 'bg-amber-100 text-amber-900' : 'bg-sky-100 text-sky-900' }}" id="temp-tag-{{ $prodId }}">
+                                                                    {{ $defaultTemp === 'Hot' ? '🔥 Hot' : '🧊 Ice' }}
+                                                                </span>
+                                                            </div>
+
+                                                            <div class="temp-pill-group grid grid-cols-2 gap-1.5 p-1 bg-stone-100/90 rounded-lg border border-stone-200/70"
+                                                                 id="temp-group-{{ $prodId }}"
+                                                                 data-selected="{{ $defaultTemp }}"
+                                                                 data-hot-price="{{ $hotPrice }}"
+                                                                 data-ice-price="{{ $icePrice }}">
+                                                                
+                                                                <button type="button" 
+                                                                        onclick="selectMenuTemperature({{ $prodId }}, 'Hot', {{ $hotPrice }})"
+                                                                        id="btn-temp-hot-{{ $prodId }}"
+                                                                        class="temp-btn py-1 px-2 rounded-md text-[11px] font-mono font-semibold transition-all flex items-center justify-center space-x-1 {{ $defaultTemp === 'Hot' ? 'bg-amber-500 text-white shadow-xs font-bold' : 'bg-white text-stone-600 hover:bg-stone-50 hover:text-ink' }}">
+                                                                    <span>🔥</span>
+                                                                    <span>Hot</span>
+                                                                </button>
+
+                                                                <button type="button" 
+                                                                        onclick="selectMenuTemperature({{ $prodId }}, 'Ice', {{ $icePrice }})"
+                                                                        id="btn-temp-ice-{{ $prodId }}"
+                                                                        class="temp-btn py-1 px-2 rounded-md text-[11px] font-mono font-semibold transition-all flex items-center justify-center space-x-1 {{ $defaultTemp === 'Ice' ? 'bg-sky-500 text-white shadow-xs font-bold' : 'bg-white text-stone-600 hover:bg-stone-50 hover:text-ink' }}">
+                                                                    <span>🧊</span>
+                                                                    <span>Ice</span>
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    @endif
                                                 </div>
 
                                                 {{-- Price & Order Action --}}
                                                 <div class="flex items-center justify-between pt-3 border-t border-stone-100">
                                                     <div class="flex flex-col">
-                                                        <span class="font-mono text-sm font-bold text-ink">
-                                                            {{ $product->price_range_formatted ?? ('Rp ' . number_format($prodPrice, 0, ',', '.')) }}
+                                                        <span class="font-mono text-sm font-bold text-ink" id="price-display-{{ $prodId }}" data-base-price="{{ $prodPrice }}">
+                                                            @if($product->is_beverage)
+                                                                Rp {{ number_format($initialDisplayPrice ?? $prodPrice, 0, ',', '.') }}
+                                                            @else
+                                                                Rp {{ number_format($prodPrice, 0, ',', '.') }}
+                                                            @endif
                                                         </span>
-                                                        @if(!empty($product->temperature_options) && count($product->temperature_options) > 1)
-                                                            <span class="text-[9px] font-mono text-stone-400">Pilihan suhu variatif</span>
+                                                        @if($product->is_beverage && !empty($product->temperature_options) && count($product->temperature_options) > 1)
+                                                            <span class="text-[9px] font-mono text-stone-400">Harga varian suhu</span>
                                                         @endif
                                                     </div>
 
@@ -352,6 +396,47 @@
 
 @section('scripts')
 <script>
+// Select temperature option on menu card
+function selectMenuTemperature(menuId, temperature, price) {
+    const group = document.getElementById(`temp-group-${menuId}`);
+    if (!group) return;
+
+    group.setAttribute('data-selected', temperature);
+
+    const btnHot = document.getElementById(`btn-temp-hot-${menuId}`);
+    const btnIce = document.getElementById(`btn-temp-ice-${menuId}`);
+    const tag = document.getElementById(`temp-tag-${menuId}`);
+    const priceDisplay = document.getElementById(`price-display-${menuId}`);
+
+    if (temperature === 'Hot') {
+        if (btnHot) {
+            btnHot.className = 'temp-btn py-1 px-2 rounded-md text-[11px] font-mono font-bold transition-all flex items-center justify-center space-x-1 bg-amber-500 text-white shadow-xs scale-100';
+        }
+        if (btnIce) {
+            btnIce.className = 'temp-btn py-1 px-2 rounded-md text-[11px] font-mono font-semibold transition-all flex items-center justify-center space-x-1 bg-white text-stone-600 hover:bg-stone-50 hover:text-ink';
+        }
+        if (tag) {
+            tag.textContent = '🔥 Hot';
+            tag.className = 'temp-selected-tag px-1.5 py-0.2 rounded font-semibold bg-amber-100 text-amber-900';
+        }
+    } else {
+        if (btnIce) {
+            btnIce.className = 'temp-btn py-1 px-2 rounded-md text-[11px] font-mono font-bold transition-all flex items-center justify-center space-x-1 bg-sky-500 text-white shadow-xs scale-100';
+        }
+        if (btnHot) {
+            btnHot.className = 'temp-btn py-1 px-2 rounded-md text-[11px] font-mono font-semibold transition-all flex items-center justify-center space-x-1 bg-white text-stone-600 hover:bg-stone-50 hover:text-ink';
+        }
+        if (tag) {
+            tag.textContent = '🧊 Ice';
+            tag.className = 'temp-selected-tag px-1.5 py-0.2 rounded font-semibold bg-sky-100 text-sky-900';
+        }
+    }
+
+    if (priceDisplay && price) {
+        priceDisplay.textContent = 'Rp ' + Number(price).toLocaleString('id-ID');
+    }
+}
+
 // Toggle Wishlist / Favorite AJAX
 function toggleFavorite(productId, buttonElement) {
     fetch('{{ route("favorites.toggle") }}', {
@@ -378,14 +463,22 @@ function toggleFavorite(productId, buttonElement) {
     .catch(() => {});
 }
 
-// Add to Cart AJAX with Toast Feedback
+// Add to Cart AJAX with Temperature & Toast Feedback
 document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('.add-to-cart-btn').forEach(button => {
         button.addEventListener('click', function(e) {
             e.preventDefault();
             const productId = this.getAttribute('data-id');
             const productName = this.getAttribute('data-name') || 'Menu';
+            const card = document.getElementById(`card-product-${productId}`);
             const originalHtml = this.innerHTML;
+
+            // Determine chosen temperature
+            let chosenTemp = null;
+            if (card && card.getAttribute('data-is-beverage') === '1') {
+                const tempGroup = document.getElementById(`temp-group-${productId}`);
+                chosenTemp = tempGroup ? tempGroup.getAttribute('data-selected') : 'Ice';
+            }
 
             this.innerHTML = '<i class="fas fa-spinner fa-spin text-[10px]"></i> <span>Menambah...</span>';
             this.disabled = true;
@@ -400,7 +493,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 body: JSON.stringify({
                     product_id: productId,
                     menu_id: productId,
-                    quantity: 1
+                    quantity: 1,
+                    temperature: chosenTemp
                 })
             })
             .then(async response => {
@@ -426,9 +520,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     updateCartBadge();
                 }
 
-                // Trigger Floating Toast Notification
+                // Trigger Floating Toast Notification with variant indication
+                const variantText = chosenTemp ? ` (${chosenTemp})` : '';
                 if (typeof showToast === 'function') {
-                    showToast(data.message || `Menu "${productName}" berhasil ditambahkan ke keranjang!`, 'success', '{{ route('cart.index') }}', 'Lihat Keranjang');
+                    showToast(data.message || `Menu "${productName}${variantText}" berhasil ditambahkan ke keranjang!`, 'success', '{{ route('cart.index') }}', 'Lihat Keranjang');
                 }
             })
             .catch(err => {

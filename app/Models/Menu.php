@@ -146,6 +146,74 @@ class Menu extends Model
         return $this->price_formatted;
     }
 
+    public function getIsBeverageAttribute(): bool
+    {
+        if ($this->has_temperature_option || ! empty($this->temperature_options)) {
+            return true;
+        }
+
+        $categoryName = strtolower($this->categoryRelation?->nama_kategori ?? $this->category ?? '');
+        $categorySlug = strtolower($this->categoryRelation?->slug ?? '');
+
+        if (in_array($categorySlug, ['food', 'snack', 'dessert']) ||
+            str_contains($categoryName, 'makanan') ||
+            str_contains($categoryName, 'food') ||
+            str_contains($categoryName, 'snack') ||
+            str_contains($categoryName, 'dessert')) {
+            return false;
+        }
+
+        return true;
+    }
+
+    public function getPriceForTemperature(?string $temperature = null): float
+    {
+        if ($temperature && ! empty($this->temperature_options)) {
+            $normTemp = strtolower($temperature);
+            if ($normTemp === 'ice') {
+                $normTemp = 'cold';
+            }
+
+            foreach ($this->temperature_options as $opt) {
+                if (isset($opt['type'])) {
+                    $optType = strtolower($opt['type']);
+                    if ($optType === 'ice') {
+                        $optType = 'cold';
+                    }
+                    if ($optType === $normTemp && isset($opt['price'])) {
+                        return (float) $opt['price'];
+                    }
+                }
+            }
+        }
+
+        return (float) ($this->harga ?? 0);
+    }
+
+    public function getHppForTemperature(?string $temperature = null): float
+    {
+        if ($temperature && ! empty($this->temperature_options)) {
+            $normTemp = strtolower($temperature);
+            if ($normTemp === 'ice') {
+                $normTemp = 'cold';
+            }
+
+            foreach ($this->temperature_options as $opt) {
+                if (isset($opt['type'])) {
+                    $optType = strtolower($opt['type']);
+                    if ($optType === 'ice') {
+                        $optType = 'cold';
+                    }
+                    if ($optType === $normTemp && isset($opt['hpp'])) {
+                        return (float) $opt['hpp'];
+                    }
+                }
+            }
+        }
+
+        return (float) ($this->hpp ?? 0);
+    }
+
     public function hasStock(int $qty = 1): bool
     {
         return ($this->stok ?? 0) >= $qty;

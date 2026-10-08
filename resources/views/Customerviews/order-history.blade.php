@@ -73,7 +73,14 @@
                         <div class="order-items">
                             @foreach($order->items as $item)
                                 <div class="order-item-row">
-                                    <span class="item-name">{{ $item->menu->name }} x{{ $item->quantity }}</span>
+                                    <span class="item-name" style="display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                                        {{ $item->menu?->nama_menu ?? ($item->menu?->name ?? 'Menu') }} x{{ $item->quantity }}
+                                        @if(!empty($item->temperature))
+                                            <span style="font-size: 10px; padding: 1px 5px; border-radius: 4px; font-weight: 700; font-family: monospace; {{ $item->temperature === 'Hot' ? 'background: #FEF3C7; color: #92400E;' : 'background: #E0F2FE; color: #075985;' }}">
+                                                {{ $item->temperature === 'Hot' ? '🔥 Hot' : '🧊 Ice' }}
+                                            </span>
+                                        @endif
+                                    </span>
                                     <span class="item-price">Rp {{ number_format($item->subtotal, 0, ',', '.') }}</span>
                                 </div>
                             @endforeach

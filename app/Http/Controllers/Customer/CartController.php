@@ -3,158 +3,142 @@
 namespace App\Http\Controllers\Customer;
 
 use App\Http\Controllers\Controller;
-use App\Models\CartItem;
-use App\Models\Menu;
+use App\Services\CartSessionService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class CartController extends Controller
 {
+    protected CartSessionService $cartService;
+
+    public function __construct(CartSessionService $cartService)
+    {
+        $this->cartService = $cartService;
+    }
+
     /**
-     * Show shopping cart
+     * Show shopping cart page
      */
     public function index()
     {
-        $user = auth()->user();
+        $cartItems = $this->cartService->getCartItems();
+        $totals = $this->cartService->getTotals();
+        $total = $totals['grand_total'];
 
-        $cartItems = $user->cartItems()
-            ->with('menu')
-            ->get();
-
-        $total = $cartItems->sum(function ($item) {
-            return $item->menu->harga * $item->quantity;
-        });
-
-        return view('Customerviews.cart', compact('cartItems', 'total'));
+        return view('Customerviews.cart', compact('cartItems', 'totals', 'total'));
     }
 
     /**
-     * Add item to cart
+     * Add menu item with temperature variant to cart
      */
-    public function add(Request $request)
+    public function add(Request $request): JsonResponse
     {
         $productId = $request->input('product_id') ?? $request->input('menu_id') ?? $request->input('id');
-
-        $request->merge(['product_id' => $productId]);
-
-        $request->validate([
-            'product_id' => 'required|exists:menus,id_menu',
-            'quantity' => 'nullable|integer|min:1',
-        ]);
-
+        $temperature = $request->input('temperature');
         $quantity = (int) ($request->input('quantity') ?? 1);
-        $user = auth()->user();
+        $note = $request->input('note') ?? $request->input('notes');
 
-        if (! $user) {
+        if (! $productId) {
             return response()->json([
                 'success' => false,
-                'message' => 'Sesi belanja belum aktif. Silakan muat ulang halaman.',
-            ], 401);
+                'message' => 'Menu tidak valid atau tidak dipilih.',
+            ], 422);
         }
 
-        $menu = Menu::where('id_menu', $productId)->firstOrFail();
+        $result = $this->cartService->addItem((int) $productId, $quantity, $temperature, $note);
 
-        $cartItem = $user->cartItems()
-            ->where('menu_id', $productId)
-            ->first();
+        $status = $result['success'] ? 200 : 400;
 
-        if ($cartItem) {
-            $cartItem->quantity += $quantity;
-            $cartItem->save();
-        } else {
-            CartItem::create([
-                'user_id' => $user->id_user ?? $user->id,
-                'menu_id' => $productId,
-                'quantity' => $quantity,
-            ]);
+        return response()->json($result, $status);
+    }
+
+    /**
+     * Update quantity of an item
+     */
+    public function update(Request $request, string $cartItem): JsonResponse
+    {
+        $action = $request->input('action');
+        $quantity = $request->has('quantity') ? (int) $request->input('quantity') : null;
+
+        $result = $this->cartService->updateQuantity($cartItem, $quantity, $action);
+
+        $status = $result['success'] ? 200 : 400;
+
+        return response()->json($result, $status);
+    }
+
+    /**
+     * Update note of an item
+     */
+    public function updateNote(Request $request, string $cartItem): JsonResponse
+    {
+        $note = $request->input('note') ?? $request->input('notes');
+        $result = $this->cartService->updateItemNote($cartItem, $note);
+
+        return response()->json($result);
+    }
+
+    /**
+     * Remove single item from cart
+     */
+    public function remove(string $cartItem): JsonResponse
+    {
+        $result = $this->cartService->removeItem($cartItem);
+
+        $status = $result['success'] ? 200 : 400;
+
+        return response()->json($result, $status);
+    }
+
+    /**
+     * Clear all items in cart
+     */
+    public function clear(Request $request)
+    {
+        $result = $this->cartService->clearCart();
+
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json($result);
         }
 
-        $totalCount = (int) $user->cartItems()->sum('quantity');
-
-        return response()->json([
-            'success' => true,
-            'status' => 'success',
-            'message' => 'Menu "'.$menu->nama_menu.'" berhasil ditambahkan ke keranjang!',
-            'product_name' => $menu->nama_menu,
-            'product_price' => $menu->harga,
-            'cart_count' => $totalCount,
-            'count' => $totalCount,
-        ]);
+        return redirect()->route('cart.index')->with('success', 'Keranjang belanja telah dikosongkan.');
     }
 
     /**
-     * Update quantity
+     * Apply Promo Code
      */
-    public function update(Request $request, CartItem $cartItem)
+    public function applyPromo(Request $request): JsonResponse
     {
-        // Handle form submission with action parameter (increase/decrease)
-        if ($request->has('action')) {
-            $action = $request->input('action');
-            $newQuantity = $cartItem->quantity;
+        $code = $request->input('code') ?? $request->input('promo_code');
+        $result = $this->cartService->applyPromo((string) $code);
 
-            if ($action === 'increase') {
-                $newQuantity++;
-            } elseif ($action === 'decrease' && $newQuantity > 1) {
-                $newQuantity--;
-            }
+        $status = $result['success'] ? 200 : 400;
 
-            $cartItem->update([
-                'quantity' => $newQuantity,
-            ]);
-        } else {
-            // Handle JSON request with quantity parameter
-            $request->validate([
-                'quantity' => 'required|integer|min:1|max:100',
-            ]);
-
-            $cartItem->update([
-                'quantity' => $request->quantity,
-            ]);
-        }
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Keranjang diperbarui',
-        ]);
+        return response()->json($result, $status);
     }
 
     /**
-     * Remove item
+     * Remove applied promo code
      */
-    public function remove(CartItem $cartItem)
+    public function removePromo(): JsonResponse
     {
-        $cartItem->delete();
+        $result = $this->cartService->removePromo();
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Produk dihapus dari keranjang',
-            'cart_count' => auth()->user()->cartItems()->sum('quantity'),
-        ]);
+        return response()->json($result);
     }
 
     /**
-     * Clear cart
+     * Get real-time cart item count for badge
      */
-    public function clear()
+    public function count(): JsonResponse
     {
-        auth()->user()->cartItems()->delete();
+        $totals = $this->cartService->getTotals();
 
         return response()->json([
-            'success' => true,
-            'message' => 'Keranjang dikosongkan',
-        ]);
-    }
-
-    /**
-     * Cart item count
-     */
-    public function count()
-    {
-        $count = auth()->user()
-            ->cartItems()
-            ->sum('quantity');
-
-        return response()->json([
-            'count' => $count,
+            'count' => $totals['total_quantity'],
+            'items_count' => $totals['items_count'],
+            'subtotal' => $totals['subtotal'],
+            'grand_total' => $totals['grand_total'],
         ]);
     }
 }

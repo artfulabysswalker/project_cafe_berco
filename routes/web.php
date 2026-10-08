@@ -285,14 +285,23 @@ Route::middleware(['restore.guest'])->group(function () {
     Route::post('/cart/add', [CartController::class, 'add'])
         ->name('cart.add');
 
-    Route::post('/cart/clear', [CartController::class, 'clear'])
+    Route::match(['POST', 'DELETE'], '/cart/clear', [CartController::class, 'clear'])
         ->name('cart.clear');
 
     Route::get('/cart/count', [CartController::class, 'count'])
         ->name('cart.count');
 
+    Route::post('/cart/promo/apply', [CartController::class, 'applyPromo'])
+        ->name('cart.promo.apply');
+
+    Route::post('/cart/promo/remove', [CartController::class, 'removePromo'])
+        ->name('cart.promo.remove');
+
     Route::patch('/cart/{cartItem}/update', [CartController::class, 'update'])
         ->name('cart.update');
+
+    Route::patch('/cart/{cartItem}/note', [CartController::class, 'updateNote'])
+        ->name('cart.note');
 
     Route::delete('/cart/{cartItem}/remove', [CartController::class, 'remove'])
         ->name('cart.remove');
@@ -427,6 +436,9 @@ Route::middleware(['admin.staff'])->group(function () {
     // Orders
     Route::get('/admin/orders', [OrderController::class, 'index'])
         ->name('admin.orders');
+
+    Route::get('/admin/orders/live-updates', [OrderController::class, 'liveOrders'])
+        ->name('admin.orders.live');
 
     Route::get('/admin/orders-list', [OrderController::class, 'index'])
         ->name('orders.index');

@@ -10,6 +10,8 @@ class CartItem extends Model
         'user_id',
         'menu_id',
         'quantity',
+        'temperature',
+        'note',
     ];
 
     /**
@@ -39,5 +41,24 @@ class CartItem extends Model
     public function getProductIdAttribute()
     {
         return $this->attributes['menu_id'] ?? null;
+    }
+
+    public function getUnitPriceAttribute(): float
+    {
+        if ($this->menu) {
+            return (float) $this->menu->getPriceForTemperature($this->temperature);
+        }
+
+        return 0.0;
+    }
+
+    public function getSubtotalAttribute(): float
+    {
+        return (float) ($this->unit_price * $this->quantity);
+    }
+
+    public function getCartItemKeyAttribute(): string
+    {
+        return $this->menu_id.'_'.($this->temperature ?: 'default');
     }
 }
