@@ -99,7 +99,12 @@ class QrisTransaction extends Model
 
         // Update order payment status
         if ($this->order) {
-            $this->order->update(['status_pembayaran' => 'Paid']);
+            // QRIS langsung settle -> pesanan otomatis sah & masuk dapur.
+            $this->order->update([
+                'status_pembayaran' => 'paid',
+                'paid_at' => now(),
+                'status_order' => 'processing',
+            ]);
         }
 
         return $this;
@@ -117,7 +122,7 @@ class QrisTransaction extends Model
 
         // Update order payment status
         if ($this->order) {
-            $this->order->update(['status_pembayaran' => 'Failed']);
+            $this->order->update(['status_pembayaran' => 'pending']);
         }
 
         return $this;

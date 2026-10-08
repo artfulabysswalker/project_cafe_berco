@@ -146,6 +146,15 @@
                         @endif
                     </a>
 
+                    @if(auth()->user()?->isAdmin())
+                        <a href="{{ route('admin.tables.index') }}" class="flex items-center justify-between px-2.5 py-2 rounded-md transition-colors {{ request()->routeIs('admin.tables*') ? 'bg-stone-800 text-white font-medium border-l-2 border-[#C27835]' : 'text-stone-400 hover:text-stone-200 hover:bg-stone-800/50' }}">
+                            <div class="flex items-center space-x-2.5">
+                                <i class="fas fa-qrcode text-xs w-4 text-center {{ request()->routeIs('admin.tables*') ? 'text-[#C27835]' : 'text-stone-400' }}"></i>
+                                <span>Meja & QR Code</span>
+                            </div>
+                        </a>
+                    @endif
+
                     <a href="{{ route('admin.expenses.index') }}" class="flex items-center justify-between px-2.5 py-2 rounded-md transition-colors {{ request()->routeIs('admin.expenses*') ? 'bg-stone-800 text-white font-medium border-l-2 border-[#C27835]' : 'text-stone-400 hover:text-stone-200 hover:bg-stone-800/50' }}">
                         <div class="flex items-center space-x-2.5">
                             <i class="fas fa-file-invoice-dollar text-xs w-4 text-center {{ request()->routeIs('admin.expenses*') ? 'text-[#C27835]' : 'text-stone-400' }}"></i>

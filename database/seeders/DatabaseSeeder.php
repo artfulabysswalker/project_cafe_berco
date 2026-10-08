@@ -23,6 +23,7 @@ class DatabaseSeeder extends Seeder
             CashierShiftSeeder::class,
             InventorySeeder::class,
             RecipeSeeder::class,
+            MejaSeeder::class,
             // BigGSeeder::class, // Commented: konflict dengan UserSeeder
         ]);
     }

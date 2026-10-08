@@ -48,7 +48,6 @@ class DashboardController extends Controller
         // Cash Breakdown
         $cashOrdersQuery = Order::where(function ($q) {
             $q->where('payment_method', 'cash')
-                ->orWhere('payment_method', 'tunai')
                 ->orWhereNull('payment_method');
         })->where(function ($q) {
             $q->whereIn('status_pembayaran', ['paid', 'Sudah'])
@@ -62,9 +61,7 @@ class DashboardController extends Controller
 
         // QRIS Breakdown
         $qrisOrdersQuery = Order::where(function ($q) {
-            $q->where('payment_method', 'qris')
-                ->orWhere('payment_method', 'QRIS')
-                ->orWhere('payment_method', 'transfer');
+            $q->where('payment_method', 'qris');
         })->where(function ($q) {
             $q->whereIn('status_pembayaran', ['paid', 'Sudah'])
                 ->orWhere('status_order', 'completed');
@@ -175,8 +172,6 @@ class DashboardController extends Controller
             return match (strtolower($method ?? '')) {
                 'cash' => 'Tunai (Cash)',
                 'qris' => 'QRIS',
-                'debit' => 'Debit Card',
-                'credit' => 'Credit Card',
                 default => ucfirst($method ?: 'Lainnya'),
             };
         })->toArray();

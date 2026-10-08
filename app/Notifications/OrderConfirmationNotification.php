@@ -41,7 +41,7 @@ class OrderConfirmationNotification extends Notification
             ->line('Order ID: #'.$this->order->id_order)
             ->line('Tanggal: '.$this->order->tanggal->format('d M Y H:i'))
             ->line('Tipe Layanan: '.($this->order->service_type === 'dine_in' ? '🍽️ Dine In' : '🛍️ Take Away'))
-            ->line('Metode Pembayaran: '.($this->order->payment_method === 'cash' ? '💵 Tunai' : '💳 Kartu'))
+            ->line('Metode Pembayaran: '.($this->order->payment_method === 'cash' ? '💵 Tunai' : '📱 QRIS'))
             ->line('')
             ->line('📦 **Item yang Dipesan:**');
 

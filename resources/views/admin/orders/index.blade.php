@@ -2,6 +2,8 @@
 
 @section('content')
 
+@include('admin.partials.order-alert')
+
 <div class="px-6 py-8">
     <!-- Header Section -->
     <div class="mb-8">
@@ -11,6 +13,52 @@
         </div>
         <p class="text-gray-600 ml-14">Kelola pesanan yang belum diselesaikan</p>
     </div>
+
+    <!-- Filter per meja / token QR -->
+    <form method="GET" action="{{ route('admin.orders') }}" class="mb-6 flex flex-wrap items-end gap-3 rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+        <div class="min-w-[180px]">
+            <label for="filter-meja" class="mb-1 block text-xs font-semibold text-gray-600">Meja</label>
+            <select name="meja" id="filter-meja" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-800 focus:border-amber-500 focus:outline-none">
+                <option value="all">Semua Meja</option>
+                @foreach($tables as $tableOption)
+                    <option value="{{ $tableOption->id_meja }}" @selected((string) request('meja') === (string) $tableOption->id_meja)>
+                        {{ $tableOption->nama_meja }}{{ $tableOption->is_active ? '' : ' (Nonaktif)' }}
+                    </option>
+                @endforeach
+            </select>
+        </div>
+
+        <div class="min-w-[240px] flex-1">
+            <label for="filter-q" class="mb-1 block text-xs font-semibold text-gray-600">Cari Token QR / Nama Meja</label>
+            <input type="text"
+                   name="q"
+                   id="filter-q"
+                   value="{{ request('q') }}"
+                   placeholder="Contoh: 05 / Meja 05 / token QR..."
+                   class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-800 focus:border-amber-500 focus:outline-none">
+        </div>
+
+        <div class="flex gap-2">
+            <button type="submit" class="rounded-lg bg-amber-600 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-700 transition-colors">
+                Terapkan
+            </button>
+            <a href="{{ route('admin.orders') }}" class="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-50 transition-colors">
+                Reset
+            </a>
+        </div>
+    </form>
+
+    @if(request('meja') !== null && request('meja') !== 'all' || request('q'))
+        @php
+            $filteredTable = $tables->firstWhere('id_meja', (int) request('meja'));
+        @endphp
+        <p class="mb-4 text-sm text-gray-600">
+            Menampilkan pesanan
+            @if($filteredTable) untuk <strong>{{ $filteredTable->nama_meja }}</strong> @endif
+            @if(request('q')) dengan pencarian "<strong>{{ request('q') }}</strong>" @endif
+            — {{ $orders->total() }} data ditemukan.
+        </p>
+    @endif
 
     @if($orders->isEmpty())
         <!-- Empty State -->
@@ -27,7 +75,8 @@
                     <thead>
                         <tr class="bg-gradient-to-r from-amber-100 to-amber-50 border-b-2 border-amber-200">
                             <th class="px-6 py-4 text-left text-sm font-semibold text-amber-900">ID Pesanan</th>
-                            <th class="px-6 py-4 text-left text-sm font-semibold text-amber-900">Pelanggan</th>
+                            <th class="px-6 py-4 text-left text-sm font-semibold text-amber-900">Data Pelanggan</th>
+                            <th class="px-6 py-4 text-left text-sm font-semibold text-amber-900">Pesanan</th>
                             <th class="px-6 py-4 text-left text-sm font-semibold text-amber-900">Total</th>
                             <th class="px-6 py-4 text-left text-sm font-semibold text-amber-900">Status Pembayaran</th>
                             <th class="px-6 py-4 text-left text-sm font-semibold text-amber-900">Status Pesanan</th>
@@ -40,9 +89,35 @@
                             <tr class="border-b border-gray-200 hover:bg-amber-50 transition-colors">
                                 <td class="px-6 py-4">
                                     <strong class="text-amber-700 text-lg">#{{ $order->id_order }}</strong>
+                                    <div class="text-[11px] text-gray-400 font-mono">{{ $order->public_code }}</div>
                                 </td>
-                                <td class="px-6 py-4 text-gray-800 font-medium">
-                                    {{ $order->user->name ?? $order->nama_pelanggan }}
+                                <td class="px-6 py-4">
+                                    <div class="flex flex-col gap-0.5">
+                                        <span class="text-[11px] text-gray-500">
+                                            Meja: <strong class="text-gray-800">{{ $order->table?->nama_meja ?? '-' }}</strong>
+                                        </span>
+                                        <span class="text-[11px] text-gray-500">
+                                            Nama: <strong class="text-gray-800">{{ $order->customer_name ?: ($order->user->name ?? $order->nama_pelanggan) }}</strong>
+                                        </span>
+                                        <span class="text-[11px] text-gray-500">
+                                            No. Telp: <strong class="text-gray-800 font-mono">{{ $order->customer_phone ?: '-' }}</strong>
+                                        </span>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <ul class="text-xs text-gray-700 space-y-0.5 max-w-[220px]">
+                                        @forelse($order->items as $item)
+                                            <li>
+                                                <span class="font-semibold">{{ $item->quantity }}x</span>
+                                                {{ $item->menu?->nama_menu ?? 'Item' }}
+                                                @if($item->notes)
+                                                    <span class="block text-[10px] text-amber-700">📝 {{ $item->notes }}</span>
+                                                @endif
+                                            </li>
+                                        @empty
+                                            <li class="text-gray-400">-</li>
+                                        @endforelse
+                                    </ul>
                                 </td>
                                 <td class="px-6 py-4 font-semibold text-gray-800">
                                     Rp {{ number_format($order->total_harga, 0, ',', '.') }}
@@ -67,10 +142,23 @@
                                     {{ $order->tanggal->format('d/m/Y H:i') }}
                                 </td>
                                 <td class="px-6 py-4 text-center">
-                                    <div class="flex justify-center items-center gap-2">
+<div class="flex justify-center items-center gap-2">
+                                        <!-- Konfirmasi & Cetak (bayar di kasir) -->
+                                        @if(! $order->isPaid() && $order->payment_method === 'cash')
+                                            <form method="POST" action="{{ route('admin.orders.confirm', $order->id_order) }}"
+                                                  style="display:inline;" onsubmit="return confirm('Konfirmasi pembayaran #{{ $order->id_order }} dari {{ $order->customer_name ?: $order->nama_pelanggan }}?')">
+                                                @csrf
+                                                <button type="submit"
+                                                        class="inline-flex items-center justify-center px-3 h-9 bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition-colors text-xs font-semibold"
+                                                        title="Konfirmasi pembayaran lalu cetak struk">
+                                                    💵 Konfirmasi &amp; Cetak
+                                                </button>
+                                            </form>
+                                        @endif
+
                                         <!-- View Receipt -->
-                                        <a href="{{ route('order.receipt', $order) }}" 
-                                           class="inline-flex items-center justify-center w-9 h-9 bg-blue-100 text-blue-600 rounded-lg hover:bg-blue-200 transition-colors" 
+                                        <a href="{{ route('admin.receipt.view', $order->id_order) }}"
+                                           class="inline-flex items-center justify-center w-9 h-9 bg-blue-100 text-blue-600 rounded-lg hover:bg-blue-200 transition-colors"
                                            title="Lihat Kwitansi">
                                             👀
                                         </a>

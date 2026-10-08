@@ -220,8 +220,8 @@ class StatsController extends Controller
 
         $allOrders = $query->orderBy('tanggal', 'asc')->get();
 
-        $cashOrders = $allOrders->filter(fn ($o) => in_array(strtolower($o->payment_method), ['cash', 'tunai', '']));
-        $qrisOrders = $allOrders->filter(fn ($o) => in_array(strtolower($o->payment_method), ['qris', 'transfer', 'debit', 'credit']));
+        $cashOrders = $allOrders->filter(fn ($o) => in_array(strtolower($o->payment_method), ['cash', '']));
+        $qrisOrders = $allOrders->filter(fn ($o) => strtolower($o->payment_method) === 'qris');
 
         $totalCash = $cashOrders->sum('total_harga');
         $totalQris = $qrisOrders->sum('total_harga');

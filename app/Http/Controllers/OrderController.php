@@ -3,23 +3,71 @@
 namespace App\Http\Controllers;
 
 use App\Events\OrderCreated;
+use App\Exceptions\TableQrCodeException;
+use App\Http\Requests\StoreOrderRequest;
+use App\Models\Meja;
 use App\Models\Order;
 use App\Models\OrderItem;
-use App\Models\Payment;
+use App\Models\TableQrCode;
 use App\Models\User;
 use App\Services\CartSessionService;
+use App\Services\KitchenService;
+use App\Services\QrCodeService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 
 class OrderController extends Controller
 {
+    public function __construct(protected QrCodeService $qrService, protected KitchenService $kitchenService)
+    {
+        //
+    }
+
+    /**
+     * Halaman order via QR Code per meja: GET /order?token={token_meja}
+     *
+     * Token divalidasi di server; bila tidak valid / meja nonaktif, tampilkan
+     * halaman error yang ramah tanpa membuka menu. Identitas meja disimpan di
+     * session supaya input form tidak bisa memanipulasi meja pesanan.
+     */
+    public function orderPage(Request $request)
+    {
+        $token = (string) $request->query('token', '');
+
+        if ($token === '') {
+            return $this->invalidOrderPage('QR tidak valid, silakan hubungi kasir.');
+        }
+
+        try {
+            $qr = $this->qrService->validateTokenForOrder($token);
+        } catch (TableQrCodeException $e) {
+            return $this->invalidOrderPage($e->getMessage().', silakan hubungi kasir.');
+        }
+
+        $table = $qr->table;
+
+        $request->session()->put('order_table_token', $qr->token);
+        $request->session()->put('order_table', $table->nama_meja);
+        $request->session()->put('order_table_id', $table->id_meja);
+
+        return view('Customerviews.order', [
+            'table' => $table,
+            'qr' => $qr,
+            'cartCount' => (int) (auth()->user()?->cartItems()->sum('quantity') ?? 0),
+        ]);
+    }
+
+    private function invalidOrderPage(string $message)
+    {
+        return response()->view('Customerviews.order-error', [
+            'errorMessage' => $message,
+        ], 404);
+    }
+
     /**
      * Show checkout page
      */
-    /**
-     * Show checkout page
-     */
-    public function checkout()
+    public function checkout(Request $request)
     {
         $user = auth()->user();
         $cartItems = app(CartSessionService::class)->getCartItems();
@@ -28,6 +76,12 @@ class OrderController extends Controller
             return redirect()->route('cart.index')
                 ->with('error', 'Keranjang Anda kosong');
         }
+
+        if ($request->filled('meja')) {
+            $request->session()->put('order_table', $request->query('meja'));
+        }
+
+        $table = $this->resolveTableForRequest($request);
 
         $priceInfo = $this->calculateOrderPrice($cartItems, 'dine_in');
 
@@ -58,6 +112,7 @@ class OrderController extends Controller
             'discount' => $priceInfo['discount'],
             'total' => $priceInfo['total'],
             'morningDiscount' => $priceInfo['discount'] > 0,
+            'table' => $table,
         ]);
     }
 
@@ -87,6 +142,64 @@ class OrderController extends Controller
         ];
     }
 
+    /**
+     * Ubah input meja menjadi id_meja yang valid.
+     *
+     * Input bisa berupa nama_meja ("05", hasil QR Code) maupun id_meja (3).
+     * nama_meja dicoba lebih dulu karena kode meja seperti "05" isinya
+     * numeric dan akan salah ditafsirkan sebagai id kalau urutannya dibalik.
+     *
+     * Mengembalikan null bila meja tidak ditemukan atau tidak diisi.
+     */
+    private function resolveTableId($value)
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        $table = Meja::where('nama_meja', $value)->first();
+
+        if (! $table && is_numeric($value)) {
+            $table = Meja::find((int) $value);
+        }
+
+        return $table?->id_meja;
+    }
+
+    /**
+     * Tentukan meja untuk request berjalan.
+     *
+     * Sumber utama: token QR di session (ditetapkan halaman /order?token=...)
+     * sehingga meja ditentukan server dan tidak bisa dimanipulasi lewat form.
+     * Fallback: session order_table hasil scan/pilihan URL ?meja= (perilaku
+     * lama), lalu input form sebagai cadangan terakhir.
+     */
+    private function resolveTableForRequest(Request $request): ?Meja
+    {
+        $token = $request->session()->get('order_table_token');
+
+        if (is_string($token) && $token !== '') {
+            try {
+                return $this->qrService->validateTokenForOrder($token)->table;
+            } catch (TableQrCodeException) {
+                // Token sudah dicabut/kedaluwarsa — jatuh ke fallback lama.
+            }
+        }
+
+        $value = $request->session()->get('order_table')
+            ?? $request->query('meja')
+            ?? $request->input('meja')
+            ?? $request->input('table_id');
+
+        if (is_string($value)) {
+            $value = trim($value);
+        }
+
+        $tableId = $this->resolveTableId($value === '' || $value === null ? null : $value);
+
+        return $tableId !== null ? Meja::find($tableId) : null;
+    }
+
     private function calculateMorningDiscount($amount, $dateTime)
     {
         $hour = $dateTime->hour;
@@ -97,7 +210,7 @@ class OrderController extends Controller
         return 0;
     }
 
-    public function store(Request $request)
+    public function store(StoreOrderRequest $request)
     {
         $user = auth()->user();
         $cartItems = app(CartSessionService::class)->getCartItems();
@@ -109,11 +222,7 @@ class OrderController extends Controller
             ], 400);
         }
 
-        $validated = $request->validate([
-            'service_type' => 'required|in:dine_in,take_away',
-            'payment_method' => 'required|in:cash,qris,debit,credit',
-            'notes' => 'nullable|string|max:500',
-        ]);
+        $validated = $request->validated();
 
         // 1. Stock validation before creating order
         foreach ($cartItems as $item) {
@@ -147,10 +256,18 @@ class OrderController extends Controller
         });
         $profitMargin = max(0, $total - $totalHpp);
 
-        // 3. Create Order
+        // 3. Meja ditentukan server dari token QR di session (bukan dari input
+        //    form); fallback ke ?meja=/session untuk alur lama tanpa QR.
+        $table = $this->resolveTableForRequest($request);
+        $tableId = $table?->id_meja;
+
+        // 4. Create Order
         $order = Order::create([
             'tanggal' => now(),
-            'nama_pelanggan' => $user->name,
+            'nama_pelanggan' => $validated['customer_name'] ?: $user->name,
+            'customer_name' => $validated['customer_name'],
+            'customer_phone' => $validated['customer_phone'] ?? null,
+            'table_id' => $tableId,
             'total_harga' => $total,
             'subtotal' => $subtotal,
             'service_charge' => $serviceCharge,
@@ -158,7 +275,9 @@ class OrderController extends Controller
             'final_total' => $total,
             'cost_of_goods' => $totalHpp,
             'profit_margin' => $profitMargin,
-            'status_pembayaran' => $validated['payment_method'] === 'cash' ? 'paid' : 'pending',
+            // Bayar di kasir: pembayaran menunggu konfirmasi kasir (bukan
+            // langsung lunas), QRIS: menunggu settlement dari gateway.
+            'status_pembayaran' => 'pending',
             'service_type' => $validated['service_type'],
             'payment_method' => $validated['payment_method'],
             'notes' => $validated['notes'] ?? null,
@@ -166,7 +285,12 @@ class OrderController extends Controller
             'id_user' => $user->id_user,
         ]);
 
-        // 4. Create OrderItems with temperature and note, record historical HPP, and deduct stock
+        // Kode tagihan publik (nomor antrean), unik per pesanan.
+        $order->forceFill([
+            'order_code' => 'BT-'.str_pad((string) $order->id_order, 4, '0', STR_PAD_LEFT),
+        ])->save();
+
+        // 5. Create OrderItems with temperature and note, record historical HPP, and deduct stock
         foreach ($cartItems as $item) {
             $menu = $item->menu;
             $itemUnitPrice = $menu->getPriceForTemperature($item->temperature ?? null);
@@ -176,6 +300,7 @@ class OrderController extends Controller
                 'id_order' => $order->id_order,
                 'id_menu' => $menu->id_menu,
                 'quantity' => $item->quantity,
+                'notes' => $item->note,
                 'subtotal' => $itemUnitPrice * $item->quantity,
                 'hpp' => $itemHpp,
                 'hpp_at_sale' => $itemHpp,
@@ -187,16 +312,16 @@ class OrderController extends Controller
             $menu->decrementStock($item->quantity);
         }
 
-        // 5. Clear cart session and database
+        // 6. Clear cart session and database
         app(CartSessionService::class)->clearCart();
 
-        // 6. Broadcast real-time event to cashier tablet
+        // 7. Broadcast real-time event to cashier tablet
         event(new OrderCreated($order));
 
-        // 7. Return response
+        // 8. Return response
         $redirectUrl = ($validated['payment_method'] === 'qris')
             ? route('xendit.qris.redirect', $order->id_order)
-            : route('order.receipt', $order->id_order);
+            : route('order.waiting', $order->id_order);
 
         return response()->json([
             'success' => true,
@@ -213,6 +338,174 @@ class OrderController extends Controller
         return view('Customerviews.receipt', compact('order'));
     }
 
+    /**
+     * Halaman "pesanan diterima" setelah submit (bayar di kasir): menampilkan
+     * kode tagihan/nomor antrean untuk dibawa ke kasir.
+     */
+    public function waiting(Order $order)
+    {
+        $this->authorizeOrderOwner($order);
+        $order->load(['items.menu', 'table']);
+
+        return view('Customerviews.order-waiting', compact('order'));
+    }
+
+    /**
+     * Tracking status pesanan untuk pelanggan.
+     */
+    public function show(Order $order)
+    {
+        $this->authorizeOrderOwner($order);
+        $order->load(['items.menu', 'table']);
+
+        return view('Customerviews.order-status', compact('order'));
+    }
+
+    /**
+     * Polling status pesanan (JSON) untuk halaman tracking pelanggan.
+     */
+    public function statusJson(Order $order)
+    {
+        $this->authorizeOrderOwner($order);
+
+        return response()->json([
+            'id_order' => $order->id_order,
+            'order_code' => $order->public_code,
+            'status_order' => $order->status_order,
+            'status_pembayaran' => $order->status_pembayaran,
+            'status_label' => $order->statusLabel(),
+            'paid' => $order->isPaid(),
+            'paid_at' => $order->paid_at?->toISOString(),
+        ]);
+    }
+
+    /**
+     * Kasir mengonfirmasi pembayaran (bayar di kasir) sekaligus meloloskan
+     * pesanan ke dapur, lalu membuka struk thermal untuk dicetak.
+     */
+    public function confirmPayment(Order $order)
+    {
+        abort_unless(auth()->user()?->isStaff() || auth()->user()?->isAdmin(), 403);
+
+        if (! $order->isPaid()) {
+            $order->update([
+                'status_pembayaran' => 'paid',
+                'paid_at' => now(),
+                'status_order' => 'processing',
+                'cashier_name' => auth()->user()?->name ?? $order->cashier_name,
+            ]);
+        }
+
+        return redirect()->route('admin.receipt.print', $order->id_order);
+    }
+
+    /**
+     * Tolak/langsung proses tanpa menunggu kasir (dari halaman kasir).
+     */
+    public function markProcessing(Order $order)
+    {
+        $order->update(['status_order' => in_array($order->status_order, ['pending', 'confirmed', 'processing'], true) ? 'processing' : $order->status_order]);
+
+        return back()->with('success', 'Pesanan masuk proses dapur.');
+    }
+
+    /**
+     * Dapur menandai pesanan siap diambil/diantar.
+     */
+    public function markReady(Order $order)
+    {
+        if (in_array($order->status_order, ['processing', 'ready'], true)) {
+            $order->update(['status_order' => 'ready']);
+        }
+
+        return back()->with('success', 'Pesanan ditandai siap.');
+    }
+
+    /**
+     * Pesanan diselesaikan (diserahkan ke pelanggan / meja di-reset).
+     */
+    public function finishOrder(Order $order)
+    {
+        $order->update([
+            'status_pembayaran' => 'paid',
+            'status_order' => 'completed',
+            'paid_at' => $order->paid_at ?? now(),
+        ]);
+
+        return back()->with('success', 'Pesanan #'.$order->public_code.' selesai.');
+    }
+
+    /**
+     * Polling pesanan baru untuk peringatan kasir (tanpa WebSocket).
+     * Mengembalikan daftar pesanan menunggu pembayaran dengan id > after_id.
+     */
+    public function poll(Request $request)
+    {
+        $afterId = max(0, (int) $request->query('after_id', 0));
+
+        $orders = Order::with('table')
+            ->where('status_pembayaran', 'pending')
+            ->where('id_order', '>', $afterId)
+            ->orderBy('id_order')
+            ->get();
+
+        $latestId = Order::where('status_pembayaran', 'pending')->max('id_order') ?? $afterId;
+
+        return response()->json([
+            'latest_id' => (int) $latestId,
+            'count' => $orders->count(),
+            'new_orders' => $orders->map(fn (Order $o) => [
+                'id' => $o->id_order,
+                'code' => $o->public_code,
+                'table' => $o->table?->nama_meja,
+                'customer' => $o->customer_name ?: $o->nama_pelanggan,
+                'total' => (int) $o->total_harga,
+                'at' => $o->tanggal->format('H:i'),
+            ]),
+        ]);
+    }
+
+    /**
+     * KDS: daftar pesanan terbayar yang sedang di dapur/di antar, dikelompokkan
+     * per stasiun berdasarkan kategori menu.
+     */
+    public function kitchen()
+    {
+        $orders = Order::with(['table', 'items.menu'])
+            ->where('status_pembayaran', 'paid')
+            ->whereIn('status_order', ['processing', 'ready'])
+            ->latest('tanggal')
+            ->get();
+
+        $groups = $this->kitchenService->groupOrdersByStation($orders);
+
+        return view('admin.kitchen', compact('groups', 'orders'));
+    }
+
+    /**
+     * Tiket dapur (kitchen ticket) per stasiun untuk dicetak.
+     */
+    public function kitchenTickets(Order $order)
+    {
+        abort_unless(auth()->user()?->isStaff() || auth()->user()?->isAdmin(), 403);
+
+        $order->load(['table', 'items.menu']);
+        $groups = $this->kitchenService->groupOrderByStation($order);
+
+        return view('admin.kitchen-tickets', compact('order', 'groups'));
+    }
+
+    private function authorizeOrderOwner(Order $order): void
+    {
+        $user = auth()->user();
+
+        if ($user && ($user->isAdmin() || $user->isStaff())) {
+            return;
+        }
+
+        abort_unless($user && (int) $order->id_user === (int) $user->id_user, 403);
+    }
+
     public function history()
     {
         $orders = auth()->user()->orders()->with('items.menu')->latest()->paginate(10);
@@ -227,7 +520,7 @@ class OrderController extends Controller
     {
         $user = auth()->user();
         $isAdmin = $user->isAdmin();
-        $query = Order::with(['user', 'items.menu']);
+        $query = Order::with(['user', 'table', 'items.menu']);
 
         if (! $isAdmin) {
             $query->where('id_user', $user->id_user);
@@ -294,17 +587,36 @@ class OrderController extends Controller
         return back()->with('success', 'Pesanan dibatalkan');
     }
 
-    public function index()
+    public function index(Request $request)
     {
-        $orders = Order::where(function ($q) {
-            $q->where('status_pembayaran', 'pending')
-                ->orWhere('status_order', 'pending');
-        })
-            ->with(['user', 'items.menu'])
-            ->latest()
-            ->paginate(15);
+        $query = Order::where('status_pembayaran', 'pending')
+            ->with(['user', 'table', 'items.menu'])
+            ->latest();
 
-        return view('admin.orders', compact('orders'));
+        // Filter meja: pilih dari dropdown (id_meja)...
+        if ($request->filled('meja') && $request->query('meja') !== 'all') {
+            $query->where('table_id', (int) $request->query('meja'));
+        }
+
+        // ...atau cari bebas: token QR / nama meja (mis. "Meja 05" / "05").
+        $search = trim((string) $request->query('q', ''));
+        if ($search !== '') {
+            $table = $this->findTableByTokenOrName($search);
+
+            if ($table) {
+                $query->where('table_id', $table->id_meja);
+            } else {
+                $query->whereHas('table', function ($q) use ($search) {
+                    $q->where('nama_meja', 'like', '%'.$search.'%');
+                });
+            }
+        }
+
+        $orders = $query->paginate(10)->withQueryString();
+
+        $tables = Meja::orderBy('nama_meja')->get(['id_meja', 'nama_meja', 'is_active']);
+
+        return view('admin.orders.index', compact('orders', 'tables'));
     }
 
     /**
@@ -376,5 +688,25 @@ class OrderController extends Controller
             'max_id' => $maxId,
             'total_pending' => $totalPending,
         ]);
+    }
+
+    /**
+     * Cari meja dari token QR (lengkap/parsial) atau nama meja persis.
+     * Dipakai filter admin supaya pesanan bisa dicari lewat token QR.
+     */
+    private function findTableByTokenOrName(string $value): ?Meja
+    {
+        if (preg_match('/^[0-9a-fA-F-]{8,36}$/', $value)) {
+            $qr = TableQrCode::where('token', $value)
+                ->orWhere('token', 'like', $value.'%')
+                ->orderBy('id_qr_code', 'desc')
+                ->first();
+
+            if ($qr?->table) {
+                return $qr->table;
+            }
+        }
+
+        return Meja::where('nama_meja', $value)->first();
     }
 }

@@ -1,0 +1,70 @@
+# syntax=docker/dockerfile:1
+
+# =============================================================
+# Cafe Berco — image aplikasi (Nginx + PHP-FPM sekaligus)
+# Build:  podman build -t cafe-berco:latest -f deploy/Containerfile .
+# =============================================================
+
+# ---------- Stage 1: build asset frontend (Vite) ----------
+FROM docker.io/library/node:22-alpine AS frontend
+
+WORKDIR /app
+
+COPY package.json package-lock.json ./
+RUN npm ci --no-audit --no-fund --no-progress
+
+COPY . .
+RUN npm run build
+
+# ---------- Stage 2: runtime Nginx + PHP-FPM ----------
+FROM docker.io/library/php:8.3-fpm-alpine
+
+ENV PHP_OPCACHE_ENABLE=1
+
+# Nginx untuk menyajikan aplikasi + dependensi pustaka ekstensi PHP
+RUN apk add --no-cache \
+        nginx \
+        icu-dev \
+        libxml2-dev \
+        oniguruma-dev \
+        libzip-dev \
+        libpng-dev \
+        freetype-dev \
+        libjpeg-turbo-dev \
+    && docker-php-ext-configure gd --with-freetype --with-jpeg \
+    && docker-php-ext-install -j"$(nproc)" \
+        pdo_mysql \
+        mbstring \
+        intl \
+        bcmath \
+        zip \
+        exif \
+        gd \
+        opcache
+
+# Composer untuk meng-install dependensi PHP produksi
+COPY --from=docker.io/composer:2 /usr/bin/composer /usr/bin/composer
+
+WORKDIR /var/www/html
+
+# Salin kode aplikasi (lihat .dockerignore untuk yang dikecualikan)
+COPY . .
+
+# Install dependensi PHP versi produksi (tanpa dev/test)
+RUN composer install --no-dev --optimize-autoloader --no-interaction --no-progress \
+    && php artisan config:clear
+
+# Asset frontend hasil build Vite
+COPY --from=frontend /app/public/build /var/www/html/public/build
+
+# Konfigurasi Nginx + entrypoint (nginx -fpm digabung jadi satu proses)
+COPY deploy/nginx-default.conf /etc/nginx/http.d/default.conf
+COPY deploy/php-opcache.ini /usr/local/etc/php/conf.d/zz-opcache.ini
+COPY deploy/entrypoint.sh /usr/local/bin/entrypoint.sh
+
+RUN chmod +x /usr/local/bin/entrypoint.sh \
+    && chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
+
+EXPOSE 80
+
+CMD ["/usr/local/bin/entrypoint.sh"]

@@ -122,8 +122,8 @@
                         </div>
                     </div>
 
-                    <button class="btn-pay" onclick="processPayment()">
-                        <i class="fas fa-check"></i> Konfirmasi Pembayaran
+                    <button class="btn-pay" onclick="openCustomerModal()">
+                        <i class="fas fa-user"></i> Lanjut &amp; Isi Data Pelanggan
                     </button>
                     <a href="{{ route('cart.index') }}" class="btn-cancel">
                         <i class="fas fa-arrow-left"></i> Kembali ke Keranjang
@@ -132,6 +132,84 @@
             </div>
         </div>
     </main>
+</div>
+
+{{-- MODAL DATA PELANGGAN (wajib diisi sebelum checkout) --}}
+<div id="customer-modal" 
+     class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50 backdrop-blur-sm px-4"
+     role="dialog" aria-modal="true" aria-labelledby="customer-modal-title">
+    <div class="bg-white rounded-lg w-full max-w-md shadow-2xl overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-200 flex items-start justify-between gap-4">
+            <div>
+                <h3 id="customer-modal-title" class="text-lg font-bold text-gray-800">Data Pelanggan</h3>
+                <p class="text-xs text-gray-500 mt-0.5">
+                    Mohon lengkapi data berikut sebelum menyelesaikan pesanan.
+                </p>
+            </div>
+            <button type="button" onclick="closeCustomerModal()" aria-label="Tutup"
+                    class="text-gray-400 hover:text-gray-600 transition-colors">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+
+        <form id="customer-form" class="px-6 py-5 space-y-4" novalidate>
+            <div>
+                <label for="customer_table_id" class="block text-sm font-semibold text-gray-700 mb-1.5">
+                    Meja
+                </label>
+                <input type="text"
+                       name="table_id"
+                       id="customer_table_id"
+                       readonly
+                       value="{{ $table->nama_meja ?? request('meja') ?? '' }}"
+                       class="w-full px-3 py-2.5 border rounded-md text-sm bg-stone-100 text-stone-700 font-semibold cursor-not-allowed"
+                       aria-describedby="table-help">
+                <p id="table-help" class="text-[11px] text-stone-400 mt-1">
+                    Meja terisi otomatis dari QR Code Anda dan tidak dapat diubah.
+                </p>
+            </div>
+
+            <div>
+                <label for="customer_name" class="block text-sm font-semibold text-gray-700 mb-1.5">
+                    Nama Lengkap <span class="text-red-500">*</span>
+                </label>
+                <input type="text" 
+                       name="customer_name" 
+                       id="customer_name"
+                       maxlength="255"
+                       required
+                       autocomplete="name"
+                       placeholder="Contoh: Budi Santoso"
+                       class="w-full px-3 py-2.5 border rounded-md text-sm focus:outline-none focus:border-[#bf4f08] focus:ring-1 focus:ring-[#bf4f08]">
+                <p class="field-error text-xs text-red-600 mt-1 hidden"></p>
+            </div>
+
+            <div>
+                <label for="customer_phone" class="block text-sm font-semibold text-gray-700 mb-1.5">
+                    Nomor Telepon / WhatsApp <span class="text-gray-400 font-normal">(Opsional)</span>
+                </label>
+                <input type="tel" 
+                       name="customer_phone" 
+                       id="customer_phone"
+                       maxlength="20"
+                       inputmode="numeric"
+                       autocomplete="tel"
+                       placeholder="Contoh: 081234567890"
+                       class="w-full px-3 py-2.5 border rounded-md text-sm focus:outline-none focus:border-[#bf4f08] focus:ring-1 focus:ring-[#bf4f08]">
+                <p class="text-[11px] text-stone-400 mt-1">Isi dengan 9-15 digit angka bila ingin dihubungi via WhatsApp.</p>
+                <p class="field-error text-xs text-red-600 mt-1 hidden"></p>
+            </div>
+
+            <div class="pt-2 space-y-2">
+                <button type="submit" id="customer-submit" class="btn-pay !mb-0">
+                    <i class="fas fa-check"></i> Konfirmasi &amp; Pesan
+                </button>
+                <button type="button" onclick="closeCustomerModal()" class="btn-cancel">
+                    <i class="fas fa-arrow-left"></i> Kembali
+                </button>
+            </div>
+        </form>
+    </div>
 </div>
 
 <style>
@@ -304,6 +382,12 @@
         color: #999;
     }
 
+    .item-note {
+        font-size: 11px;
+        color: #b7791f;
+        margin-top: 2px;
+    }
+
     .item-total {
         font-weight: bold;
         color: #bf4f08;
@@ -371,6 +455,19 @@
     .btn-cancel:hover {
         background: #e0e0e0;
     }
+
+    /* Modal */
+    #customer-modal {
+        display: none;
+    }
+
+    #customer-modal.is-open {
+        display: flex;
+    }
+
+    .field-error.is-visible {
+        display: block;
+    }
 </style>
 
 <script>
@@ -432,12 +529,47 @@ function number_format(number, decimals, dec_point, thousands_sep) {
     return s.join(dec);
 }
 
-function processPayment() {
+/* --- Modal Data Pelanggan --- */
+function openCustomerModal() {
+    const modal = document.getElementById('customer-modal');
+    modal.classList.add('is-open');
+    document.body.style.overflow = 'hidden';
+    document.getElementById('customer_name').focus();
+}
+
+function closeCustomerModal() {
+    const modal = document.getElementById('customer-modal');
+    modal.classList.remove('is-open');
+    document.body.style.overflow = '';
+}
+
+function showFieldError(inputId, message) {
+    const input = document.getElementById(inputId);
+    const error = input.parentElement.querySelector('.field-error');
+    input.classList.add('border-red-500');
+
+    if (message) {
+        error.textContent = message;
+        error.classList.remove('hidden');
+        error.classList.add('is-visible');
+    } else {
+        error.classList.add('hidden');
+        error.classList.remove('is-visible');
+        input.classList.remove('border-red-500');
+    }
+}
+
+function clearFieldErrors() {
+    showFieldError('customer_name', null);
+    showFieldError('customer_phone', null);
+}
+
+function processPayment(form) {
     const serviceType = document.querySelector('input[name="service_type"]:checked').value;
     const paymentMethod = document.querySelector('input[name="payment_method"]:checked').value;
     const notes = document.querySelector('textarea[name="notes"]').value;
 
-    const btn = document.querySelector('.btn-pay');
+    const btn = document.getElementById('customer-submit');
     btn.disabled = true;
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Memproses...';
 
@@ -445,37 +577,104 @@ function processPayment() {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
+            'Accept': 'application/json',
             'X-CSRF-TOKEN': '{{ csrf_token() }}'
         },
         body: JSON.stringify({
             service_type: serviceType,
             payment_method: paymentMethod,
-            notes: notes
+            notes: notes,
+            customer_name: form.customer_name.value.trim(),
+            customer_phone: form.customer_phone.value.trim(),
+            table_id: form.table_id.value.trim() || null
         })
     })
-    .then(response => response.json())
+    .then(async response => {
+        const data = await response.json().catch(() => ({}));
+
+        if (! response.ok) {
+            if (data.errors && data.errors.customer_name) {
+                showFieldError('customer_name', data.errors.customer_name[0]);
+            }
+
+            if (data.errors && data.errors.customer_phone) {
+                showFieldError('customer_phone', data.errors.customer_phone[0]);
+            }
+
+            throw new Error(data.message || 'Gagal menyimpan pesanan.');
+        }
+
+        return data;
+    })
     .then(data => {
         if (data.success) {
             window.location.href = data.redirect;
         } else {
             alert('Error: ' + data.message);
             btn.disabled = false;
-            btn.innerHTML = '<i class="fas fa-check"></i> Konfirmasi Pembayaran';
+            btn.innerHTML = '<i class="fas fa-check"></i> Konfirmasi &amp; Pesan';
         }
     })
     .catch(error => {
         console.error('Error:', error);
-        alert('Terjadi kesalahan saat memproses pembayaran');
+        alert(error.message || 'Terjadi kesalahan saat memproses pembayaran');
         btn.disabled = false;
-        btn.innerHTML = '<i class="fas fa-check"></i> Konfirmasi Pembayaran';
+        btn.innerHTML = '<i class="fas fa-check"></i> Konfirmasi &amp; Pesan';
     });
 }
 
 // Initialize price calculation and add event listeners
 document.addEventListener('DOMContentLoaded', function() {
     calculatePrice();
+
     document.querySelectorAll('input[name="service_type"]').forEach(radio => {
         radio.addEventListener('change', calculatePrice);
+    });
+
+    const form = document.getElementById('customer-form');
+    const nameInput = document.getElementById('customer_name');
+    const phoneInput = document.getElementById('customer_phone');
+
+    nameInput.addEventListener('input', () => showFieldError('customer_name', null));
+    phoneInput.addEventListener('input', () => showFieldError('customer_phone', null));
+
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        clearFieldErrors();
+
+        const nameVal = nameInput.value.trim();
+        const phoneVal = phoneInput.value.trim();
+        let valid = true;
+
+        if (! nameVal) {
+            showFieldError('customer_name', 'Nama lengkap wajib diisi.');
+            valid = false;
+        }
+
+        // Telepon opsional — hanya divalidasi format bila diisi.
+        if (phoneVal && ! /^[0-9]{9,15}$/.test(phoneVal)) {
+            showFieldError('customer_phone', 'Nomor telepon harus terdiri dari 9-15 digit angka.');
+            valid = false;
+        }
+
+        if (! valid) {
+            return;
+        }
+
+        processPayment(form);
+    });
+
+    // Tutup modal dengan tombol Escape atau klik area luar
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            closeCustomerModal();
+        }
+    });
+
+    document.getElementById('customer-modal').addEventListener('click', function(e) {
+        if (e.target === this) {
+            closeCustomerModal();
+        }
     });
 });
 </script>

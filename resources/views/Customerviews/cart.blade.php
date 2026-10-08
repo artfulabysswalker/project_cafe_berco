@@ -341,7 +341,7 @@
 
                         {{-- Checkout CTA Button --}}
                         <div class="pt-2">
-                            <a href="{{ route('checkout') }}" 
+                            <a href="{{ route('checkout', request('meja') ? ['meja' => request('meja')] : []) }}" 
                                id="checkout-btn"
                                class="w-full py-3.5 px-4 bg-terracotta hover:bg-terracotta-dark active:scale-[0.98] text-white rounded-xl font-mono text-xs uppercase tracking-wider font-bold shadow-md hover:shadow-lg transition-all flex items-center justify-center space-x-2 text-center">
                                 <span>Lanjut ke Pembayaran</span>

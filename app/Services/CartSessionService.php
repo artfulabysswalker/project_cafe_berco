@@ -352,7 +352,10 @@ class CartSessionService
             CartItem::where('user_id', $user->id_user ?? $user->id)
                 ->where('menu_id', $cart[$matchedKey]['menu_id'])
                 ->where('temperature', $cart[$matchedKey]['temperature'] ?? null)
-                ->update(['note' => $cart[$matchedKey]['note']]);
+                ->update([
+                    'note' => $cart[$matchedKey]['note'] !== null ? mb_substr((string) $cart[$matchedKey]['note'], 0, 255) : null,
+                    'notes' => $cart[$matchedKey]['note'],
+                ]);
         }
 
         return ['success' => true, 'message' => 'Catatan item disimpan'];

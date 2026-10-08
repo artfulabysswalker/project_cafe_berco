@@ -10,6 +10,7 @@ class OrderItem extends Model
         'id_order',
         'id_menu',
         'quantity',
+        'notes',
         'subtotal',
         'hpp',
         'hpp_at_sale',

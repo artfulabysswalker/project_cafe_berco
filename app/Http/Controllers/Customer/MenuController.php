@@ -204,6 +204,12 @@ class MenuController extends Controller
         $search = $request->query('search');
         $price = $request->query('price');
 
+        // Simpan meja asal QR Code ke session agar tetap terbawa
+        // saat pelanggan berpindah ke halaman keranjang dan checkout.
+        if ($request->filled('meja')) {
+            $request->session()->put('order_table', $request->query('meja'));
+        }
+
         // All categories for tab navigation with live product counts
         $allCategories = Category::withCount(['products' => function ($q) {
             $q->where('status_tersedia', true);

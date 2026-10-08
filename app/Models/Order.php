@@ -15,6 +15,9 @@ class Order extends Model
     protected $fillable = [
         'tanggal',
         'nama_pelanggan',
+        'customer_name',
+        'customer_phone',
+        'table_id',
         'total_harga',
         'subtotal',
         'tax_amount',
@@ -25,6 +28,8 @@ class Order extends Model
         'service_type',
         'payment_method',
         'notes',
+        'order_code',
+        'paid_at',
         'status_order',
         'id_user',
         'id_shift',
@@ -37,6 +42,7 @@ class Order extends Model
 
     protected $casts = [
         'tanggal' => 'datetime',
+        'paid_at' => 'datetime',
         'tax_amount' => 'decimal:2',
         'service_charge' => 'decimal:2',
         'discount_amount' => 'decimal:2',
@@ -49,6 +55,68 @@ class Order extends Model
     public function getRouteKeyName()
     {
         return 'id_order';
+    }
+
+    /**
+     * Kode tagihan publik (nomor antrean) untuk ditampilkan ke pelanggan.
+     */
+    public function getPublicCodeAttribute(): string
+    {
+        return $this->order_code ?? 'BT-'.str_pad((string) $this->id_order, 4, '0', STR_PAD_LEFT);
+    }
+
+    public function isPaid(): bool
+    {
+        return in_array($this->status_pembayaran, ['paid', 'Paid'], true);
+    }
+
+    public function statusLabel(): string
+    {
+        return match ($this->status_order) {
+            'pending' => 'Menunggu Pembayaran',
+            'confirmed' => 'Dikonfirmasi Kasir',
+            'processing' => 'Diproses Dapur',
+            'ready' => 'Siap Diambil/Diantar',
+            'completed' => 'Selesai',
+            'cancelled' => 'Dibatalkan',
+            default => ucfirst((string) $this->status_order),
+        };
+    }
+
+    /**
+     * Langkah timeline tracking pelanggan (urutan status yang distandarkan).
+     */
+    public function statusSteps(): array
+    {
+        $steps = [
+            'pending' => [
+                'key' => 'pending',
+                'label' => 'Menunggu Pembayaran',
+                'desc' => 'Pesanan menunggu konfirmasi pembayaran di kasir.',
+            ],
+            'processing' => [
+                'key' => 'processing',
+                'label' => 'Diproses Dapur',
+                'desc' => 'Dapur sedang menyiapkan pesanan Anda.',
+            ],
+            'ready' => [
+                'key' => 'ready',
+                'label' => 'Siap Diambil/Diantar',
+                'desc' => 'Pesanan siap diantarkan ke meja Anda.',
+            ],
+            'completed' => [
+                'key' => 'completed',
+                'label' => 'Selesai',
+                'desc' => 'Pesanan telah selesai. Terima kasih!',
+            ],
+        ];
+
+        return collect($steps)
+            ->filter(function ($step) {
+                return in_array($step['key'], ['pending', 'processing', 'ready', 'completed'], true);
+            })
+            ->values()
+            ->all();
     }
 
     /*
@@ -65,6 +133,11 @@ class Order extends Model
     public function shift()
     {
         return $this->belongsTo(CashierShift::class, 'id_shift', 'id_shift');
+    }
+
+    public function table()
+    {
+        return $this->belongsTo(Meja::class, 'table_id', 'id_meja');
     }
 
     public function items()

@@ -27,7 +27,7 @@
             <div class="receipt-info">
                 <div class="info-row">
                     <span class="label">Nomor Pesanan</span>
-                    <span class="value">#{{ $order->id_order }}</span>
+                    <span class="value">#{{ $order->id_order }} <span class="code-tag">{{ $order->public_code }}</span></span>
                 </div>
                 <div class="info-row">
                     <span class="label">Nama Pelanggan</span>
@@ -221,6 +221,24 @@
     .item-qty {
         color: #999;
         font-size: 12px;
+    }
+
+    .item-note {
+        color: #b7791f;
+        font-size: 11px;
+        margin-top: 2px;
+    }
+
+    .code-tag {
+        display: inline-block;
+        background: #fdf2e6;
+        color: #bf4f08;
+        font-family: monospace;
+        font-size: 11px;
+        font-weight: bold;
+        padding: 2px 6px;
+        border-radius: 4px;
+        margin-left: 6px;
     }
 
     .item-price {

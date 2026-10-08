@@ -6,11 +6,14 @@ use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\DiscountSchemeController;
 use App\Http\Controllers\Admin\ExpenseController;
 use App\Http\Controllers\Admin\HppController;
+use App\Http\Controllers\Admin\MejaController;
+use App\Http\Controllers\Admin\TableQrCodeController;
 use App\Http\Controllers\Admin\TaxConfigurationController;
 use App\Http\Controllers\Api\LoginApiController;
 use App\Http\Controllers\Customer\CartController;
 use App\Http\Controllers\Customer\FavoriteController;
 use App\Http\Controllers\Customer\MenuController;
+use App\Http\Controllers\Customer\TableQrScanController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\PasswordResetRequestController;
@@ -29,14 +32,12 @@ use App\Http\Controllers\StatsController;
 use App\Http\Controllers\VoucherController;
 use App\Http\Controllers\XenditPaymentController;
 use App\Models\Menu;
-use App\Models\Role;
 use App\Models\User;
+use App\Services\GuestSessionService;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Str;
 use Xendit\Configuration;
 
 /*
@@ -86,7 +87,7 @@ Route::get('/', function () {
     return view('Customerviews.welcome', compact('favoriteMenus'));
 })->name('home');
 
-Route::middleware(['restore.guest'])->group(function () {
+Route::middleware(['restore.guest', 'local.network'])->group(function () {
 
     Route::get('/menu', [MenuController::class, 'customerIndex'])
         ->name('menu.index');
@@ -103,30 +104,13 @@ Route::middleware(['restore.guest'])->group(function () {
     |--------------------------------------------------------------------------
     */
 
-    Route::post('/guest-login', function () {
-        // Ensure a guest role exists and use its id to satisfy FK
-        $role = Role::firstOrCreate([
-            'role_name' => 'Guest',
-        ]);
-
-        $guest = User::firstOrCreate(
-            ['is_guest' => true],
-            [
-                'name' => 'Guest User',
-                'username' => 'guest',
-                'email' => 'guest@local.test',
-                'password' => Hash::make(Str::random(16)),
-                'id_role' => $role->id_role,
-                'is_guest' => true,
-            ]
-        );
+    Route::post('/guest-login', function (Request $request, GuestSessionService $guests) {
+        // Satu user guest per sesi browser supaya keranjang antar meja tidak tercampur.
+        $guest = $guests->resolve($request);
 
         Auth::login($guest);
 
-        session([
-            'is_guest' => true,
-            'guest_name' => 'Guest',
-        ]);
+        $request->session()->put('guest_name', 'Guest');
 
         return redirect()->route('menu.index');
     })->name('guest.login');
@@ -185,6 +169,12 @@ Route::middleware(['customer'])->group(function () {
 
     Route::get('/order/{order}', [OrderController::class, 'show'])
         ->name('order.show');
+
+    Route::get('/order/{order}/waiting', [OrderController::class, 'waiting'])
+        ->name('order.waiting');
+
+    Route::get('/order/{order}/status', [OrderController::class, 'statusJson'])
+        ->name('order.status');
 
     Route::get('/order/{order}/receipt', [OrderController::class, 'receipt'])
         ->name('order.receipt');
@@ -270,13 +260,24 @@ Route::middleware(['customer'])->group(function () {
 
 });
 
+// Customer QR Scan
+// Signature diverifikasi di controller agar mendukung dua mode payload:
+// signed URL (default) maupun encrypted payload.
+Route::get('/qrcode/scan/{token}', [TableQrScanController::class, 'scan'])
+    ->middleware('local.network')
+    ->name('customer.qrcode.scan');
+
+Route::get('/qrcode/scan', [TableQrScanController::class, 'scanPayload'])
+    ->name('customer.qrcode.scan-payload')
+    ->middleware(['local.network', 'throttle:60,1']);
+
 /*
 |--------------------------------------------------------------------------
 | GUEST MODE
 |--------------------------------------------------------------------------
 */
 
-Route::middleware(['restore.guest'])->group(function () {
+Route::middleware(['restore.guest', 'local.network'])->group(function () {
 
     // Cart
     Route::get('/cart', [CartController::class, 'index'])
@@ -310,12 +311,20 @@ Route::middleware(['restore.guest'])->group(function () {
     Route::get('/checkout', [OrderController::class, 'checkout'])
         ->name('checkout');
 
+    // Halaman order via QR Code per meja: /order?token={token_meja}
+    // Token divalidasi sebelum menu ditampilkan; throttle mencegah
+    // enumerasi token oleh pihak yang tidak bertanggung jawab.
+    Route::get('/order', [OrderController::class, 'orderPage'])
+        ->name('order.page')
+        ->middleware('throttle:30,1');
+
     // Get available discounts (API endpoint)
     Route::get('/api/discounts/available', [DiscountSchemeController::class, 'getAvailable'])
         ->name('api.discounts.available');
 
     Route::post('/order', [OrderController::class, 'store'])
-        ->name('order.store');
+        ->name('order.store')
+        ->middleware('throttle:60,1');
 
     // Xendit Payment Routes
     Route::prefix('xendit')->group(function () {
@@ -455,8 +464,29 @@ Route::middleware(['admin.staff'])->group(function () {
     Route::patch('/admin/orders/{id_order}/cancel', [OrderController::class, 'cancel'])
         ->name('order.cancel');
 
-    Route::post('/order/{id_order}/finish', [OrderController::class, 'finishOrder'])
+    Route::post('/order/{order}/finish', [OrderController::class, 'finishOrder'])
         ->name('order.finish');
+
+    // Konfirmasi pembayaran (bayar di kasir) lalu buka struk cincangan
+    Route::post('/control/orders/{order}/confirm', [OrderController::class, 'confirmPayment'])
+        ->name('admin.orders.confirm');
+
+    // Transisi status untuk dapur / kasir
+    Route::post('/admin/orders/{order}/mark-processing', [OrderController::class, 'markProcessing'])
+        ->name('admin.orders.processing');
+
+    Route::post('/admin/orders/{order}/mark-ready', [OrderController::class, 'markReady'])
+        ->name('admin.orders.ready');
+
+    // Peringatan pesanan baru (polling, tanpa WebSocket) & kitchen display
+    Route::get('/control/orders/poll', [OrderController::class, 'poll'])
+        ->name('admin.orders.poll');
+
+    Route::get('/control/kitchen', [OrderController::class, 'kitchen'])
+        ->name('admin.kitchen');
+
+    Route::get('/control/orders/{order}/tickets', [OrderController::class, 'kitchenTickets'])
+        ->name('admin.orders.tickets');
 
     // Password Management
     Route::put('/password/update', [StaffController::class, 'updateOwnPassword'])
@@ -670,6 +700,46 @@ Route::middleware(['admin.staff'])->group(function () {
             ->name('products');
         Route::get('/export', [AnalyticsController::class, 'exportCsv'])
             ->name('export');
+    });
+
+    // Meja & QR Code (Admin only)
+    Route::middleware(['is_admin'])->prefix('admin/tables')->name('admin.tables.')->group(function () {
+        Route::get('/', [TableQrCodeController::class, 'index'])
+            ->name('index');
+
+        // CRUD meja
+        Route::get('/create', [MejaController::class, 'create'])
+            ->name('create');
+        Route::post('/', [MejaController::class, 'store'])
+            ->name('store');
+        Route::get('/{tableId}/edit', [MejaController::class, 'edit'])
+            ->name('edit');
+        Route::put('/{tableId}', [MejaController::class, 'update'])
+            ->name('update');
+        Route::patch('/{tableId}/toggle-status', [MejaController::class, 'toggleStatus'])
+            ->name('toggle-status');
+
+        // Riwayat pesanan per meja (filter via token/nama meja)
+        Route::get('/{tableId}/orders', [TableQrCodeController::class, 'orders'])
+            ->name('orders');
+
+        Route::get('/{tableId}/qrcode', [TableQrCodeController::class, 'show'])
+            ->name('qrcode');
+
+        Route::post('/{tableId}/qrcode/generate', [TableQrCodeController::class, 'generate'])
+            ->name('qrcode.generate');
+
+        Route::post('/{tableId}/qrcode/revoke', [TableQrCodeController::class, 'revoke'])
+            ->name('qrcode.revoke');
+
+        Route::get('/{tableId}/qrcode/download', [TableQrCodeController::class, 'download'])
+            ->name('qrcode.download');
+
+        Route::get('/{tableId}/qrcode/image', [TableQrCodeController::class, 'image'])
+            ->name('qrcode.image');
+
+        Route::get('/{tableId}/qrcode/print', [TableQrCodeController::class, 'printQr'])
+            ->name('qrcode.print');
     });
 
     // Shift Monitoring

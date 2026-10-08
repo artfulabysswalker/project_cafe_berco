@@ -57,10 +57,8 @@
                                 <span>
                                     @if($order->payment_method === 'cash')
                                         <i class="fas fa-money-bill-wave"></i> Tunai
-                                    @elseif($order->payment_method === 'debit')
-                                        <i class="fas fa-credit-card"></i> Kartu Debit
                                     @else
-                                        <i class="fas fa-credit-card"></i> Kartu Kredit
+                                        <i class="fas fa-qrcode"></i> QRIS
                                     @endif
                                 </span>
                             </div>

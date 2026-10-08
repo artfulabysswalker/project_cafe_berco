@@ -1,0 +1,19 @@
+# Build context yang dikirim ke podman build — jangan sertakan data rahasia/berat
+.env*
+!.env.example
+.git
+.gitignore
+vendor
+!vendor/livewire/flux
+node_modules
+tests
+deploy
+!deploy/nginx-default.conf
+!deploy/php-opcache.ini
+!deploy/entrypoint.sh
+storage/logs/*
+storage/framework/cache/*
+storage/framework/sessions/*
+storage/framework/views/*
+.dockerignore
+Dockerfile

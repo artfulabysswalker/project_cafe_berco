@@ -60,7 +60,6 @@
                     <option value="all">Semua Metode</option>
                     <option value="cash" {{ request('payment_method') == 'cash' ? 'selected' : '' }}>Tunai / Cash</option>
                     <option value="qris" {{ request('payment_method') == 'qris' ? 'selected' : '' }}>QRIS</option>
-                    <option value="transfer" {{ request('payment_method') == 'transfer' ? 'selected' : '' }}>Transfer</option>
                 </select>
             </div>
 
@@ -92,6 +91,7 @@
                 <thead class="bg-stone-50 border-b border-stone-200">
                     <tr>
                         <th class="px-6 py-4 text-xs font-semibold text-stone-500 uppercase tracking-wider">No / ID Nota</th>
+                        <th class="px-6 py-4 text-xs font-semibold text-stone-500 uppercase tracking-wider">Pelanggan</th>
                         <th class="px-6 py-4 text-xs font-semibold text-stone-500 uppercase tracking-wider">Waktu Transaksi</th>
                         <th class="px-6 py-4 text-xs font-semibold text-stone-500 uppercase tracking-wider">Kasir Bertugas</th>
                         <th class="px-6 py-4 text-xs font-semibold text-stone-500 uppercase tracking-wider">Daftar Item Menu</th>
@@ -109,6 +109,19 @@
                                     @if(($order->status_order ?? '') === 'cancelled')
                                         <span class="text-[9px] font-black text-rose-500 uppercase tracking-tighter">CANCELLED / VOID</span>
                                     @endif
+                                </div>
+                            </td>
+                            <td class="px-6 py-4">
+                                <div class="flex flex-col gap-1">
+                                    <span class="text-sm font-semibold text-stone-800">
+                                        {{ $order->customer_name ?: ($order->user?->name ?: 'Pelanggan') }}
+                                    </span>
+                                    <span class="text-[11px] text-stone-500 font-mono">
+                                        {{ $order->customer_phone ?: '-' }}
+                                    </span>
+                                    <span class="inline-flex items-center self-start px-2 py-0.5 rounded-full text-[10px] font-bold border border-stone-200 bg-stone-50 text-stone-600">
+                                        Meja: {{ $order->table?->nama_meja ?? '-' }}
+                                    </span>
                                 </div>
                             </td>
                             <td class="px-6 py-4 text-stone-600 font-medium">
@@ -145,7 +158,6 @@
                                     $method = strtoupper($order->payment_method ?: 'CASH');
                                     $methodIcon = match($method) {
                                         'QRIS' => 'fa-qrcode text-blue-500',
-                                        'TRANSFER' => 'fa-bank text-purple-500',
                                         default => 'fa-money-bill-wave text-stone-400'
                                     };
                                 @endphp
@@ -172,7 +184,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="7" class="px-6 py-24 text-center">
+                            <td colspan="8" class="px-6 py-24 text-center">
                                 <div class="flex flex-col items-center opacity-30">
                                     <i class="fas fa-file-invoice text-5xl mb-4 text-stone-300"></i>
                                     <p class="text-sm font-bold text-stone-400 uppercase tracking-widest">Tidak ada riwayat ditemukan</p>

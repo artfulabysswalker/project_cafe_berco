@@ -5,6 +5,7 @@ use App\Http\Middleware\CustomerMiddleware;
 use App\Http\Middleware\GuestModeMiddleware;
 use App\Http\Middleware\IsAdmin;
 use App\Http\Middleware\RestoreGuestMiddleware;
+use App\Http\Middleware\RestrictToLocalNetwork;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -27,6 +28,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'is_admin' => IsAdmin::class,
             'guest.mode' => GuestModeMiddleware::class,
             'restore.guest' => RestoreGuestMiddleware::class,
+            'local.network' => RestrictToLocalNetwork::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

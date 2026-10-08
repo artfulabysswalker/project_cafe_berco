@@ -12,6 +12,7 @@ class CartItem extends Model
         'quantity',
         'temperature',
         'note',
+        'notes',
     ];
 
     /**
@@ -60,5 +61,16 @@ class CartItem extends Model
     public function getCartItemKeyAttribute(): string
     {
         return $this->menu_id.'_'.($this->temperature ?: 'default');
+    }
+
+    public function setNoteAttribute($value): void
+    {
+        $this->attributes['note'] = $value !== null ? mb_substr((string) $value, 0, 255) : null;
+        $this->attributes['notes'] = $value;
+    }
+
+    public function setNotesAttribute($value): void
+    {
+        $this->setNoteAttribute($value);
     }
 }

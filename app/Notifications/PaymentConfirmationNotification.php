@@ -81,8 +81,6 @@ class PaymentConfirmationNotification extends Notification
         return match ($this->order->payment_method) {
             'cash' => 'Tunai',
             'qris' => 'QRIS',
-            'debit' => 'Debit',
-            'credit' => 'Kredit',
             default => ucfirst($this->order->payment_method ?? ''),
         };
     }

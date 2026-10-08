@@ -1,0 +1,49 @@
+# podman-compose (atau `docker compose`):
+#   podman-compose -f deploy/compose.yml up -d --build
+#
+# Docker Compose tidak wajib dipakai; file deploy/run.sh adalah alternatif murni podman CLI.
+
+services:
+  app:
+    build:
+      context: ..
+      dockerfile: deploy/Containerfile
+    image: cafe-berco:latest
+    container_name: cafe-berco-app
+    restart: unless-stopped
+    env_file:
+      - ../.env
+    environment:
+      # Host DB menunjuk ke service `db` di jaringan compose
+      - DB_HOST=db
+      - DB_PORT=3306
+      # Aplikasi berada di balik proxy (host nginx) -> scheme ditegakkan lewat APP_URL
+      - APP_URL=${APP_URL:-http://localhost}
+      - QR_CODE_BASE_URL=${QR_CODE_BASE_URL:-http://localhost}
+    ports:
+      # Hanya terikat ke loopback host; publik lewat Nginx host pada langkah "online"
+      - "127.0.0.1:8080:80"
+    volumes:
+      # Persist foto menu, QR code, logo, session, log
+      - app-storage:/var/www/html/storage
+    depends_on:
+      - db
+
+  db:
+    image: docker.io/library/mariadb:11
+    container_name: cafe-berco-db
+    restart: unless-stopped
+    environment:
+      MARIADB_DATABASE: ${DB_DATABASE:-cafe_berco}
+      MARIADB_USER: ${DB_USERNAME:-cafe_admin}
+      MARIADB_PASSWORD: ${DB_PASSWORD:?isi DB_PASSWORD yang sama dengan .env}
+      MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD:-ubah-root-ini}
+    volumes:
+      - db-data:/var/lib/mysql
+    ports:
+      # Loopback saja; jangan biarkan MySQL terbuka ke internet
+      - "127.0.0.1:3306:3306"
+
+volumes:
+  app-storage:
+  db-data:

@@ -141,14 +141,16 @@ class QrisPaymentController extends Controller
                         'paid_at' => now(),
                     ]);
 
-                    // Update order status to paid
+                    // QRIS sudah settle -> pesanan langsung sah & masuk dapur.
                     $order->update([
-                        'payment_status' => 'paid',
+                        'status_pembayaran' => 'paid',
+                        'status_order' => 'processing',
+                        'paid_at' => now(),
                     ]);
                 }
 
-                return redirect()->route('order.receipt', $order)
-                    ->with('success', '✅ Pembayaran QRIS berhasil! Terima kasih telah berbelanja.');
+                return redirect()->route('order.show', $order->id_order)
+                    ->with('success', '✅ Pembayaran QRIS berhasil! Pesanan Anda sedang disiapkan.');
             }
 
             return redirect()->route('cart.index')
