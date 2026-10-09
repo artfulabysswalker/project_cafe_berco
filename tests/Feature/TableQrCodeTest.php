@@ -445,11 +445,7 @@ test('the stored png really encodes the signed url', function () {
     $meja = Meja::factory()->create();
     $qr = app(QrCodeService::class)->generateForTable($meja->id_meja);
 
-    $expectedUrl = URL::temporarySignedRoute(
-        'customer.qrcode.scan',
-        $qr->expired_at,
-        ['token' => $qr->token]
-    );
+    $expectedUrl = app(QrCodeService::class)->scanUrlFor($qr);
 
     $svg = (new Writer(new ImageRenderer(new RendererStyle(256, 4), new SvgImageBackEnd)))
         ->writeString(
@@ -462,14 +458,37 @@ test('the stored png really encodes the signed url', function () {
     $tmpPng = tempnam(sys_get_temp_dir(), 'qr').'.png';
     file_put_contents($tmpSvg, $svg);
 
-    $magick = config('qrcode.magick_path');
-    exec(escapeshellarg($magick).' convert -density 300 '.escapeshellarg($tmpSvg).' -background none '.escapeshellarg($tmpPng).' 2>&1', $out, $code);
+    $magickCandidates = array_unique(array_filter(array_merge(
+        [config('qrcode.magick_path')],
+        (array) config('qrcode.magick_fallbacks', [])
+    )));
+    $magick = null;
+    foreach ($magickCandidates as $candidate) {
+        if (str_contains($candidate, '/')) {
+            if (is_file($candidate) && is_executable($candidate)) {
+                $magick = $candidate;
+                break;
+            }
+        } else {
+            exec('command -v '.escapeshellarg($candidate).' 2>/dev/null', $candidatePath, $candidateCode);
+            if ($candidateCode === 0 && ! empty($candidatePath)) {
+                $magick = $candidate;
+                break;
+            }
+        }
+    }
+
+    $magickCommand = escapeshellarg($magick);
+    $isMagickV7 = basename($magick) === 'magick';
+    $convertCommand = $magickCommand.($isMagickV7 ? ' convert' : '');
+    exec($convertCommand.' -density 300 '.escapeshellarg($tmpSvg).' -background none '.escapeshellarg($tmpPng).' 2>&1', $out, $code);
 
     $storedPath = Storage::disk('public')->path($qr->image_path);
 
     // %# = signature berbasis piksel, jadi perbandingan tahan beda metadata PNG
-    exec(escapeshellarg($magick).' identify -format "%#" '.escapeshellarg($storedPath), $storedSig, $storedCode);
-    exec(escapeshellarg($magick).' identify -format "%#" '.escapeshellarg($tmpPng), $refSig, $refCode);
+    $identifyCommand = $isMagickV7 ? $magickCommand.' identify' : 'identify';
+    exec($identifyCommand.' -format "%#" '.escapeshellarg($storedPath), $storedSig, $storedCode);
+    exec($identifyCommand.' -format "%#" '.escapeshellarg($tmpPng), $refSig, $refCode);
 
     unlink($tmpSvg);
     unlink($tmpPng);

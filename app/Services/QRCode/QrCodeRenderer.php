@@ -103,9 +103,12 @@ class QrCodeRenderer
     private function convertSvgToPng(string $svgFile, string $pngFile): string
     {
         $magick = $this->resolveMagick();
-        $binary = str_contains(basename($magick), 'convert') ? 'convert' : 'convert';
+        $command = escapeshellarg($magick);
+        if (basename($magick) === 'magick') {
+            $command .= ' convert';
+        }
 
-        $cmd = escapeshellarg($magick).' '.$binary
+        $cmd = $command
             .' -density 300 '.escapeshellarg($svgFile)
             .' -background none '.escapeshellarg($pngFile)
             .' 2>&1';
