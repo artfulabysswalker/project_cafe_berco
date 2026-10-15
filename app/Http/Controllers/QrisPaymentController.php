@@ -131,6 +131,13 @@ class QrisPaymentController extends Controller
     public function success(Order $order)
     {
         try {
+            // Pesanan yang sudah dibatalkan tidak boleh dihidupkan kembali oleh
+            // redirect sukses dari penyedia pembayaran.
+            if ($order->isCancelled()) {
+                return redirect()->route('cart.index')
+                    ->with('error', 'Pesanan sudah dibatalkan, pembayaran tidak diproses.');
+            }
+
             $qrisTransaction = QrisTransaction::where('id_order', $order->id_order)->first();
 
             if ($qrisTransaction) {

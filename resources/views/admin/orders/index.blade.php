@@ -144,16 +144,19 @@
                                 <td class="px-6 py-4 text-center">
 <div class="flex justify-center items-center gap-2">
                                         <!-- Konfirmasi & Cetak (bayar di kasir) -->
-                                        @if(! $order->isPaid() && $order->payment_method === 'cash')
-                                            <form method="POST" action="{{ route('admin.orders.confirm', $order->id_order) }}"
-                                                  style="display:inline;" onsubmit="return confirm('Konfirmasi pembayaran #{{ $order->id_order }} dari {{ $order->customer_name ?: $order->nama_pelanggan }}?')">
-                                                @csrf
-                                                <button type="submit"
-                                                        class="inline-flex items-center justify-center px-3 h-9 bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition-colors text-xs font-semibold"
-                                                        title="Konfirmasi pembayaran lalu cetak struk">
-                                                    💵 Konfirmasi &amp; Cetak
-                                                </button>
-                                            </form>
+                                        @if(! $order->isPaid() && ! $order->isCancelled() && $order->payment_method === 'cash')
+                                            <button type="button"
+                                                    data-confirm-cash
+                                                    data-order-id="{{ $order->id_order }}"
+                                                    data-order-code="{{ $order->public_code }}"
+                                                    data-customer="{{ $order->customer_name ?: ($order->user->name ?? $order->nama_pelanggan) }}"
+                                                    data-total="{{ (int) $order->total_harga }}"
+                                                    data-action="{{ route('admin.orders.confirm', $order->id_order) }}"
+                                                    onclick="openCashModal(this)"
+                                                    class="inline-flex items-center justify-center px-3 h-9 bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition-colors text-xs font-semibold"
+                                                    title="Konfirmasi pembayaran tunai lalu cetak struk">
+                                                💵 Konfirmasi &amp; Cetak
+                                            </button>
                                         @endif
 
                                         <!-- View Receipt -->
@@ -213,6 +216,105 @@
     @endif
 </div>
 
+{{-- MODAL KONFIRMASI PEMBAYARAN TUNAI --}}
+<div id="cashModal"
+     class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50 backdrop-blur-sm px-4"
+     role="dialog" aria-modal="true" aria-labelledby="cash-modal-title">
+    <div class="bg-white rounded-2xl w-full max-w-md shadow-2xl overflow-hidden">
+        <div class="px-5 py-4 border-b border-stone-200 flex items-start justify-between gap-4 bg-stone-50">
+            <div class="flex items-center gap-2.5">
+                <div class="w-9 h-9 rounded-lg bg-amber-500 text-white flex items-center justify-center">
+                    <i class="fas fa-money-bill-wave"></i>
+                </div>
+                <div>
+                    <h3 id="cash-modal-title" class="text-sm font-bold text-stone-900">Konfirmasi Pembayaran Tunai</h3>
+                    <p class="text-[11px] text-stone-500">Masukkan uang yang diterima dari pelanggan.</p>
+                </div>
+            </div>
+            <button type="button" onclick="closeCashModal()" aria-label="Tutup modal"
+                    class="text-stone-400 hover:text-stone-600 transition-colors">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+
+        <form id="cashForm" method="POST" action="{{ old('order_id') ? route('admin.orders.confirm', old('order_id')) : '#' }}"
+              class="px-5 py-5 space-y-4" novalidate>
+            @csrf
+            <input type="hidden" name="order_id" id="cash_order_id" value="{{ old('order_id') }}">
+
+            <div class="rounded-xl bg-stone-50 border border-stone-200 p-3.5 space-y-1.5 text-xs">
+                <div class="flex items-center justify-between gap-3">
+                    <span class="text-stone-500">Kode Pesanan</span>
+                    <strong id="cash_order_code" class="font-mono text-stone-800">-</strong>
+                </div>
+                <div class="flex items-center justify-between gap-3">
+                    <span class="text-stone-500">Pelanggan</span>
+                    <strong id="cash_customer" class="text-stone-800 truncate">-</strong>
+                </div>
+                <div class="flex items-center justify-between gap-3 pt-1.5 border-t border-stone-200">
+                    <span class="text-stone-500">Total Tagihan</span>
+                    <strong id="cash_total" class="text-base font-bold text-amber-700">Rp 0</strong>
+                </div>
+            </div>
+
+            <div>
+                <label for="cash_amount" class="block text-sm font-semibold text-stone-700 mb-1.5">
+                    Uang Diterima (Rp) <span class="text-red-500">*</span>
+                </label>
+                <input type="number"
+                       name="uang_diterima"
+                       id="cash_amount"
+                       min="0"
+                       step="1"
+                       inputmode="numeric"
+                       autocomplete="off"
+                       required
+                       value="{{ old('uang_diterima') }}"
+                       class="w-full px-3 py-2.5 border border-stone-300 rounded-lg text-sm font-mono font-bold text-stone-800 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500"
+                       aria-describedby="cash_change_help cash_error">
+                <div class="mt-2 flex flex-wrap items-center gap-1.5">
+                    <button type="button" onclick="setExactCash()"
+                            class="rounded-md border border-stone-300 px-2.5 py-1 text-[11px] font-semibold text-stone-600 hover:bg-stone-50 transition-colors">
+                        Uang Pas
+                    </button>
+                    <button type="button" onclick="addCash(50000)"
+                            class="rounded-md border border-stone-300 px-2.5 py-1 text-[11px] font-semibold text-stone-600 hover:bg-stone-50 transition-colors">
+                        +50rb
+                    </button>
+                    <button type="button" onclick="addCash(100000)"
+                            class="rounded-md border border-stone-300 px-2.5 py-1 text-[11px] font-semibold text-stone-600 hover:bg-stone-50 transition-colors">
+                        +100rb
+                    </button>
+                </div>
+            </div>
+
+            <div id="cash_change_box" class="rounded-lg border p-3 flex items-center justify-between text-sm bg-stone-100 border-stone-200">
+                <span id="cash_change_help" class="text-stone-600">Kembalian</span>
+                <strong id="cash_change" class="font-mono text-stone-800">Rp 0</strong>
+            </div>
+
+            <p id="cash_error" class="hidden text-xs text-red-600 font-medium" role="alert" aria-live="polite"></p>
+
+            @if($errors->first('uang_diterima') || $errors->first('payment_method'))
+                <p class="text-xs text-red-600 font-medium" role="alert">
+                    {{ $errors->first('uang_diterima') ?: $errors->first('payment_method') }}
+                </p>
+            @endif
+
+            <div class="pt-1 flex items-center gap-2">
+                <button type="button" onclick="closeCashModal()"
+                        class="w-1/2 py-2.5 rounded-lg border border-stone-200 text-stone-600 text-sm font-semibold hover:bg-stone-50 transition-colors">
+                    Batal
+                </button>
+                <button type="submit" id="cash_submit"
+                        class="w-1/2 py-2.5 rounded-lg bg-amber-500 hover:bg-amber-600 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-bold transition-colors">
+                    Konfirmasi &amp; Cetak
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <style>
     .pagination-custom :deep(.pagination) {
         gap: 0.5rem;
@@ -238,5 +340,127 @@
         border-color: #b45309;
     }
 </style>
+
+@push('scripts')
+<script>
+    let cashTotal = 0;
+
+    function openCashModal(btn) {
+        const modal = document.getElementById('cashModal');
+        const form = document.getElementById('cashForm');
+        const amount = document.getElementById('cash_amount');
+        const orderId = btn.dataset.orderId;
+
+        cashTotal = parseInt(btn.dataset.total || '0', 10) || 0;
+
+        document.getElementById('cash_order_id').value = orderId;
+        document.getElementById('cash_order_code').textContent = btn.dataset.orderCode || ('#' + orderId);
+        document.getElementById('cash_customer').textContent = btn.dataset.customer || '-';
+        document.getElementById('cash_total').textContent = 'Rp ' + cashTotal.toLocaleString('id-ID');
+
+        form.action = btn.dataset.action;
+
+        updateCashChange();
+
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        document.body.classList.add('overflow-hidden');
+
+        setTimeout(function () { amount.focus(); }, 30);
+    }
+
+    function closeCashModal() {
+        const modal = document.getElementById('cashModal');
+        if (!modal) return;
+
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+        document.body.classList.remove('overflow-hidden');
+    }
+
+    function setExactCash() {
+        document.getElementById('cash_amount').value = cashTotal;
+        updateCashChange();
+    }
+
+    function addCash(amount) {
+        const input = document.getElementById('cash_amount');
+        const current = parseInt(input.value || '0', 10) || 0;
+
+        input.value = current + amount;
+        updateCashChange();
+    }
+
+    function updateCashChange() {
+        const input = document.getElementById('cash_amount');
+        const errorBox = document.getElementById('cash_error');
+        const changeBox = document.getElementById('cash_change_box');
+        const changeEl = document.getElementById('cash_change');
+        const submit = document.getElementById('cash_submit');
+
+        const raw = input.value.trim();
+        const value = raw === '' ? NaN : Number(raw);
+        const valid = Number.isFinite(value) && value >= 0 && Number.isInteger(value);
+        const enough = valid && value >= cashTotal;
+        const change = valid ? value - cashTotal : 0;
+
+        changeEl.textContent = 'Rp ' + Math.max(0, change).toLocaleString('id-ID');
+
+        let message = '';
+        if (raw !== '' && ! Number.isInteger(value)) {
+            message = 'Nominal uang diterima harus berupa angka bulat.';
+        } else if (raw !== '' && ! valid) {
+            message = 'Nominal uang diterima tidak valid.';
+        } else if (valid && ! enough) {
+            message = 'Uang diterima kurang dari total tagihan.';
+        }
+
+        if (message) {
+            errorBox.textContent = message;
+            errorBox.classList.remove('hidden');
+        } else {
+            errorBox.textContent = '';
+            errorBox.classList.add('hidden');
+        }
+
+        input.setAttribute('aria-invalid', message ? 'true' : 'false');
+        submit.disabled = ! enough;
+
+        changeBox.classList.remove('bg-stone-100', 'border-stone-200', 'bg-emerald-50', 'border-emerald-200', 'bg-red-50', 'border-red-200');
+        if (enough && value > cashTotal) {
+            changeBox.classList.add('bg-emerald-50', 'border-emerald-200');
+        } else if (enough) {
+            changeBox.classList.add('bg-stone-100', 'border-stone-200');
+        } else {
+            changeBox.classList.add('bg-red-50', 'border-red-200');
+        }
+    }
+
+    document.getElementById('cash_amount')?.addEventListener('input', updateCashChange);
+
+    document.getElementById('cashModal')?.addEventListener('click', function (event) {
+        if (event.target === this) {
+            closeCashModal();
+        }
+    });
+
+    document.addEventListener('keydown', function (event) {
+        if (event.key === 'Escape') {
+            closeCashModal();
+        }
+    });
+
+    // Buka kembali modal dengan data lama bila server menolak validasi.
+    document.addEventListener('DOMContentLoaded', function () {
+        const oldOrderId = @json(old('order_id'));
+        if (! oldOrderId) return;
+
+        const trigger = document.querySelector('[data-confirm-cash][data-order-id="' + oldOrderId + '"]');
+        if (trigger) {
+            openCashModal(trigger);
+        }
+    });
+</script>
+@endpush
 
 @endsection

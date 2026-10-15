@@ -175,6 +175,35 @@ class QrisPaymentService
             switch ($status) {
                 case 'PAID':
                 case 'SETTLED':
+                    // Pembayaran yang masuk terlambat tidak boleh menghidupkan
+                    // kembali order yang sudah dibatalkan.
+                    if ($order->isCancelled()) {
+                        \Log::warning('QRIS Callback diabaikan: pesanan sudah dibatalkan', [
+                            'order_id' => $order->id_order,
+                        ]);
+
+                        break;
+                    }
+
+                    // Verifikasi nominal dari penyedia sebelum melunasi pesanan.
+                    // Callback tanpa nominal atau dengan nominal kurang tidak
+                    // boleh menandai lunas / meneruskan pesanan ke dapur.
+                    $providerAmount = $data['paid_amount'] ?? $data['amount'] ?? null;
+                    $expectedAmount = (float) $qrisTransaction->amount;
+
+                    if ($providerAmount === null || (float) $providerAmount + 0.01 < $expectedAmount) {
+                        $data['amount'] = $providerAmount ?? 0;
+                        $this->reconcilePayment($qrisTransaction, $data);
+
+                        \Log::warning('QRIS Callback tidak melunasi pesanan: nominal tidak terverifikasi', [
+                            'order_id' => $order->id_order,
+                            'expected_amount' => $expectedAmount,
+                            'provider_amount' => $providerAmount,
+                        ]);
+
+                        break;
+                    }
+
                     $qrisTransaction->markAsPaid($data['id'] ?? null);
                     $this->reconcilePayment($qrisTransaction, $data);
                     $this->sendPaymentNotification($order, $qrisTransaction);

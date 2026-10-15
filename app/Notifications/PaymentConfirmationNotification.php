@@ -4,6 +4,7 @@ namespace App\Notifications;
 
 use App\Models\Order;
 use App\Models\Payment;
+use App\Models\QrisTransaction;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
@@ -16,7 +17,7 @@ class PaymentConfirmationNotification extends Notification
 
     public $payment;
 
-    public function __construct(Order $order, Payment $payment)
+    public function __construct(Order $order, Payment|QrisTransaction $payment)
     {
         $this->order = $order;
         $this->payment = $payment;

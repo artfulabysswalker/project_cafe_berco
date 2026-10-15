@@ -196,6 +196,16 @@ class XenditPaymentController extends Controller
             $status = $data['status'] ?? null;
 
             if ($status === 'PAID' || $status === 'SETTLED') {
+                // Callback yang datang terlambat tidak boleh menghidupkan
+                // kembali order yang sudah dibatalkan.
+                if ($order->isCancelled()) {
+                    \Log::warning('Xendit callback diabaikan: pesanan sudah dibatalkan', [
+                        'order_id' => $order->id_order,
+                    ]);
+
+                    return response()->json(['success' => true, 'message' => 'Order cancelled; callback ignored']);
+                }
+
                 $payment->update([
                     'status' => 'paid',
                     'transaction_id' => $data['id'] ?? null,

@@ -15,6 +15,7 @@ use App\Services\KitchenService;
 use App\Services\QrCodeService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class OrderController extends Controller
 {
@@ -110,12 +111,22 @@ class OrderController extends Controller
             'subtotal' => $priceInfo['subtotal'],
             'serviceCharge' => $priceInfo['service_charge'],
             'discount' => $priceInfo['discount'],
+            'promo' => $priceInfo['promo'],
             'total' => $priceInfo['total'],
             'morningDiscount' => $priceInfo['discount'] > 0,
             'table' => $table,
         ]);
     }
 
+    /**
+     * Sumber kebenaran tunggal untuk harga pesanan.
+     *
+     * Nilai total/diskon TIDAK pernah diambil dari browser: seluruh komponen
+     * dihitung di server dari item keranjang, tipe layanan, dan diskon yang
+     * valid. Hasil method ini dipakai baik oleh halaman checkout maupun saat
+     * order disimpan, sehingga angka yang dilihat pelanggan sama dengan yang
+     * tersimpan dan ditagihkan kasir/QRIS/struk.
+     */
     private function calculateOrderPrice($cartItems, $serviceType, $dateTime = null)
     {
         $dateTime = $dateTime ?? now();
@@ -131,13 +142,15 @@ class OrderController extends Controller
             $serviceCharge = $itemCount * 1000;
         }
 
-        $discount = $this->calculateMorningDiscount($subtotal, $dateTime);
+        $discountInfo = app(CartSessionService::class)->resolveCheckoutDiscount((float) $subtotal, $dateTime);
+        $discount = $discountInfo['discount'];
         $total = max(0, $subtotal + $serviceCharge - $discount);
 
         return [
             'subtotal' => $subtotal,
             'service_charge' => $serviceCharge,
             'discount' => $discount,
+            'promo' => $discountInfo['promo'],
             'total' => $total,
         ];
     }
@@ -200,16 +213,6 @@ class OrderController extends Controller
         return $tableId !== null ? Meja::find($tableId) : null;
     }
 
-    private function calculateMorningDiscount($amount, $dateTime)
-    {
-        $hour = $dateTime->hour;
-        if ($hour >= 6 && $hour < 11) {
-            return round($amount * 0.05);
-        }
-
-        return 0;
-    }
-
     public function store(StoreOrderRequest $request)
     {
         $user = auth()->user();
@@ -270,9 +273,11 @@ class OrderController extends Controller
             'table_id' => $tableId,
             'total_harga' => $total,
             'subtotal' => $subtotal,
+            'tax_amount' => 0,
             'service_charge' => $serviceCharge,
             'discount_amount' => $discount,
             'final_total' => $total,
+            'id_discount_scheme' => $priceInfo['promo']['scheme_id'] ?? null,
             'cost_of_goods' => $totalHpp,
             'profit_margin' => $profitMargin,
             // Bayar di kasir: pembayaran menunggu konfirmasi kasir (bukan
@@ -380,21 +385,69 @@ class OrderController extends Controller
     }
 
     /**
-     * Kasir mengonfirmasi pembayaran (bayar di kasir) sekaligus meloloskan
-     * pesanan ke dapur, lalu membuka struk thermal untuk dicetak.
+     * Kasir mengonfirmasi pembayaran tunai: memverifikasi nominal uang yang
+     * diterima di server, mencatat kembalian, meloloskan pesanan ke dapur,
+     * lalu membuka struk thermal untuk dicetak.
      */
-    public function confirmPayment(Order $order)
+    public function confirmPayment(Request $request, Order $order)
     {
         abort_unless(auth()->user()?->isStaff() || auth()->user()?->isAdmin(), 403);
 
-        if (! $order->isPaid()) {
-            $order->update([
+        // Pesanan yang sudah dibatalkan tidak boleh dilunasi/diproses lagi,
+        // termasuk bila endpoint dipanggil langsung.
+        if ($order->isCancelled()) {
+            return back()->withErrors([
+                'payment_method' => 'Pesanan #'.$order->public_code.' sudah dibatalkan dan tidak dapat dilunasi.',
+            ]);
+        }
+
+        // Endpoint ini khusus pembayaran tunai. Pesanan QRIS hanya boleh
+        // dinyatakan lunas melalui callback resmi dari penyedia pembayaran.
+        if (strtolower((string) $order->payment_method) !== 'cash') {
+            return back()->withErrors([
+                'payment_method' => 'Pesanan ini menggunakan metode '.strtoupper((string) $order->payment_method).' dan tidak dapat dilunasi melalui konfirmasi tunai.',
+            ]);
+        }
+
+        // Nominal dihitung ulang dari total tagihan di server; nilai kiriman
+        // browser hanya dipakai sebagai input mentah, bukan sumber kebenaran.
+        $total = (int) round((float) $order->total_harga);
+
+        $validated = $request->validate([
+            'uang_diterima' => ['required', 'numeric', 'min:0'],
+        ], [
+            'uang_diterima.required' => 'Nominal uang diterima wajib diisi.',
+            'uang_diterima.numeric' => 'Nominal uang diterima harus berupa angka.',
+            'uang_diterima.min' => 'Nominal uang diterima tidak boleh bernilai negatif.',
+        ]);
+
+        $uangDiterima = (int) round((float) $validated['uang_diterima']);
+
+        if ($uangDiterima < $total) {
+            return back()
+                ->withInput()
+                ->withErrors([
+                    'uang_diterima' => 'Uang diterima kurang dari total tagihan (Rp '.number_format($total, 0, ',', '.').').',
+                ]);
+        }
+
+        DB::transaction(function () use ($order, $uangDiterima, $total) {
+            // Kunci baris agar dua permintaan bersamaan tidak melunasi ganda.
+            $locked = Order::whereKey($order->id_order)->lockForUpdate()->first();
+
+            if (! $locked || $locked->isPaid() || $locked->isCancelled()) {
+                return;
+            }
+
+            $locked->update([
                 'status_pembayaran' => 'paid',
                 'paid_at' => now(),
                 'status_order' => 'processing',
-                'cashier_name' => auth()->user()?->name ?? $order->cashier_name,
+                'cashier_name' => auth()->user()?->name ?? $locked->cashier_name,
+                'uang_diterima' => $uangDiterima,
+                'kembalian' => max(0, $uangDiterima - $total),
             ]);
-        }
+        });
 
         return redirect()->route('admin.receipt.print', $order->id_order);
     }
@@ -404,6 +457,10 @@ class OrderController extends Controller
      */
     public function markProcessing(Order $order)
     {
+        if ($order->isCancelled()) {
+            return back()->with('error', 'Pesanan '.$order->public_code.' sudah dibatalkan.');
+        }
+
         $order->update(['status_order' => in_array($order->status_order, ['pending', 'confirmed', 'processing'], true) ? 'processing' : $order->status_order]);
 
         return back()->with('success', 'Pesanan masuk proses dapur.');
@@ -414,6 +471,10 @@ class OrderController extends Controller
      */
     public function markReady(Order $order)
     {
+        if ($order->isCancelled()) {
+            return back()->with('error', 'Pesanan '.$order->public_code.' sudah dibatalkan.');
+        }
+
         if (in_array($order->status_order, ['processing', 'ready'], true)) {
             $order->update(['status_order' => 'ready']);
         }
@@ -426,6 +487,10 @@ class OrderController extends Controller
      */
     public function finishOrder(Order $order)
     {
+        if ($order->isCancelled()) {
+            return back()->with('error', 'Pesanan '.$order->public_code.' sudah dibatalkan.');
+        }
+
         $order->update([
             'status_pembayaran' => 'paid',
             'status_order' => 'completed',
@@ -445,11 +510,14 @@ class OrderController extends Controller
 
         $orders = Order::with('table')
             ->where('status_pembayaran', 'pending')
+            ->notCancelled()
             ->where('id_order', '>', $afterId)
             ->orderBy('id_order')
             ->get();
 
-        $latestId = Order::where('status_pembayaran', 'pending')->max('id_order') ?? $afterId;
+        $latestId = Order::where('status_pembayaran', 'pending')
+            ->notCancelled()
+            ->max('id_order') ?? $afterId;
 
         return response()->json([
             'latest_id' => (int) $latestId,
@@ -473,6 +541,7 @@ class OrderController extends Controller
     {
         $orders = Order::with(['table', 'items.menu'])
             ->where('status_pembayaran', 'paid')
+            ->notCancelled()
             ->whereIn('status_order', ['processing', 'ready'])
             ->latest('tanggal')
             ->get();
@@ -574,6 +643,11 @@ class OrderController extends Controller
     public function complete($id_order)
     {
         $order = Order::findOrFail($id_order);
+
+        if ($order->isCancelled()) {
+            return back()->with('error', 'Pesanan '.$order->public_code.' sudah dibatalkan.');
+        }
+
         $order->update(['status_pembayaran' => 'paid', 'status_order' => 'completed']);
 
         return back()->with('success', 'Pesanan selesai');
@@ -590,6 +664,7 @@ class OrderController extends Controller
     public function index(Request $request)
     {
         $query = Order::where('status_pembayaran', 'pending')
+            ->notCancelled()
             ->with(['user', 'table', 'items.menu'])
             ->latest();
 
@@ -627,6 +702,7 @@ class OrderController extends Controller
         $lastId = (int) $request->query('after_id', 0);
 
         $newOrders = Order::where('id_order', '>', $lastId)
+            ->notCancelled()
             ->where(function ($q) {
                 $q->where('status_pembayaran', 'pending')
                     ->orWhere('status_order', 'pending');
@@ -680,7 +756,12 @@ class OrderController extends Controller
         });
 
         $maxId = $newOrders->max('id_order') ?? $lastId;
-        $totalPending = Order::where('status_order', 'pending')->orWhere('status_pembayaran', 'pending')->count();
+        $totalPending = Order::notCancelled()
+            ->where(function ($q) {
+                $q->where('status_order', 'pending')
+                    ->orWhere('status_pembayaran', 'pending');
+            })
+            ->count();
 
         return response()->json([
             'success' => true,

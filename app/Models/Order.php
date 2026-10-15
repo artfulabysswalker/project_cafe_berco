@@ -30,6 +30,8 @@ class Order extends Model
         'notes',
         'order_code',
         'paid_at',
+        'uang_diterima',
+        'kembalian',
         'status_order',
         'id_user',
         'id_shift',
@@ -48,6 +50,8 @@ class Order extends Model
         'discount_amount' => 'decimal:2',
         'subtotal' => 'decimal:2',
         'final_total' => 'decimal:2',
+        'uang_diterima' => 'integer',
+        'kembalian' => 'integer',
         'cost_of_goods' => 'decimal:2',
         'profit_margin' => 'decimal:2',
     ];
@@ -68,6 +72,24 @@ class Order extends Model
     public function isPaid(): bool
     {
         return in_array($this->status_pembayaran, ['paid', 'Paid'], true);
+    }
+
+    /**
+     * Pesanan yang dibatalkan tidak boleh diproses, dilunasi, atau dianggap
+     * pesanan baru lagi. Pengecualian cukup berdasarkan status_order sehingga
+     * tidak diperlukan status pembayaran atau migrasi baru.
+     */
+    public function isCancelled(): bool
+    {
+        return $this->status_order === 'cancelled';
+    }
+
+    /**
+     * Kecualikan pesanan yang dibatalkan dari daftar operasional.
+     */
+    public function scopeNotCancelled($query)
+    {
+        return $query->where('status_order', '!=', 'cancelled');
     }
 
     public function statusLabel(): string

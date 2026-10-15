@@ -112,9 +112,9 @@
                             <span id="service-charge-label">Biaya layanan</span>
                             <span id="service-charge-amount">Rp {{ number_format($serviceCharge, 0, ',', '.') }}</span>
                         </div>
-                        <div class="calc-row" id="discount-row">
-                            <span id="discount-label">Diskon pagi 5%</span>
-                            <span id="discount-amount">Rp {{ number_format($discount, 0, ',', '.') }}</span>
+                        <div class="calc-row" id="discount-row" style="{{ $discount > 0 ? '' : 'display: none;' }}">
+                            <span id="discount-label">{{ $promo['name'] ?? 'Diskon' }}</span>
+                            <span id="discount-amount">Rp -{{ number_format($discount, 0, ',', '.') }}</span>
                         </div>
                         <div class="calc-row total">
                             <span>Total</span>
@@ -473,13 +473,15 @@
 <script>
 const cartItems = @json($cartItemsData ?? []);
 
+// Subtotal & diskon berasal dari server (sumber kebenaran). Browser tidak
+// menghitung ulang diskon dari jam perangkat, sehingga total yang ditampilkan
+// selalu sama dengan yang akan disimpan dan ditagihkan.
+const serverSubtotal = {{ (float) $subtotal }};
+const serverDiscount = {{ (float) $discount }};
+const serverDiscountLabel = @json($promo['name'] ?? 'Diskon');
+
 function calculatePrice() {
     const serviceType = document.querySelector('input[name="service_type"]:checked').value;
-    
-    let subtotal = 0;
-    cartItems.forEach(item => {
-        subtotal += item.menu.harga * item.quantity;
-    });
 
     let serviceCharge = 0;
     if (serviceType === 'take_away') {
@@ -490,16 +492,16 @@ function calculatePrice() {
         document.getElementById('service-charge-label').textContent = 'Biaya layanan';
     }
 
-    const currentHour = new Date().getHours();
-    const discount = (currentHour >= 6 && currentHour < 11) ? Math.round(subtotal * 0.05) : 0;
-    const total = subtotal + serviceCharge - discount;
+    const subtotal = serverSubtotal;
+    const discount = serverDiscount;
+    const total = Math.max(0, subtotal + serviceCharge - discount);
 
     document.getElementById('service-charge-amount').textContent = 'Rp ' + number_format(serviceCharge, 0, ',', '.');
 
     const discountRow = document.getElementById('discount-row');
     if (discount > 0) {
         discountRow.style.display = 'flex';
-        document.getElementById('discount-label').textContent = 'Diskon pagi 5%';
+        document.getElementById('discount-label').textContent = serverDiscountLabel;
         document.getElementById('discount-amount').textContent = 'Rp -' + number_format(discount, 0, ',', '.');
     } else {
         discountRow.style.display = 'none';

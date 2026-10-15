@@ -99,6 +99,17 @@ class QrisTransaction extends Model
 
         // Update order payment status
         if ($this->order) {
+            // Order yang sudah dibatalkan tidak boleh dihidupkan kembali oleh
+            // pembayaran yang datang terlambat.
+            if ($this->order->isCancelled()) {
+                \Log::warning('QRIS payment ignored for cancelled order', [
+                    'order_id' => $this->order->id_order,
+                    'qris_transaction_id' => $this->id_qris_transaction,
+                ]);
+
+                return $this;
+            }
+
             // QRIS langsung settle -> pesanan otomatis sah & masuk dapur.
             $this->order->update([
                 'status_pembayaran' => 'paid',

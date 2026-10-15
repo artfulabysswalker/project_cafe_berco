@@ -6,6 +6,7 @@ use App\Models\CartItem;
 use App\Models\DiscountScheme;
 use App\Models\Menu;
 use App\Models\TaxConfiguration;
+use Carbon\CarbonInterface;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Session;
@@ -604,6 +605,61 @@ class CartSessionService
             'grand_total' => (float) $grandTotal,
             'grand_total_formatted' => 'Rp '.number_format($grandTotal, 0, ',', '.'),
             'promo' => $promoInfo,
+        ];
+    }
+
+    /**
+     * Tentukan diskon yang benar-benar akan diterapkan pada checkout.
+     *
+     * Ini adalah sumber kebenaran tunggal untuk halaman checkout dan pembuatan
+     * order. Promo yang tersimpan di session diprioritaskan selama masih valid
+     * (dicek ulang di server), jika tidak ada gunakan diskon pagi otomatis.
+     * Promo dan diskon pagi tidak pernah dihitung bersamaan, sehingga potongan
+     * tidak pernah dikurangkan dua kali.
+     */
+    public function resolveCheckoutDiscount(float $subtotal, ?CarbonInterface $dateTime = null): array
+    {
+        $dateTime = $dateTime ?? now();
+        $discount = 0.0;
+        $promo = null;
+
+        if ($subtotal > 0 && Session::has(self::PROMO_KEY)) {
+            $stored = Session::get(self::PROMO_KEY);
+
+            if (! empty($stored['scheme_id'])) {
+                $scheme = DiscountScheme::find($stored['scheme_id']);
+
+                if ($scheme && $scheme->isValid($subtotal)['valid']) {
+                    $discount = (float) $scheme->calculateDiscount($subtotal);
+                    $promo = array_merge($stored, ['discount' => $discount]);
+                    Session::put(self::PROMO_KEY, $promo);
+                } else {
+                    // Promo kadaluarsa / tidak lagi memenuhi syarat: jangan
+                    // pernah tampilkan atau kurangkan dari tagihan.
+                    Session::forget(self::PROMO_KEY);
+                }
+            } else {
+                $discount = (float) ($stored['discount'] ?? 0);
+                $promo = $stored;
+            }
+        }
+
+        if ($discount <= 0 && $subtotal > 0) {
+            $hour = $dateTime->hour;
+            if ($hour >= 6 && $hour < 11) {
+                $discount = round($subtotal * 0.05);
+                $promo = [
+                    'code' => 'MORNING_5',
+                    'name' => 'Diskon Pagi (06:00 - 11:00)',
+                    'discount' => $discount,
+                    'is_automatic' => true,
+                ];
+            }
+        }
+
+        return [
+            'discount' => (float) $discount,
+            'promo' => $promo,
         ];
     }
 

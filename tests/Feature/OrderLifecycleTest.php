@@ -148,7 +148,7 @@ test('cashier can confirm a cash order: paid + processing then opens the thermal
     $order = lifecycleOrder();
 
     $this->actingAs($staff)
-        ->post(route('admin.orders.confirm', $order->id_order))
+        ->post(route('admin.orders.confirm', $order->id_order), ['uang_diterima' => 20000])
         ->assertRedirect(route('admin.receipt.print', $order->id_order));
 
     $order->refresh();
