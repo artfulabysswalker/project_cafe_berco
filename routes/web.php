@@ -15,11 +15,11 @@ use App\Http\Controllers\Customer\FavoriteController;
 use App\Http\Controllers\Customer\MenuController;
 use App\Http\Controllers\Customer\TableQrScanController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\MidtransWebhookController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\PasswordResetRequestController;
 use App\Http\Controllers\PlaylistController;
 use App\Http\Controllers\ProfileController;
-use App\Http\Controllers\QrisPaymentController;
 use App\Http\Controllers\ReceiptController;
 use App\Http\Controllers\RedeemController;
 use App\Http\Controllers\ReferralController;
@@ -32,6 +32,7 @@ use App\Http\Controllers\StatsController;
 use App\Http\Controllers\VoucherController;
 use App\Http\Controllers\XenditPaymentController;
 use App\Models\Menu;
+use App\Models\Order;
 use App\Models\User;
 use App\Services\GuestSessionService;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
@@ -67,6 +68,12 @@ Route::get('/xendit/test', function () {
         ], 500);
     }
 })->name('xendit.test')->withoutMiddleware([VerifyCsrfToken::class]);
+
+// Midtrans payment notification (webhook): tanpa auth & CSRF, keamanan
+// ditjamin oleh verifikasi signature_key SHA512 di backend.
+Route::post('/webhooks/midtrans', [MidtransWebhookController::class, 'handle'])
+    ->name('midtrans.webhook')
+    ->withoutMiddleware([VerifyCsrfToken::class]);
 
 Route::get('/', function () {
     if (Auth::check()) {
@@ -178,6 +185,11 @@ Route::middleware(['customer'])->group(function () {
 
     Route::get('/order/{order}/receipt', [OrderController::class, 'receipt'])
         ->name('order.receipt');
+
+    // Halaman pembayaran QRIS (Menampilkan QR dari Midtrans)
+    Route::get('/order/{order}/qris', function (Order $order) {
+        return view('Customerviews.qris', compact('order'));
+    })->name('order.qris');
 
     // Reviews
     Route::post('/menu/{menu}/reviews', [ReviewController::class, 'store'])
@@ -348,33 +360,6 @@ Route::middleware(['restore.guest', 'local.network'])->group(function () {
         Route::post('/payment/callback', [XenditPaymentController::class, 'callback'])
             ->name('xendit.payment.callback')
             ->withoutMiddleware([VerifyCsrfToken::class]);
-
-        // QRIS Payment Routes
-        Route::prefix('qris')->group(function () {
-            Route::get('/payment/{order}', [QrisPaymentController::class, 'show'])
-                ->name('xendit.qris.show');
-
-            Route::get('/payment/{order}/redirect', [QrisPaymentController::class, 'redirectToPayment'])
-                ->name('xendit.qris.redirect');
-
-            Route::post('/payment/{order}/invoice', [QrisPaymentController::class, 'createInvoice'])
-                ->name('xendit.qris.create');
-
-            Route::get('/payment/{order}/status', [QrisPaymentController::class, 'checkStatus'])
-                ->name('xendit.qris.status');
-
-            // Success and Failed redirect from Xendit
-            Route::get('/payment/success/{order}', [QrisPaymentController::class, 'success'])
-                ->name('xendit.qris.success');
-
-            Route::get('/payment/failed/{order}', [QrisPaymentController::class, 'failed'])
-                ->name('xendit.qris.failed');
-
-            // QRIS Callback
-            Route::post('/payment/callback', [QrisPaymentController::class, 'callback'])
-                ->name('xendit.qris.callback')
-                ->withoutMiddleware([VerifyCsrfToken::class]);
-        });
     });
 
 });

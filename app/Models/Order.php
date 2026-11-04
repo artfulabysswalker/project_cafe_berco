@@ -25,6 +25,7 @@ class Order extends Model
         'discount_amount',
         'final_total',
         'status_pembayaran',
+        'payment_status',
         'service_type',
         'payment_method',
         'notes',
@@ -71,7 +72,8 @@ class Order extends Model
 
     public function isPaid(): bool
     {
-        return in_array($this->status_pembayaran, ['paid', 'Paid'], true);
+        return in_array($this->status_pembayaran, ['paid', 'Paid'], true)
+            || $this->payment_status === 'paid';
     }
 
     /**
@@ -175,6 +177,19 @@ class Order extends Model
     public function payment()
     {
         return $this->hasOne(Payment::class, 'id_order', 'id_order');
+    }
+
+    public function paymentLogs()
+    {
+        return $this->hasMany(PaymentLog::class, 'order_id', 'id_order');
+    }
+
+    /**
+     * Charge QRIS terbaru (dipakai halaman pembayaran pelanggan).
+     */
+    public function latestPaymentLog()
+    {
+        return $this->hasOne(PaymentLog::class, 'order_id', 'id_order')->latestOfMany();
     }
 
     public function taxConfiguration()

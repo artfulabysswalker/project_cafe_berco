@@ -18,3 +18,8 @@ Broadcast::channel('cashier.orders', function (User $user) {
     // Only active Staff / Cashier / Admin are authorized to listen
     return $user->isActive() && ($user->isAdmin() || $user->isStaff());
 });
+
+Broadcast::channel('cashier.dashboard', function (User $user) {
+    // Log transfer QRIS hanya boleh didengarkan staf/admin yang aktif
+    return $user->isActive() && ($user->isAdmin() || $user->isStaff());
+});
