@@ -86,16 +86,45 @@
         
         {{-- Left: 7-Day Trend Chart --}}
         <div class="lg:col-span-8 bg-white border border-stone-200 rounded-lg p-5 shadow-2xs space-y-4">
-            <div class="flex items-center justify-between border-b border-stone-100 pb-3">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between border-b border-stone-100 pb-3 gap-2">
                 <div class="flex items-center space-x-2">
                     <span class="w-2.5 h-2.5 rounded-full bg-[#C27835]"></span>
-                    <h3 class="text-xs font-mono uppercase tracking-wider font-semibold text-stone-800">Tren Penjualan 7 Hari Terakhir</h3>
+                    <h3 class="text-xs font-mono uppercase tracking-wider font-semibold text-stone-800">
+                        {{ $trendChartTitle ?? 'Tren Penjualan 7 Hari Terakhir' }}
+                    </h3>
                 </div>
-                <div class="flex items-center space-x-4 text-xs font-mono text-stone-500">
-                    <span class="flex items-center space-x-1.5"><span class="w-2 h-2 rounded bg-[#C27835]"></span><span>Omzet (Rp)</span></span>
-                    <span class="flex items-center space-x-1.5"><span class="w-2 h-2 rounded bg-sky-500"></span><span>Pesanan (Trx)</span></span>
+                <div class="flex items-center space-x-3 text-xs font-mono">
+                    <div class="flex items-center bg-stone-100 p-0.5 rounded border border-stone-200">
+                        <a href="{{ route('control.dashboard', ['range' => '7_days']) }}" class="px-2 py-0.5 rounded text-[10px] {{ ($trendRange ?? '7_days') === '7_days' ? 'bg-white text-stone-900 font-semibold shadow-2xs' : 'text-stone-500 hover:text-stone-900' }}">7 Hari</a>
+                        <a href="{{ route('control.dashboard', ['range' => '30_days']) }}" class="px-2 py-0.5 rounded text-[10px] {{ ($trendRange ?? '') === '30_days' ? 'bg-white text-stone-900 font-semibold shadow-2xs' : 'text-stone-500 hover:text-stone-900' }}">30 Hari</a>
+                        @if(!empty($latestOrderDate) && \Carbon\Carbon::parse($latestOrderDate)->lt(now()->subDays(6)))
+                            <a href="{{ route('control.dashboard', ['range' => 'recent']) }}" class="px-2 py-0.5 rounded text-[10px] {{ ($trendRange ?? '') === 'recent' ? 'bg-white text-stone-900 font-semibold shadow-2xs' : 'text-stone-500 hover:text-stone-900' }}" title="Lihat 7 hari dari transaksi terakhir ({{ \Carbon\Carbon::parse($latestOrderDate)->format('d M Y') }})">Aktif Terakhir</a>
+                        @endif
+                    </div>
+                    <div class="hidden sm:flex items-center space-x-3 text-stone-400">
+                        <span class="flex items-center space-x-1.5"><span class="w-2 h-2 rounded bg-[#C27835]"></span><span class="text-stone-600">Omzet</span></span>
+                        <span class="flex items-center space-x-1.5"><span class="w-2 h-2 rounded bg-sky-500"></span><span class="text-stone-600">Pesanan</span></span>
+                    </div>
                 </div>
             </div>
+
+            @if(($trendTotalRevenue ?? 0) === 0 && ($trendTotalOrders ?? 0) === 0)
+                <div class="p-3 bg-amber-50/70 border border-amber-200/80 rounded text-xs font-mono text-amber-900 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div class="flex items-center space-x-2">
+                        <i class="fas fa-circle-info text-amber-600"></i>
+                        <span>Belum ada transaksi pada rentang tanggal ini.</span>
+                        @if(!empty($latestOrderDate))
+                            <span class="text-amber-800">Transaksi terakhir: <strong>{{ \Carbon\Carbon::parse($latestOrderDate)->locale('id')->isoFormat('D MMM Y') }}</strong></span>
+                        @endif
+                    </div>
+                    @if(!empty($latestOrderDate) && ($trendRange ?? '7_days') !== 'recent')
+                        <a href="{{ route('control.dashboard', ['range' => 'recent']) }}" class="text-xs font-semibold text-[#C27835] hover:underline shrink-0">
+                            Lihat Periode Aktif Terakhir →
+                        </a>
+                    @endif
+                </div>
+            @endif
+
             <div class="h-64 relative">
                 <canvas id="salesTrendChart"></canvas>
             </div>
@@ -200,7 +229,10 @@
 
     </div>
 
-    {{-- 4. RECENT ORDERS HIGH-DENSITY TABLE --}}
+    {{-- 4. QRIS PAYMENT LOG (tercatat otomatis dari notifikasi Midtrans) --}}
+    <livewire:cashier-payment-log />
+
+    {{-- 5. RECENT ORDERS HIGH-DENSITY TABLE --}}
     <div class="bg-white border border-stone-200 rounded-lg shadow-2xs overflow-hidden">
         <div class="px-5 py-3.5 border-b border-stone-200 flex items-center justify-between">
             <h3 class="text-xs font-mono uppercase tracking-wider font-semibold text-stone-800">5 Transaksi Terakhir</h3>
@@ -251,10 +283,15 @@
 {{-- Chart.js Scripts --}}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-document.addEventListener('DOMContentLoaded', () => {
+function initAdminOverviewCharts() {
+    if (typeof Chart === 'undefined') return;
+
     // 1. Sales Trend Chart
     const trendCtx = document.getElementById('salesTrendChart');
     if (trendCtx) {
+        const existingTrend = Chart.getChart(trendCtx);
+        if (existingTrend) existingTrend.destroy();
+
         new Chart(trendCtx, {
             type: 'line',
             data: {
@@ -278,7 +315,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         backgroundColor: '#0284c7',
                         type: 'bar',
                         borderRadius: 4,
-                        barThickness: 16,
+                        barThickness: {!! count($sevenDaysDates) > 14 ? 'null' : '16' !!},
                         yAxisID: 'y1'
                     }
                 ]
@@ -307,11 +344,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 scales: {
                     x: {
                         grid: { display: false },
-                        ticks: { font: { family: 'JetBrains Mono', size: 11 }, color: '#78716c' }
+                        ticks: {
+                            font: { family: 'JetBrains Mono', size: {!! count($sevenDaysDates) > 14 ? '9' : '11' !!} },
+                            color: '#78716c',
+                            maxRotation: {!! count($sevenDaysDates) > 14 ? '45' : '0' !!}
+                        }
                     },
                     y: {
                         type: 'linear',
                         position: 'left',
+                        beginAtZero: true,
                         grid: { color: '#f5f5f4' },
                         ticks: {
                             font: { family: 'JetBrains Mono', size: 10 },
@@ -324,6 +366,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     y1: {
                         type: 'linear',
                         position: 'right',
+                        beginAtZero: true,
+                        grace: '15%',
                         grid: { drawOnChartArea: false },
                         ticks: {
                             font: { family: 'JetBrains Mono', size: 10 },
@@ -340,6 +384,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // 2. Payment Donut Chart
     const paymentCtx = document.getElementById('paymentMethodsChart');
     if (paymentCtx) {
+        const existingPayment = Chart.getChart(paymentCtx);
+        if (existingPayment) existingPayment.destroy();
+
         new Chart(paymentCtx, {
             type: 'doughnut',
             data: {
@@ -367,6 +414,13 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
-});
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initAdminOverviewCharts);
+} else {
+    initAdminOverviewCharts();
+}
+document.addEventListener('livewire:navigated', initAdminOverviewCharts);
 </script>
 @endsection

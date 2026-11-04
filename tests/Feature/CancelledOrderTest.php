@@ -4,7 +4,6 @@ use App\Models\Category;
 use App\Models\Menu;
 use App\Models\Order;
 use App\Models\OrderItem;
-use App\Models\QrisTransaction;
 use App\Models\Role;
 use App\Models\User;
 
@@ -82,27 +81,17 @@ test('a cancelled order cannot be settled through the cash confirmation endpoint
         ->and($order->uang_diterima)->toBeNull();
 });
 
-test('a qris callback cannot revive a cancelled order', function () {
-    $order = cancelledOrder(['payment_method' => 'qris']);
+test('a midtrans settlement cannot revive a cancelled order', function () {
+    $order = cancelledOrder(['payment_method' => 'qris', 'total_harga' => 25000]);
+    $log = qrisPaymentLogFor($order);
 
-    QrisTransaction::create([
-        'id_order' => $order->id_order,
-        'qris_code' => 'QRIS-'.uniqid(),
-        'transaction_id' => 'txn-'.uniqid(),
-        'amount' => 25000,
-        'status' => 'pending',
-    ]);
-
-    $this->postJson(route('xendit.qris.callback'), [
-        'external_id' => 'QRIS-ORDER-'.$order->id_order.'-'.time(),
-        'status' => 'PAID',
-        'amount' => 25000,
-        'id' => 'xendit-cancelled',
-    ])->assertOk();
+    $this->postJson(route('midtrans.webhook'), midtransNotificationFor($log))
+        ->assertOk();
 
     $order->refresh();
     expect($order->status_order)->toBe('cancelled')
-        ->and($order->isPaid())->toBeFalse();
+        ->and($order->isPaid())->toBeFalse()
+        ->and($order->payment_status)->toBeNull();
 });
 
 test('a cancelled order cannot be finished or completed', function () {

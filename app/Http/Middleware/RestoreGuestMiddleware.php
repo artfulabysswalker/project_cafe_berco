@@ -21,7 +21,7 @@ class RestoreGuestMiddleware
         if ($request->is(
             'login', 'register', 'staff-login', 'logout',
             'admin*', 'control*', 'dashboard*', 'settings*',
-            'profile*', 'user*', 'api*',
+            'profile*', 'user*', 'api*', 'webhooks*',
             'forgot-password*', 'reset-password*', 'verify-email*', 'two-factor*', 'confirm-password*'
         )) {
             return $next($request);

@@ -325,7 +325,7 @@ class OrderController extends Controller
 
         // 8. Return response
         $redirectUrl = ($validated['payment_method'] === 'qris')
-            ? route('xendit.qris.redirect', $order->id_order)
+            ? route('order.qris', $order->id_order)
             : route('order.waiting', $order->id_order);
 
         return response()->json([

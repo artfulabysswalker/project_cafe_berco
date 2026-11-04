@@ -6,6 +6,7 @@ use App\Models\Menu;
 use App\Models\Order;
 use App\Models\OrderItem;
 use Carbon\Carbon;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class DashboardController extends Controller
@@ -13,7 +14,7 @@ class DashboardController extends Controller
     /**
      * Display the Admin Dashboard with Analytics & Metrics
      */
-    public function index()
+    public function index(Request $request)
     {
         $user = auth()->user();
         $isAdmin = $user->isAdmin();
@@ -134,30 +135,65 @@ class DashboardController extends Controller
             ? round($totalRevenue / max(1, $completedOrdersCount ?: $totalOrders))
             : 0;
 
-        // 2. Sales Trend for Last 7 Days (Chart Data)
+        // 2. Sales Trend Chart Data (Supports 7 days, 30 days, recent active period)
+        $trendRange = $request->query('range', '7_days');
+
+        $completedCondition = function ($q) {
+            $q->whereIn('status_pembayaran', ['paid', 'Sudah'])
+                ->orWhere('status_order', 'completed');
+        };
+
+        $latestOrderQuery = Order::where($completedCondition);
+        if (! $isAdmin) {
+            $latestOrderQuery->where('id_user', $user->id_user);
+        }
+        $latestOrder = $latestOrderQuery->latest('tanggal')->first();
+        $latestOrderDate = $latestOrder?->tanggal;
+
+        $anchorDate = Carbon::today();
+        if ($trendRange === 'recent' && $latestOrderDate) {
+            $anchorDate = Carbon::parse($latestOrderDate)->startOfDay();
+            $daysCount = 7;
+            $trendChartTitle = 'Tren Penjualan (7 Hari Aktif Terakhir: ' . $anchorDate->copy()->subDays(6)->locale('id')->isoFormat('D MMM') . ' - ' . $anchorDate->locale('id')->isoFormat('D MMM Y') . ')';
+        } elseif ($trendRange === '30_days') {
+            $daysCount = 30;
+            $trendChartTitle = 'Tren Penjualan 30 Hari Terakhir';
+        } else {
+            $trendRange = '7_days';
+            $daysCount = 7;
+            $trendChartTitle = 'Tren Penjualan 7 Hari Terakhir';
+        }
+
         $sevenDaysDates = collect();
         $sevenDaysRevenue = collect();
         $sevenDaysOrders = collect();
 
-        for ($i = 6; $i >= 0; $i--) {
-            $date = Carbon::today()->subDays($i);
-            $dayLabel = $date->locale('id')->isoFormat('ddd, D MMM');
+        for ($i = $daysCount - 1; $i >= 0; $i--) {
+            $date = $anchorDate->copy()->subDays($i);
+            $dayLabel = $daysCount <= 7
+                ? $date->locale('id')->isoFormat('ddd, D MMM')
+                : $date->locale('id')->isoFormat('D MMM');
             $sevenDaysDates->push($dayLabel);
 
-            $dayRevenueQuery = Order::whereDate('tanggal', $date->toDateString());
-            $dayOrdersQuery = Order::whereDate('tanggal', $date->toDateString());
+            $dayRevenueQuery = Order::whereDate('tanggal', $date->toDateString())
+                ->where($completedCondition);
+            $dayOrdersQuery = Order::whereDate('tanggal', $date->toDateString())
+                ->where($completedCondition);
 
             if (! $isAdmin) {
                 $dayRevenueQuery->where('id_user', $user->id_user);
                 $dayOrdersQuery->where('id_user', $user->id_user);
             }
 
-            $dayRevenue = $dayRevenueQuery->sum('total_harga');
+            $dayRevenue = $dayRevenueQuery->sum(DB::raw('COALESCE(final_total, total_harga)'));
             $dayOrders = $dayOrdersQuery->count();
 
             $sevenDaysRevenue->push((int) $dayRevenue);
             $sevenDaysOrders->push((int) $dayOrders);
         }
+
+        $trendTotalRevenue = $sevenDaysRevenue->sum();
+        $trendTotalOrders = $sevenDaysOrders->sum();
 
         // 3. Payment Method & Service Type Breakdown
         $paymentMethodsQuery = Order::select('payment_method', DB::raw('count(*) as count'), DB::raw('sum(total_harga) as total'))
@@ -266,6 +302,11 @@ class DashboardController extends Controller
             'sevenDaysDates',
             'sevenDaysRevenue',
             'sevenDaysOrders',
+            'trendRange',
+            'trendChartTitle',
+            'trendTotalRevenue',
+            'trendTotalOrders',
+            'latestOrderDate',
             'paymentLabels',
             'paymentCounts',
             'serviceTypes',

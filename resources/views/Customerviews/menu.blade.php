@@ -391,6 +391,130 @@
         </div>
     @endif
 
+    {{-- 4. ULASAN & RATING PELANGGAN --}}
+    <div id="menu-review-section" class="mt-12 pt-8 border-t border-border">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+            <div>
+                <div class="inline-flex items-center space-x-2 text-[11px] font-mono uppercase tracking-widest text-terracotta mb-1">
+                    <span class="w-2 h-2 rounded-full bg-terracotta"></span>
+                    <span>Ulasan Pelanggan</span>
+                </div>
+                <h2 class="text-xl sm:text-2xl font-serif text-ink tracking-tight">Rating & Review Menu</h2>
+                <p class="text-xs text-ink-muted mt-0.5">Bagikan pengalaman rasa Anda menikmati sajian Cafe Berco.</p>
+            </div>
+            @if(isset($totalReviews) && $totalReviews > 0)
+                <div class="text-xs font-mono text-ink-muted bg-stone-100 px-3 py-1.5 rounded-md border border-stone-200">
+                    Total <strong>{{ $totalReviews }}</strong> Ulasan
+                </div>
+            @endif
+        </div>
+
+        @if(session('success'))
+            <div class="mb-6 p-4 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center gap-2">
+                <i class="fas fa-check-circle text-emerald-600 text-sm"></i>
+                <span>{{ session('success') }}</span>
+            </div>
+        @endif
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {{-- Form Review --}}
+            <div class="lg:col-span-1 bg-white p-5 rounded-xl border border-border shadow-xs">
+                @auth
+                    @php
+                        $allProducts = $categories->flatMap(fn($cat) => $cat->products);
+                    @endphp
+                    @if($allProducts->count() > 0)
+                        <h3 class="text-sm font-semibold text-ink mb-3 flex items-center gap-2">
+                            <i class="fas fa-star text-amber-500"></i>
+                            <span>Tulis Ulasan & Rating</span>
+                        </h3>
+                        <form id="menu-review-form" method="POST" action="{{ route('reviews.store', $allProducts->first()) }}" class="space-y-4">
+                            @csrf
+                            <div>
+                                <label for="review-menu-select" class="block text-xs font-mono text-ink-muted mb-1">Pilih Menu</label>
+                                <select id="review-menu-select" onchange="document.getElementById('menu-review-form').action = this.value" class="w-full bg-stone-50 border border-border rounded-lg px-3 py-2 text-xs text-ink focus:outline-none focus:ring-1 focus:ring-terracotta" required>
+                                    @foreach($allProducts as $p)
+                                        <option value="{{ route('reviews.store', $p) }}">{{ $p->nama_menu }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-mono text-ink-muted mb-1">Bintang Rating</label>
+                                <select name="rating" required class="w-full bg-stone-50 border border-border rounded-lg px-3 py-2 text-xs text-ink focus:outline-none focus:ring-1 focus:ring-terracotta">
+                                    <option value="5">⭐⭐⭐⭐⭐ (5 / 5 - Sangat Enak)</option>
+                                    <option value="4">⭐⭐⭐⭐ (4 / 5 - Enak)</option>
+                                    <option value="3">⭐⭐⭐ (3 / 5 - Cukup)</option>
+                                    <option value="2">⭐⭐ (2 / 5 - Kurang)</option>
+                                    <option value="1">⭐ (1 / 5 - Tidak Enak)</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label for="review-comment" class="block text-xs font-mono text-ink-muted mb-1">Komentar / Ulasan</label>
+                                <textarea id="review-comment" name="comment" rows="3" placeholder="Ceritakan pengalaman Anda (rasa, aroma, penyajian)..." class="w-full bg-stone-50 border border-border rounded-lg p-3 text-xs text-ink focus:outline-none focus:ring-1 focus:ring-terracotta" required></textarea>
+                            </div>
+
+                            <button type="submit" class="w-full bg-ink hover:bg-stone-800 text-white font-mono text-xs font-semibold py-2.5 px-4 rounded-lg transition-colors flex items-center justify-center gap-2">
+                                <i class="fas fa-paper-plane text-[11px]"></i>
+                                <span>Kirim Rating & Ulasan</span>
+                            </button>
+                        </form>
+                    @else
+                        <p class="text-xs text-ink-muted">Belum ada menu tersedia untuk direview.</p>
+                    @endif
+                @else
+                    <div class="text-center py-6">
+                        <i class="fas fa-user-lock text-stone-300 text-3xl mb-2"></i>
+                        <p class="text-xs text-ink-muted mb-3">Silakan masuk untuk memberikan rating dan review pada menu.</p>
+                        <a href="{{ route('login') }}" class="inline-flex items-center gap-1.5 text-xs font-mono font-semibold bg-terracotta text-white px-3.5 py-2 rounded-lg hover:bg-amber-800 transition-colors">
+                            <i class="fas fa-sign-in-alt"></i> Masuk Sekarang
+                        </a>
+                    </div>
+                @endauth
+            </div>
+
+            {{-- Daftar Review Terbaru --}}
+            <div class="lg:col-span-2 space-y-3">
+                <h3 class="text-sm font-semibold text-ink flex items-center justify-between">
+                    <span>Ulasan Pelanggan Terbaru</span>
+                    @if(isset($recentReviews) && $recentReviews->count() > 0)
+                        <span class="text-[11px] font-mono text-ink-muted font-normal">{{ $recentReviews->count() }} ulasan ditampilkan</span>
+                    @endif
+                </h3>
+
+                @if(isset($recentReviews) && $recentReviews->count() > 0)
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        @foreach($recentReviews as $rev)
+                            <div class="p-3.5 bg-white rounded-xl border border-border shadow-2xs space-y-2">
+                                <div class="flex items-start justify-between gap-2">
+                                    <div>
+                                        <p class="text-xs font-semibold text-ink line-clamp-1">{{ $rev->user->name ?? 'Pelanggan' }}</p>
+                                        <p class="text-[10px] font-mono text-terracotta">{{ $rev->product->nama_menu ?? ($rev->product->name ?? 'Menu Berco') }}</p>
+                                    </div>
+                                    <div class="text-amber-500 text-xs shrink-0">
+                                        @for($s = 1; $s <= 5; $s++)
+                                            <i class="{{ $s <= $rev->rating ? 'fas' : 'far' }} fa-star text-[10px]"></i>
+                                        @endfor
+                                    </div>
+                                </div>
+                                @if($rev->comment)
+                                    <p class="text-xs text-ink-muted italic leading-relaxed line-clamp-3">"{{ $rev->comment }}"</p>
+                                @endif
+                                <p class="text-[10px] font-mono text-stone-400 text-right">{{ $rev->created_at ? $rev->created_at->diffForHumans() : '' }}</p>
+                            </div>
+                        @endforeach
+                    </div>
+                @else
+                    <div class="p-6 bg-white rounded-xl border border-dashed border-stone-200 text-center">
+                        <i class="far fa-comment-dots text-stone-300 text-2xl mb-1"></i>
+                        <p class="text-xs text-ink-muted">Belum ada ulasan untuk menu. Jadilah yang pertama memberikan ulasan!</p>
+                    </div>
+                @endif
+            </div>
+        </div>
+    </div>
+
 </div>
 @endsection
 
