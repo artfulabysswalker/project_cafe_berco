@@ -40,6 +40,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Xendit\Configuration;
 
+use App\Http\Controllers\Admin\ToppingController;
 /*
 |--------------------------------------------------------------------------
 | PUBLIC ROUTES
@@ -135,7 +136,7 @@ Route::middleware(['guest'])->group(function () {
 |--------------------------------------------------------------------------
 */
 
-Route::middleware(['auth'])->group(function () {
+Route::middleware(['auth','is.admin'])->group(function () {
 
     Route::post('/logout', function (Request $request) {
 
@@ -385,7 +386,7 @@ Route::middleware(['restore.guest', 'local.network'])->group(function () {
 |--------------------------------------------------------------------------
 */
 
-Route::middleware(['auth'])->group(function () {
+Route::middleware(['auth','session.timeout'])->group(function () {
 
     Route::get('/dashboard', [DashboardController::class, 'index'])
         ->name('dashboard');
@@ -406,6 +407,36 @@ Route::middleware(['auth'])->group(function () {
 | ADMIN + STAFF
 |--------------------------------------------------------------------------
 */
+
+
+
+
+Route::prefix('admin')
+    ->name('admin.')
+    ->middleware(['auth', 'is_admin'])
+    ->group(function () {
+        Route::resource('toppings', ToppingController::class)
+            ->except(['show']);
+
+        Route::patch(
+            'toppings/{topping}/availability',
+            [ToppingController::class, 'toggleAvailability']
+        )->name('toppings.availability');
+    });
+
+
+
+
+Route::post('/cart/{cartItem}/toppings', [
+    CartToppingController::class,
+    'update'
+])->name('cart.toppings.update');
+
+Route::get('/cart/toppings/available', [
+    CartToppingController::class,
+    'available'
+])->name('cart.toppings.available');
+
 
 Route::middleware(['admin.staff'])->group(function () {
 

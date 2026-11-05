@@ -681,3 +681,42 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 @endsection
+
+
+
+///Save toppings to order items
+
+$orderItem = OrderItem::create([
+    'id_order' => $order->id,
+    'id_menu' => $menuId,
+    'jumlah' => $quantity,
+    'harga' => $price,
+]);
+
+//cart item add 
+if (!empty($cartItem['toppings'])) {
+
+    foreach ($cartItem['toppings'] as $topping) {
+
+        \App\Models\OrderItemTopping::create([
+            'id_order_item' => $orderItem->id,
+            'id_topping' => $topping['id_topping'],
+            'id_topping_size' => $topping['id_topping_size'],
+            'quantity' => $topping['quantity'],
+            'unit' => $topping['unit'],
+            'harga' => $topping['harga'],
+        ]);
+
+    }
+}
+Add topping costs to the total
+
+$toppingTotal = 0;
+
+foreach ($cart as $cartItem) {
+    foreach ($cartItem['toppings'] ?? [] as $topping) {
+        $toppingTotal += $topping['harga'];
+    }
+}
+
+$grandTotal += $toppingTotal;

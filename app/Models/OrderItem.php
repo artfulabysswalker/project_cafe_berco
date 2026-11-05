@@ -60,4 +60,12 @@ class OrderItem extends Model
     {
         return max(0, $this->subtotal - $this->total_hpp);
     }
+
+public function toppings()
+{
+    return $this->hasMany(
+        OrderItemTopping::class,
+        'id_order_item'
+    );
+}
 }

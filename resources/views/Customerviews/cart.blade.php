@@ -19,6 +19,167 @@
 </style>
 @endsection
 
+
+//Add the topping button to Cart
+
+<button
+    type="button"
+    class="btn btn-sm btn-outline-warning"
+    onclick="openToppingModal('{{ $key }}', '{{ $item['id_menu'] ?? $item['menu_id'] }}')"
+>
+    <i class="fas fa-plus"></i>
+    Add Topping
+</button>
+
+@if(!empty($item['toppings']))
+    <div class="mt-2">
+        <strong>Selected Toppings:</strong>
+
+        @foreach($item['toppings'] as $topping)
+            <div class="small text-muted">
+                + {{ $topping['nama_topping'] }}
+                ({{ $topping['size'] }} -
+                {{ $topping['quantity'] }} {{ $topping['unit'] }})
+                Rp {{ number_format($topping['harga'], 0, ',', '.') }}
+            </div>
+        @endforeach
+    </div>
+@endif
+
+//Create the topping modal
+<div class="modal fade" id="toppingModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+
+            <div class="modal-header">
+                <h5 class="modal-title">Choose Your Toppings</h5>
+                <button type="button" class="btn-close"
+                    data-bs-dismiss="modal"></button>
+            </div>
+
+            <div class="modal-body">
+                <input type="hidden" id="toppingCartItem">
+                <div id="toppingList">
+                    <p class="text-muted">Loading toppings...</p>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button class="btn btn-secondary"
+                    data-bs-dismiss="modal">
+                    Cancel
+                </button>
+
+                <button class="btn btn-warning"
+                    onclick="saveToppings()">
+                    Save Toppings
+                </button>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+//select one size per topping option
+
+<script>
+let selectedMenuId = null;
+
+function openToppingModal(cartItem, menuId) {
+    document.getElementById('toppingCartItem').value = cartItem;
+    selectedMenuId = menuId;
+
+    const list = document.getElementById('toppingList');
+    list.innerHTML = '<p>Loading toppings...</p>';
+
+    fetch(`{{ route('cart.toppings.available') }}?menu_id=${menuId}`)
+        .then(response => response.json())
+        .then(toppings => {
+            list.innerHTML = '';
+
+            if (!toppings.length) {
+                list.innerHTML = '<p>No toppings available.</p>';
+                return;
+            }
+
+            toppings.forEach(topping => {
+                let sizes = '';
+
+                topping.sizes.forEach(size => {
+                    sizes += `
+                        <label class="border rounded p-2 d-flex
+                            justify-content-between align-items-center mb-2">
+                            <span>
+                                <input type="checkbox"
+                                    class="topping-size"
+                                    value="${size.id}">
+                                ${size.size}
+                                (${size.quantity} ${size.unit})
+                            </span>
+                            <strong>
+                                Rp ${Number(size.harga).toLocaleString('id-ID')}
+                            </strong>
+                        </label>
+                    `;
+                });
+
+                list.innerHTML += `
+                    <div class="border rounded p-3 mb-3">
+                        <h6>${topping.nama_topping}</h6>
+                        ${sizes}
+                    </div>
+                `;
+            });
+
+            new bootstrap.Modal(
+                document.getElementById('toppingModal')
+            ).show();
+        })
+        .catch(() => {
+            list.innerHTML = '<p>Failed to load toppings.</p>';
+        });
+}
+
+function saveToppings() {
+    const cartItem = document.getElementById('toppingCartItem').value;
+
+    const sizeIds = Array.from(
+        document.querySelectorAll('.topping-size:checked')
+    ).map(input => input.value);
+
+    fetch(`/cart/${encodeURIComponent(cartItem)}/toppings`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+            'Accept': 'application/json'
+        },
+        body: JSON.stringify({
+            size_ids: sizeIds
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (!data.success) {
+            alert(data.message || 'Failed to save toppings.');
+            return;
+        }
+
+        location.reload();
+    })
+    .catch(() => alert('Something went wrong.'));
+}
+</script>
+
+
+
+
+
+
+
+
+
+
 @section('content')
 <div class="space-y-8 max-w-6xl mx-auto">
 

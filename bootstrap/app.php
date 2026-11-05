@@ -10,6 +10,7 @@ use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 
+
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
         web: __DIR__.'/../routes/web.php',
@@ -25,10 +26,11 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'customer' => CustomerMiddleware::class,
             'admin.staff' => AdminMiddleware::class,
-            'is_admin' => IsAdmin::class,
+            'is.admin' => IsAdmin::class,
             'guest.mode' => GuestModeMiddleware::class,
             'restore.guest' => RestoreGuestMiddleware::class,
             'local.network' => RestrictToLocalNetwork::class,
+             'session.timeout' => \App\Http\Middleware\SessionTimeout::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

@@ -137,9 +137,7 @@
                                     @endif
                                 </div>
                             </td>
-                            <td class="px-5 py-3.5 text-right">
-                                <span class="text-sm font-bold text-stone-800">Rp {{ number_format($menu->harga, 0, ',', '.') }}</span>
-                            </td>
+                            
                             <td class="px-5 py-3.5 text-center">
                                 @php
                                     $profit = max(0, ($menu->harga ?? 0) - ($menu->hpp ?? 0));

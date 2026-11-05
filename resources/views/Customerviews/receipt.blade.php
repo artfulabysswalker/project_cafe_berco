@@ -369,5 +369,41 @@
             min-width: auto;
         }
     }
+
+
+
+    ///add toping to to recitps
 </style>
 @endsection
+
+
+@foreach ($order->items as $item)
+    <tr>
+        <td>{{ $item->menu->nama_menu }}</td>
+        <td>{{ $item->quantity }}</td>
+        <td>Rp {{ number_format($item->subtotal) }}</td>
+    </tr>
+@endforeach
+
+@foreach ($item->toppings as $topping)
+    <tr>
+        <td colspan="3" style="padding-left: 20px; font-size: 12px;">
+            + {{ $topping->topping->nama_topping ?? 'Topping' }}
+
+            @if ($topping->size)
+                ({{ $topping->size->size }})
+            @endif
+
+            - {{ number_format($topping->quantity, 2) }} {{ $topping->unit }}
+            - Rp {{ number_format($topping->harga) }}
+        </td>
+    </tr>
+@endforeach
+
+$order = Order::with('items')->findOrFail($id);
+
+$order = Order::with([
+    'items.menu',
+    'items.toppings.topping',
+    'items.toppings.size',
+])->findOrFail($id);

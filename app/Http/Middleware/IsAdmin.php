@@ -10,16 +10,20 @@ class IsAdmin
 {
     public function handle(Request $request, Closure $next)
     {
-        if (! Auth::check()) {
-            return redirect('/');
+        // Check whether the user is logged in
+        if (!Auth::check()) {
+            return redirect()->route('staff.login.form');
         }
 
         $user = Auth::user();
 
-        if ($user && $user->role && $user->role->role_name === 'Admin') {
+        // Check Admin role
+        if ($user->role && $user->role->role_name === 'Admin') {
             return $next($request);
         }
 
-        abort(403, 'Hanya Admin yang dapat mengakses resource ini');
+        // Deny access to other roles
+        abort(403, 'Hanya Admin yang dapat mengakses resource ini.');
     }
 }
+

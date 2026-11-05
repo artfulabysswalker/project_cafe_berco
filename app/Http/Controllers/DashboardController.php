@@ -5,104 +5,132 @@ namespace App\Http\Controllers;
 use App\Models\Menu;
 use App\Models\Order;
 use App\Models\OrderItem;
+use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 
 class DashboardController extends Controller
 {
-    /**
-     * Display the Admin Dashboard with Analytics & Metrics
-     */
     public function index()
     {
         $user = auth()->user();
         $isAdmin = $user->isAdmin();
 
-        // 1. Key Metrics (Revenue, Orders, Profit)
-        $completedOrdersQuery = Order::where(function ($q) {
+        $data = array_merge(
+            $this->getKeyMetrics($user, $isAdmin),
+            $this->getSalesTrend($user, $isAdmin),
+            $this->getPaymentBreakdown($user, $isAdmin),
+            $this->getTopProducts($user, $isAdmin),
+            $this->getMenuMonitoring(),
+            $this->getRecentOrders($user, $isAdmin)
+        );
+
+        return view('admin.dashboard', $data);
+    }
+
+    private function getKeyMetrics(User $user, bool $isAdmin): array
+    {
+        $completedQuery = Order::where(function ($q) {
             $q->whereIn('status_pembayaran', ['paid', 'Sudah'])
                 ->orWhere('status_order', 'completed');
         });
 
-        if (! $isAdmin) {
-            $completedOrdersQuery->where('id_user', $user->id_user);
+        if (!$isAdmin) {
+            $completedQuery->where('id_user', $user->id_user);
         }
 
-        $totalRevenue = (float) $completedOrdersQuery->sum('total_harga');
+        $totalRevenue = (float) $completedQuery->sum('total_harga');
 
         $totalOrdersQuery = Order::query();
-        if (! $isAdmin) {
+
+        if (!$isAdmin) {
             $totalOrdersQuery->where('id_user', $user->id_user);
         }
+
         $totalOrders = $totalOrdersQuery->count();
 
-        $completedOrdersCountQuery = Order::where(function ($q) {
+        $completedCountQuery = Order::where(function ($q) {
             $q->whereIn('status_pembayaran', ['paid', 'Sudah'])
                 ->orWhere('status_order', 'completed');
         });
-        if (! $isAdmin) {
-            $completedOrdersCountQuery->where('id_user', $user->id_user);
-        }
-        $completedOrdersCount = $completedOrdersCountQuery->count();
 
-        // Cash Breakdown
-        $cashOrdersQuery = Order::where(function ($q) {
+        if (!$isAdmin) {
+            $completedCountQuery->where('id_user', $user->id_user);
+        }
+
+        $completedOrdersCount = $completedCountQuery->count();
+
+        $cashQuery = Order::where(function ($q) {
             $q->where('payment_method', 'cash')
                 ->orWhereNull('payment_method');
         })->where(function ($q) {
             $q->whereIn('status_pembayaran', ['paid', 'Sudah'])
                 ->orWhere('status_order', 'completed');
         });
-        if (! $isAdmin) {
-            $cashOrdersQuery->where('id_user', $user->id_user);
-        }
-        $cashRevenue = (float) $cashOrdersQuery->sum('total_harga');
-        $cashCount = $cashOrdersQuery->count();
 
-        // QRIS Breakdown
-        $qrisOrdersQuery = Order::where(function ($q) {
-            $q->where('payment_method', 'qris');
-        })->where(function ($q) {
+        if (!$isAdmin) {
+            $cashQuery->where('id_user', $user->id_user);
+        }
+
+        $cashRevenue = (float) $cashQuery->sum('total_harga');
+        $cashCount = $cashQuery->count();
+
+        $qrisQuery = Order::where('payment_method', 'qris')
+            ->where(function ($q) {
+                $q->whereIn('status_pembayaran', ['paid', 'Sudah'])
+                    ->orWhere('status_order', 'completed');
+            });
+
+        if (!$isAdmin) {
+            $qrisQuery->where('id_user', $user->id_user);
+        }
+
+        $qrisRevenue = (float) $qrisQuery->sum('total_harga');
+        $qrisCount = $qrisQuery->count();
+
+        $pendingQuery = Order::where(function ($q) {
+            $q->where('status_pembayaran', 'pending')
+                ->orWhere('status_order', 'pending');
+        });
+
+        if (!$isAdmin) {
+            $pendingQuery->where('id_user', $user->id_user);
+        }
+
+        $pendingOrdersCount = $pendingQuery->count();
+
+        $completedIdsQuery = Order::where(function ($q) {
             $q->whereIn('status_pembayaran', ['paid', 'Sudah'])
                 ->orWhere('status_order', 'completed');
         });
-        if (! $isAdmin) {
-            $qrisOrdersQuery->where('id_user', $user->id_user);
-        }
-        $qrisRevenue = (float) $qrisOrdersQuery->sum('total_harga');
-        $qrisCount = $qrisOrdersQuery->count();
 
-        $pendingOrdersQuery = Order::where('status_pembayaran', 'pending')
-            ->orWhere('status_order', 'pending');
-        if (! $isAdmin) {
-            $pendingOrdersQuery->where('id_user', $user->id_user);
+        if (!$isAdmin) {
+            $completedIdsQuery->where('id_user', $user->id_user);
         }
-        $pendingOrdersCount = $pendingOrdersQuery->count();
 
-        // Estimated Cost of Goods Sold (HPP) & Gross Profit Calculation
-        $completedOrderIdsQuery = Order::where(function ($q) {
-            $q->whereIn('status_pembayaran', ['paid', 'Sudah'])
-                ->orWhere('status_order', 'completed');
-        });
-        if (! $isAdmin) {
-            $completedOrderIdsQuery->where('id_user', $user->id_user);
-        }
-        $completedOrderIds = $completedOrderIdsQuery->pluck('id_order');
+        $completedOrderIds = $completedIdsQuery->pluck('id_order');
 
         $cogsTotal = (float) OrderItem::whereIn('id_order', $completedOrderIds)
             ->join('menus', 'order_items.id_menu', '=', 'menus.id_menu')
-            ->sum(DB::raw('order_items.quantity * CASE 
-                WHEN order_items.hpp_at_sale > 0 THEN order_items.hpp_at_sale 
-                WHEN order_items.hpp > 0 THEN order_items.hpp 
-                ELSE COALESCE(menus.hpp, 0) 
+            ->sum(DB::raw('order_items.quantity * CASE
+                WHEN order_items.hpp_at_sale > 0 THEN order_items.hpp_at_sale
+                WHEN order_items.hpp > 0 THEN order_items.hpp
+                ELSE COALESCE(menus.hpp, 0)
             END'));
 
         $grossProfit = max(0, $totalRevenue - $cogsTotal);
-        $profitMarginPct = $totalRevenue > 0 ? round(($grossProfit / $totalRevenue) * 100, 1) : 0;
-        $operationalExpenses = round($totalRevenue * 0.15); // 15% operational expenses
+
+        $profitMarginPct = $totalRevenue > 0
+            ? round(($grossProfit / $totalRevenue) * 100, 1)
+            : 0;
+
+        $operationalExpenses = round($totalRevenue * 0.15);
         $netProfit = max(0, $grossProfit - $operationalExpenses);
 
-        // Top 5 Most Profitable Menus
+        $averageOrderValue = $totalOrders > 0
+            ? round($totalRevenue / max(1, $completedOrdersCount ?: $totalOrders))
+            : 0;
+
         $topProfitableMenus = DB::table('order_items')
             ->join('menus', 'order_items.id_menu', '=', 'menus.id_menu')
             ->whereIn('order_items.id_order', $completedOrderIds)
@@ -114,67 +142,113 @@ class DashboardController extends Controller
                 'menus.hpp',
                 DB::raw('SUM(order_items.quantity) as total_qty'),
                 DB::raw('SUM(order_items.subtotal) as total_revenue'),
-                DB::raw('SUM(order_items.quantity * CASE 
-                    WHEN order_items.hpp_at_sale > 0 THEN order_items.hpp_at_sale 
-                    WHEN order_items.hpp > 0 THEN order_items.hpp 
-                    ELSE COALESCE(menus.hpp, 0) 
+                DB::raw('SUM(order_items.quantity * CASE
+                    WHEN order_items.hpp_at_sale > 0 THEN order_items.hpp_at_sale
+                    WHEN order_items.hpp > 0 THEN order_items.hpp
+                    ELSE COALESCE(menus.hpp, 0)
                 END) as total_cogs'),
-                DB::raw('SUM(order_items.subtotal - (order_items.quantity * CASE 
-                    WHEN order_items.hpp_at_sale > 0 THEN order_items.hpp_at_sale 
-                    WHEN order_items.hpp > 0 THEN order_items.hpp 
-                    ELSE COALESCE(menus.hpp, 0) 
+                DB::raw('SUM(order_items.subtotal - (order_items.quantity * CASE
+                    WHEN order_items.hpp_at_sale > 0 THEN order_items.hpp_at_sale
+                    WHEN order_items.hpp > 0 THEN order_items.hpp
+                    ELSE COALESCE(menus.hpp, 0)
                 END)) as total_profit')
             )
-            ->groupBy('menus.id_menu', 'menus.nama_menu', 'menus.foto', 'menus.harga', 'menus.hpp')
+            ->groupBy(
+                'menus.id_menu',
+                'menus.nama_menu',
+                'menus.foto',
+                'menus.harga',
+                'menus.hpp'
+            )
             ->orderByDesc('total_profit')
             ->limit(5)
             ->get();
 
-        $averageOrderValue = $totalOrders > 0
-            ? round($totalRevenue / max(1, $completedOrdersCount ?: $totalOrders))
-            : 0;
+        return compact(
+            'totalRevenue',
+            'cashRevenue',
+            'cashCount',
+            'qrisRevenue',
+            'qrisCount',
+            'cogsTotal',
+            'grossProfit',
+            'profitMarginPct',
+            'netProfit',
+            'topProfitableMenus',
+            'totalOrders',
+            'completedOrdersCount',
+            'pendingOrdersCount',
+            'averageOrderValue'
+        );
+    }
 
-        // 2. Sales Trend for Last 7 Days (Chart Data)
+    private function getSalesTrend(User $user, bool $isAdmin): array
+    {
         $sevenDaysDates = collect();
         $sevenDaysRevenue = collect();
         $sevenDaysOrders = collect();
 
         for ($i = 6; $i >= 0; $i--) {
             $date = Carbon::today()->subDays($i);
-            $dayLabel = $date->locale('id')->isoFormat('ddd, D MMM');
-            $sevenDaysDates->push($dayLabel);
 
-            $dayRevenueQuery = Order::whereDate('tanggal', $date->toDateString());
-            $dayOrdersQuery = Order::whereDate('tanggal', $date->toDateString());
+            $sevenDaysDates->push(
+                $date->locale('id')->isoFormat('ddd, D MMM')
+            );
 
-            if (! $isAdmin) {
-                $dayRevenueQuery->where('id_user', $user->id_user);
-                $dayOrdersQuery->where('id_user', $user->id_user);
+            $revenueQuery = Order::whereDate(
+                'tanggal',
+                $date->toDateString()
+            );
+
+            $ordersQuery = Order::whereDate(
+                'tanggal',
+                $date->toDateString()
+            );
+
+            if (!$isAdmin) {
+                $revenueQuery->where('id_user', $user->id_user);
+                $ordersQuery->where('id_user', $user->id_user);
             }
 
-            $dayRevenue = $dayRevenueQuery->sum('total_harga');
-            $dayOrders = $dayOrdersQuery->count();
+            $sevenDaysRevenue->push(
+                (int) $revenueQuery->sum('total_harga')
+            );
 
-            $sevenDaysRevenue->push((int) $dayRevenue);
-            $sevenDaysOrders->push((int) $dayOrders);
+            $sevenDaysOrders->push(
+                (int) $ordersQuery->count()
+            );
         }
 
-        // 3. Payment Method & Service Type Breakdown
-        $paymentMethodsQuery = Order::select('payment_method', DB::raw('count(*) as count'), DB::raw('sum(total_harga) as total'))
-            ->groupBy('payment_method');
+        return compact(
+            'sevenDaysDates',
+            'sevenDaysRevenue',
+            'sevenDaysOrders'
+        );
+    }
 
-        if (! $isAdmin) {
-            $paymentMethodsQuery->where('id_user', $user->id_user);
+    private function getPaymentBreakdown(User $user, bool $isAdmin): array
+    {
+        $paymentQuery = Order::select(
+            'payment_method',
+            DB::raw('COUNT(*) as count'),
+            DB::raw('SUM(total_harga) as total')
+        )->groupBy('payment_method');
+
+        if (!$isAdmin) {
+            $paymentQuery->where('id_user', $user->id_user);
         }
-        $paymentMethods = $paymentMethodsQuery->get();
 
-        $paymentLabels = $paymentMethods->pluck('payment_method')->map(function ($method) {
-            return match (strtolower($method ?? '')) {
-                'cash' => 'Tunai (Cash)',
-                'qris' => 'QRIS',
-                default => ucfirst($method ?: 'Lainnya'),
-            };
-        })->toArray();
+        $paymentMethods = $paymentQuery->get();
+
+        $paymentLabels = $paymentMethods->pluck('payment_method')
+            ->map(function ($method) {
+                return match (strtolower($method ?? '')) {
+                    'cash' => 'Tunai (Cash)',
+                    'qris' => 'QRIS',
+                    default => ucfirst($method ?: 'Lainnya'),
+                };
+            })
+            ->toArray();
 
         $paymentCounts = $paymentMethods->pluck('count')->toArray();
 
@@ -183,14 +257,26 @@ class DashboardController extends Controller
             $paymentCounts = [1, 0];
         }
 
-        $serviceTypesQuery = Order::select('service_type', DB::raw('count(*) as count'))
-            ->groupBy('service_type');
-        if (! $isAdmin) {
-            $serviceTypesQuery->where('id_user', $user->id_user);
-        }
-        $serviceTypes = $serviceTypesQuery->get();
+        $serviceQuery = Order::select(
+            'service_type',
+            DB::raw('COUNT(*) as count')
+        )->groupBy('service_type');
 
-        // 4. Top Selling Products (Top 5)
+        if (!$isAdmin) {
+            $serviceQuery->where('id_user', $user->id_user);
+        }
+
+        $serviceTypes = $serviceQuery->get();
+
+        return compact(
+            'paymentLabels',
+            'paymentCounts',
+            'serviceTypes'
+        );
+    }
+
+    private function getTopProducts(User $user, bool $isAdmin): array
+    {
         $topSoldQuery = DB::table('order_items')
             ->join('menus', 'order_items.id_menu', '=', 'menus.id_menu')
             ->join('orders', 'order_items.id_order', '=', 'orders.id_order')
@@ -202,13 +288,19 @@ class DashboardController extends Controller
                 DB::raw('SUM(order_items.quantity) as total_sold'),
                 DB::raw('SUM(order_items.subtotal) as total_revenue')
             )
-            ->groupBy('menus.id_menu', 'menus.nama_menu', 'menus.harga', 'menus.foto')
+            ->groupBy(
+                'menus.id_menu',
+                'menus.nama_menu',
+                'menus.harga',
+                'menus.foto'
+            )
             ->orderByDesc('total_sold')
             ->limit(5);
 
-        if (! $isAdmin) {
+        if (!$isAdmin) {
             $topSoldQuery->where('orders.id_user', $user->id_user);
         }
+
         $topSold = $topSoldQuery->get();
 
         $existingIds = $topSold->pluck('id_menu')->toArray();
@@ -234,46 +326,38 @@ class DashboardController extends Controller
             $topProducts = $topSold;
         }
 
-        // 5. Stock & Menu Monitoring
+        return compact('topProducts');
+    }
+
+    private function getMenuMonitoring(): array
+    {
         $totalMenus = Menu::count();
-        $availableMenus = Menu::where('status_tersedia', 1)->count();
-        $outOfStockMenus = Menu::where('status_tersedia', 0)->get();
 
-        // 6. Recent 5 Orders
-        $recentOrdersQuery = Order::with('user')
-            ->latest('tanggal')
-            ->limit(5);
-        if (! $isAdmin) {
-            $recentOrdersQuery->where('id_user', $user->id_user);
-        }
-        $recentOrders = $recentOrdersQuery->get();
+        $availableMenus = Menu::where('status_tersedia', 1)
+            ->count();
 
-        return view('admin.dashboard', compact(
-            'totalRevenue',
-            'cashRevenue',
-            'cashCount',
-            'qrisRevenue',
-            'qrisCount',
-            'cogsTotal',
-            'grossProfit',
-            'profitMarginPct',
-            'netProfit',
-            'topProfitableMenus',
-            'totalOrders',
-            'completedOrdersCount',
-            'pendingOrdersCount',
-            'averageOrderValue',
-            'sevenDaysDates',
-            'sevenDaysRevenue',
-            'sevenDaysOrders',
-            'paymentLabels',
-            'paymentCounts',
-            'serviceTypes',
-            'topProducts',
+        $outOfStockMenus = Menu::where('status_tersedia', 0)
+            ->get();
+
+        return compact(
             'totalMenus',
             'availableMenus',
-            'outOfStockMenus',
-            'recentOrders'
-        ));
+            'outOfStockMenus'
+        );
+    }
+
+    private function getRecentOrders(User $user, bool $isAdmin): array
+    {
+        $recentQuery = Order::with('user')
+            ->latest('tanggal')
+            ->limit(5);
+
+        if (!$isAdmin) {
+            $recentQuery->where('id_user', $user->id_user);
+        }
+
+        $recentOrders = $recentQuery->get();
+
+        return compact('recentOrders');
     }
 }
