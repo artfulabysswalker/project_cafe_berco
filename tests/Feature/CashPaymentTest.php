@@ -1,7 +1,6 @@
 <?php
 
 use App\Models\Order;
-use App\Models\QrisTransaction;
 use App\Models\Role;
 use App\Models\User;
 
@@ -142,50 +141,34 @@ test('the cashier orders page renders the cash confirmation modal', function () 
         ->assertSee('name="uang_diterima"', false);
 });
 
-test('a qris callback with a mismatched amount does not settle the order', function () {
+test('a midtrans notification with a mismatched amount does not settle the order', function () {
     $order = cashPaymentOrder(['payment_method' => 'qris', 'total_harga' => 25000]);
+    $log = qrisPaymentLogFor($order);
 
-    QrisTransaction::create([
-        'id_order' => $order->id_order,
-        'qris_code' => 'QRIS-'.uniqid(),
-        'transaction_id' => 'txn-'.uniqid(),
-        'amount' => 25000,
-        'status' => 'pending',
-    ]);
-
-    $this->postJson(route('xendit.qris.callback'), [
-        'external_id' => 'QRIS-ORDER-'.$order->id_order.'-'.time(),
-        'status' => 'PAID',
-        'amount' => 10000,
-        'id' => 'xendit-txn-mismatch',
-    ])->assertOk();
+    $this->postJson(route('midtrans.webhook'), midtransNotificationFor($log, [
+        'gross_amount' => '10000.00',
+    ]))->assertStatus(400);
 
     $order->refresh();
     expect($order->isPaid())->toBeFalse()
         ->and($order->status_order)->toBe('pending')
-        ->and($order->status_pembayaran)->toBe('pending');
+        ->and($order->status_pembayaran)->toBe('pending')
+        ->and($order->payment_status)->toBeNull()
+        ->and($log->refresh()->paid_at)->toBeNull();
 });
 
-test('a qris callback with the verified amount settles the order and pushes it to the kitchen', function () {
+test('a verified midtrans settlement pushes the order to the kitchen', function () {
     $order = cashPaymentOrder(['payment_method' => 'qris', 'total_harga' => 25000]);
+    $log = qrisPaymentLogFor($order);
 
-    QrisTransaction::create([
-        'id_order' => $order->id_order,
-        'qris_code' => 'QRIS-'.uniqid(),
-        'transaction_id' => 'txn-'.uniqid(),
-        'amount' => 25000,
-        'status' => 'pending',
-    ]);
-
-    $this->postJson(route('xendit.qris.callback'), [
-        'external_id' => 'QRIS-ORDER-'.$order->id_order.'-'.time(),
-        'status' => 'PAID',
-        'amount' => 25000,
-        'id' => 'xendit-txn-ok',
-    ])->assertOk();
+    $this->postJson(route('midtrans.webhook'), midtransNotificationFor($log))
+        ->assertOk()
+        ->assertJson(['status' => 'OK']);
 
     $order->refresh();
     expect($order->isPaid())->toBeTrue()
         ->and($order->status_order)->toBe('processing')
-        ->and($order->paid_at)->not->toBeNull();
+        ->and($order->payment_status)->toBe('paid')
+        ->and($order->paid_at)->not->toBeNull()
+        ->and($log->refresh()->paid_at)->not->toBeNull();
 });

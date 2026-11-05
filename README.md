@@ -70,6 +70,7 @@ php artisan migrate:fresh --seed
 | **Styling** | Vanilla CSS, Tailwind CSS |
 | **Build Tool** | Vite |
 | **Database** | MySQL / SQLite |
+| **Payment Gateway** | Midtrans Core API (QRIS, Sandbox) |
 | **Storage** | Laravel Storage (Public Disk) |
 | **Authentication** | Laravel Fortify / Custom Role Auth |
 | **Testing** | Pest / PHPUnit |
@@ -134,6 +135,123 @@ php artisan migrate:fresh --seed
      php artisan serve
      ```
    - Buka browser pada alamat: [`http://127.0.0.1:8000`](http://127.0.0.1:8000)
+
+---
+
+## 💳 Integrasi Pembayaran QRIS (Midtrans Sandbox)
+
+Aplikasi terhubung ke **Midtrans Core API** untuk pembayaran QRIS. Pelanggan checkout metode `qris` → dibuatkan QR dinamis → setelah pelanggan bayar, Midtrans mengirim notifikasi ke webhook (`POST /webhooks/midtrans`) yang otomatis menandai order **LUNAS** dan menampilkannya sebagai **Log Transfer QRIS** di dashboard kasir.
+
+### Konfigurasi Environment
+
+Tambahkan variabel berikut di `.env`:
+
+```env
+MIDTRANS_SERVER_KEY=SB-xxxxxxxxxxxxxxxx
+MIDTRANS_CLIENT_KEY=SB-xxxxxxxxxxxxxxxx
+MIDTRANS_IS_PRODUCTION=false
+MIDTRANS_QRIS_ACQUIRER=gopay
+```
+
+- **Server Key** & **Client Key** diambil dari [dashboard Midtrans Sandbox](https://dashboard.sandbox.midtrans.com/settings/account_info) (awalan `SB-` = sandbox).
+- `MIDTRANS_QRIS_ACQUIRER` adalah acquirer cadangan jika QRIS utama gagal dibuat.
+- Untuk menghubungkan webhook, daftarkan URL publik (mis. via **ngrok**) di [dashboard Midtrans](https://dashboard.sandbox.midtrans.com/settings/configuration) → *Payment Notification*:
+  ```
+  https://<url-anda>/webhooks/midtrans
+  ```
+
+### Alur Singkat
+
+1. Pelanggan memilih metode `qris` saat checkout.
+2. Backend memanggil **Midtrans Core API** (`POST /charge` QRIS) → menerima `qr_code_url`.
+3. QR ditampilkan pada `/order/{id}/qris` (sisa waktu tampil sebagai countdown).
+4. Midtrans mengirim **notifikasi webhook** (verifikasi **signature SHA512** → aman dari pemalsuan).
+5. Order otomatis ditandai lunas, log tampil di dashboard kasir.
+
+### Menjalankan Webhook Secara Lokal (ngrok)
+
+Midtrans tidak bisa menjangkau `localhost`, jadi webhook perlu URL publik.
+
+```bash
+# terminal 1 — aplikasi
+php artisan serve
+
+# terminal 2 — tunnel publik
+ngrok http 8000
+```
+
+Kemudian daftarkan URL ngrok di dashboard Midtrans Sandbox:
+`Settings → Payment → Notification URL` → `https://<subdomain-ngrok>/webhooks/midtrans`
+
+> Gunakan `php artisan serve --host=0.0.0.0` bila HP pelanggan juga harus mengakses halaman QR.
+
+### Perintah Bantu (artisan)
+
+```bash
+php artisan qris:test              # buat order + charge QRIS uji coba
+php artisan qris:check {order_id}  # cek status pembayaran suatu order
+php artisan qris:debug {order_id}  # telusuri transaksi & QR yang tersimpan
+php artisan qris:test-webhook {order_id}  # simulasikan notifikasi pembayaran
+```
+
+### Pengujian (Postman)
+
+Koleksi siap pakai: [`postman/berco-midtrans-qris.postman_collection.json`](postman/berco-midtrans-qris.postman_collection.json).
+
+Cara pakai:
+1. Impor file `.json` ke Postman.
+2. Set variabel koleksi `BASE_URL`, `SERVER_KEY`, dan `CUSTOMER_TOKEN` (cookie setelah login).
+3. Jalankan request berurutan (Buat Pesanan → Ambil data payment_log → Webhook Settlement).
+4. `signature_key` webhook dihitung otomatis oleh pre-request script.
+
+Skenario yang dicakup: settlement (sukses), idempotency (kirim ulang), signature salah (403), nominal tidak cocok (400), dan expire.
+
+### Pengujian Otomatis
+
+Seluruh skenario (settlement, idempotency, signature salah, nominal tidak cocok, expired, order batal) dicakup oleh tes otomatis:
+
+```bash
+php artisan test --filter=MidtransQrisTest      # webhook & alur QRIS
+php artisan test --filter=CashierPaymentLogTest # log transfer di dashboard kasir
+```
+
+### Troubleshooting
+
+| Gejala | Penyebab & Solusi |
+| --- | --- |
+| Halaman QRIS menampilkan "QRIS gagal dibuat" | `MIDTRANS_SERVER_KEY` kosong/typo. Ambil ulang dari dashboard Sandbox (awalan `SB-`). |
+| QR tidak tampil (gambar rusak) | `qr_code_url` kosong karena respons Midtrans tidak punya action `generate-qr-code`. Cek `php artisan qris:debug {order_id}`. |
+| Webhook tidak pernah sampai | Midtrans hanya bisa memanggil URL publik — pakai ngrok, dan pastikan Notification URL sudah diset di dashboard Sandbox. |
+| Webhook membalas `403 invalid_signature` | `SERVER_KEY` di server tidak sama dengan yang dipakai dashboard, atau `gross_amount` berbeda. Bandingkan `MIDTRANS_SERVER_KEY` dengan yang ada di `.env`. |
+| Webhook membalas `400 amount_mismatch` | Nominal di notifikasi ≠ nominal di `payment_logs`. Order **tidak** ditandai lunas (ini perilaku yang benar). |
+| Order belum lunas padahal sudah dibayar | Buka "Cek Status Pembayaran" di halaman QRIS (menarik status langsung dari API Midtrans), atau jalankan `php artisan qris:check {order_id}`. |
+
+### Fallback bila QRIS Sandbox Gagal
+
+QRIS Core API di sandbox kadang tidak mengembalikan QR (akun sandbox belum aktif, atau
+acquirer bermasalah). Urutan langkah yang bisa dicoba:
+
+1. **Ganti acquirer** di `.env`:
+   ```env
+   MIDTRANS_QRIS_ACQUIRER=airpay shopee
+   ```
+   lalu `php artisan config:clear`.
+2. **Gunakan Midtrans Snap Sandbox** (`payment_type` tidak dipaksa `qris`) untuk mendemokan
+   alur pembayaran, lalu tampilkan halaman Snap di frontend.
+3. **Periksa log** `storage/logs/laravel.log` — pesan error asli dari Midtrans tersimpan di
+   sini (baris `Midtrans QRIS charge gagal`).
+
+> Fallback Snap **tidak** menampilkan QR statis; untuk demo QRIS sungguhan, pastikan akun
+> sandbox Midtrans sudah aktif dan Server Key benar.
+
+### Catatan Keamanan
+
+- **Server Key hanya dipakai di backend.** Jangan pernah mengirim `MIDTRANS_SERVER_KEY` ke
+  Blade/frontend. Client Key (`MIDTRANS_CLIENT_KEY`) aman dipublikasikan.
+- Setiap notifikasi webhook diverifikasi lewat `signature_key`
+  (`SHA512(order_id + status_code + gross_amount + serverKey)`) sebelum status apa pun diubah.
+- Endpoint `POST /webhooks/midtrans` dikecualikan dari CSRF (permintaan berasal dari server
+  Midtrans, bukan browser) — verifikasi signature adalah penjaganya.
 
 ---
 

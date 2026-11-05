@@ -23,6 +23,13 @@ return Application::configure(basePath: dirname(__DIR__))
             RestoreGuestMiddleware::class,
         ]);
 
+        // Webhook Midtrans dipanggil dari server Midtrans (bukan browser),
+        // jadi tidak membawa token CSRF. Keamanan dijamin verifikasi
+        // signature_key SHA512 di dalam controller.
+        $middleware->validateCsrfTokens(except: [
+            'webhooks/midtrans',
+        ]);
+
         $middleware->alias([
             'customer' => CustomerMiddleware::class,
             'admin.staff' => AdminMiddleware::class,

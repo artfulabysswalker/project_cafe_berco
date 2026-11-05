@@ -1,0 +1,326 @@
+{
+  "info": {
+    "name": "Berco Cafe - Midtrans QRIS (Sandbox)",
+    "description": "Alur uji pembayaran QRIS via Midtrans Core API: membuat pesanan, memunculkan QR, menyimulasikan webhook (settlement / expire), serta menguji idempotency, signature salah, dan nominal tidak cocok.\n\nLangkah singkat:\n1. Set variabel koleksi BASE_URL, SERVER_KEY, dan CUSTOMER_TOKEN.\n2. Jalankan urutan request dari atas ke bawah.\n3. Untuk request webhook, signature_key dihitung otomatis oleh pre-request script memakai SERVER_KEY.\n\nCatatan: pre-request script memakai pm.require('npm:crypto-js@4.1.1') agar bekerja di Postman Cloud Agent maupun Postman App.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "BASE_URL", "value": "http://localhost:8000" },
+    { "key": "SERVER_KEY", "value": "SB-xxxxxxxxxxxxxxxx" },
+    { "key": "CUSTOMER_TOKEN", "value": "" },
+    { "key": "ORDER_ID", "value": "" },
+    { "key": "MIDTRANS_ORDER_ID", "value": "" },
+    { "key": "TRANSACTION_ID", "value": "" },
+    { "key": "GROSS_AMOUNT", "value": "50000" },
+    { "key": "GROSS_AMOUNT_STRING", "value": "50000.00" },
+    { "key": "TRANSACTION_STATUS", "value": "settlement" },
+    { "key": "STATUS_CODE", "value": "200" },
+    { "key": "FRAUD_STATUS", "value": "accept" },
+    { "key": "EXPECTED_RESULT", "value": "200 OK, order menjadi paid" }
+  ],
+  "item": [
+    {
+      "name": "1. Login Pelanggan",
+      "request": {
+        "auth": { "type": "none" },
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Accept", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"customer@bercocafe.test\",\n  \"password\": \"password\"\n}"
+        },
+        "url": {
+          "raw": "{{BASE_URL}}/login",
+          "host": ["{{BASE_URL}}"],
+          "path": ["login"]
+        },
+        "description": "Login untuk memperoleh sesi pelanggan. Salin cookie hasil login ke variabel CUSTOMER_TOKEN, atau gunakan request berikutnya dengan bantuan Postman (auto-follow cookie jar)."
+      }
+    },
+    {
+      "name": "2. Buat Pesanan (payment_method = qris)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const body = pm.response.json();",
+              "if (body.order_id) pm.collectionVariables.set('ORDER_ID', String(body.order_id));",
+              "pm.test('Order dibuat', function () { pm.expect(body.order_id).to.be.a('number'); });",
+              "pm.test('Redirect ke halaman QRIS', function () { pm.expect(body.redirect).to.include('/qris'); });"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Accept", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"service_type\": \"dine_in\",\n  \"payment_method\": \"qris\",\n  \"customer_name\": \"Pelanggan Postman\",\n  \"customer_phone\": \"081234567890\"\n}"
+        },
+        "url": {
+          "raw": "{{BASE_URL}}/order",
+          "host": ["{{BASE_URL}}"],
+          "path": ["order"]
+        },
+        "description": "Keranjang harus sudah terisi (POST /cart/add terlebih dahulu). Respons berisi redirect ke /order/{id}/qris dan order_id yang disimpan otomatis."
+      }
+    },
+    {
+      "name": "3. Ambil Data payment_log (via artisan tinker)",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Accept", "value": "application/json" }],
+        "url": {
+          "raw": "{{BASE_URL}}/order/{{ORDER_ID}}/qris",
+          "host": ["{{BASE_URL}}"],
+          "path": ["order", "{{ORDER_ID}}", "qris"]
+        },
+        "description": "Membuka halaman QRIS membuat satu baris di tabel payment_logs. Karena midtrans_order_id dan qr_code_url hanya tersimpan di database (bukan di respons HTML), ambil nilainya lewat tinker:\n\nphp artisan tinker\n>>> $log = App\\Models\\PaymentLog::latest('id')->first();\n>>> $log->midtrans_order_id\n>>> $log->qr_code_url\n>>> $log->gross_amount\n\nLalu isi variabel MIDTRANS_ORDER_ID, TRANSACTION_ID, GROSS_AMOUNT, dan GROSS_AMOUNT_STRING (format 50000.00). Buka qr_code_url di browser untuk memastikan gambar QR tampil."
+      }
+    },
+    {
+      "name": "4. Webhook Settlement (Sukses)",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "// Hitung signature_key = SHA512(order_id + status_code + gross_amount + serverKey)",
+              "// sesuai formula resmi Midtrans, sehingga tidak perlu dihitung manual.",
+              "const cryptoJs = (() => {",
+              "    if (typeof CryptoJS !== 'undefined') return CryptoJS;",
+              "    try { const m = pm.require('npm:crypto-js@4.1.1'); return m.CryptoJS || m; } catch (e) {}",
+              "    try { return require('crypto-js'); } catch (e) {}",
+              "    throw new Error('crypto-js tidak tersedia. Jalankan: pm.require(\"npm:crypto-js@4.1.1\")');",
+              "})();",
+              "",
+              "const orderId = pm.collectionVariables.get('MIDTRANS_ORDER_ID') || 'ORDER-0-20261021120000';",
+              "const statusCode = pm.collectionVariables.get('STATUS_CODE') || '200';",
+              "const grossAmount = pm.collectionVariables.get('GROSS_AMOUNT_STRING') || '50000.00';",
+              "const serverKey = pm.collectionVariables.get('SERVER_KEY') || '';",
+              "",
+              "const signature = cryptoJs.SHA512(orderId + statusCode + grossAmount + serverKey).toString();",
+              "pm.collectionVariables.set('SIGNATURE_KEY', signature);"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Webhook diterima (200 OK)', function () { pm.response.to.have.status(200); });",
+              "pm.test('Status payload OK', function () { pm.expect(pm.response.json().status).to.eql('OK'); });"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Accept", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"transaction_time\": \"2026-10-21 12:00:00\",\n  \"transaction_status\": \"settlement\",\n  \"transaction_id\": \"{{TRANSACTION_ID}}\",\n  \"status_message\": \"midtrans payment notification\",\n  \"status_code\": \"{{STATUS_CODE}}\",\n  \"signature_key\": \"{{SIGNATURE_KEY}}\",\n  \"payment_type\": \"qris\",\n  \"order_id\": \"{{MIDTRANS_ORDER_ID}}\",\n  \"merchant_id\": \"M000001\",\n  \"gross_amount\": \"{{GROSS_AMOUNT_STRING}}\",\n  \"fraud_status\": \"{{FRAUD_STATUS}}\",\n  \"currency\": \"IDR\"\n}"
+        },
+        "url": {
+          "raw": "{{BASE_URL}}/webhooks/midtrans",
+          "host": ["{{BASE_URL}}"],
+          "path": ["webhooks", "midtrans"]
+        },
+        "description": "Meniru notifikasi Midtrans. signature_key dibuat otomatis oleh pre-request script. Setelah sukses: order.status_pembayaran = paid, order.payment_status = paid, order.status_order = processing, dan kasir melihat baris baru di Log Transfer QRIS."
+      }
+    },
+    {
+      "name": "5. Idempotency (kirim ulang notifikasi sama)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Notifikasi ulang tetap 200 OK', function () { pm.response.to.have.status(200); });",
+              "pm.test('Tidak diproses ulang', function () { pm.expect(pm.response.json().status).to.eql('OK'); });"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Accept", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"transaction_time\": \"2026-10-21 12:00:05\",\n  \"transaction_status\": \"settlement\",\n  \"transaction_id\": \"{{TRANSACTION_ID}}\",\n  \"status_message\": \"midtrans payment notification\",\n  \"status_code\": \"{{STATUS_CODE}}\",\n  \"signature_key\": \"{{SIGNATURE_KEY}}\",\n  \"payment_type\": \"qris\",\n  \"order_id\": \"{{MIDTRANS_ORDER_ID}}\",\n  \"merchant_id\": \"M000001\",\n  \"gross_amount\": \"{{GROSS_AMOUNT_STRING}}\",\n  \"fraud_status\": \"{{FRAUD_STATUS}}\",\n  \"currency\": \"IDR\"\n}"
+        },
+        "url": {
+          "raw": "{{BASE_URL}}/webhooks/midtrans",
+          "host": ["{{BASE_URL}}"],
+          "path": ["webhooks", "midtrans"]
+        },
+        "description": "Jalankan langsung setelah request 4. Karena payment_log sudah memiliki paid_at, backend membalas 200 OK tanpa memproses ulang (tidak ada duplikasi, paid_at tidak berubah)."
+      }
+    },
+    {
+      "name": "6. Signature Salah (expect 403)",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "// Sengaja memakai signature palsu untuk menguji penolakan.",
+              "pm.collectionVariables.set('SIGNATURE_KEY', 'a'.repeat(128));"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Signature ditolak (403)', function () { pm.response.to.have.status(403); });",
+              "pm.test('Status invalid_signature', function () { pm.expect(pm.response.json().status).to.eql('invalid_signature'); });"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Accept", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"transaction_status\": \"settlement\",\n  \"transaction_id\": \"{{TRANSACTION_ID}}\",\n  \"status_code\": \"{{STATUS_CODE}}\",\n  \"signature_key\": \"{{SIGNATURE_KEY}}\",\n  \"payment_type\": \"qris\",\n  \"order_id\": \"{{MIDTRANS_ORDER_ID}}\",\n  \"gross_amount\": \"{{GROSS_AMOUNT_STRING}}\",\n  \"fraud_status\": \"accept\",\n  \"currency\": \"IDR\"\n}"
+        },
+        "url": {
+          "raw": "{{BASE_URL}}/webhooks/midtrans",
+          "host": ["{{BASE_URL}}"],
+          "path": ["webhooks", "midtrans"]
+        },
+        "description": "Pakai pesanan yang masih pending agar hasilnya terlihat jelas. Backend memverifikasi SHA512 dan menolak dengan 403 bila signature tidak cocok."
+      }
+    },
+    {
+      "name": "7. Nominal Tidak Cocok (expect 400)",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const cryptoJs = (() => {",
+              "    if (typeof CryptoJS !== 'undefined') return CryptoJS;",
+              "    try { const m = pm.require('npm:crypto-js@4.1.1'); return m.CryptoJS || m; } catch (e) {}",
+              "    try { return require('crypto-js'); } catch (e) {}",
+              "    throw new Error('crypto-js tidak tersedia. Jalankan: pm.require(\"npm:crypto-js@4.1.1\")');",
+              "})();",
+              "",
+              "const orderId = pm.collectionVariables.get('MIDTRANS_ORDER_ID');",
+              "const statusCode = '200';",
+              "const wrongAmount = '1.00';",
+              "const serverKey = pm.collectionVariables.get('SERVER_KEY') || '';",
+              "const signature = cryptoJs.SHA512(orderId + statusCode + wrongAmount + serverKey).toString();",
+              "pm.collectionVariables.set('SIGNATURE_KEY', signature);"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Nominal ditolak (400)', function () { pm.response.to.have.status(400); });",
+              "pm.test('Status amount_mismatch', function () { pm.expect(pm.response.json().status).to.eql('amount_mismatch'); });"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Accept", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"transaction_status\": \"settlement\",\n  \"transaction_id\": \"{{TRANSACTION_ID}}\",\n  \"status_code\": \"200\",\n  \"signature_key\": \"{{SIGNATURE_KEY}}\",\n  \"payment_type\": \"qris\",\n  \"order_id\": \"{{MIDTRANS_ORDER_ID}}\",\n  \"gross_amount\": \"1.00\",\n  \"fraud_status\": \"accept\",\n  \"currency\": \"IDR\"\n}"
+        },
+        "url": {
+          "raw": "{{BASE_URL}}/webhooks/midtrans",
+          "host": ["{{BASE_URL}}"],
+          "path": ["webhooks", "midtrans"]
+        },
+        "description": "Signature valid untuk nominal 1.00, tetapi tidak cocok dengan gross_amount di payment_logs sehingga order tidak boleh berubah menjadi lunas."
+      }
+    },
+    {
+      "name": "8. Webhook Expired",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const cryptoJs = (() => {",
+              "    if (typeof CryptoJS !== 'undefined') return CryptoJS;",
+              "    try { const m = pm.require('npm:crypto-js@4.1.1'); return m.CryptoJS || m; } catch (e) {}",
+              "    try { return require('crypto-js'); } catch (e) {}",
+              "    throw new Error('crypto-js tidak tersedia. Jalankan: pm.require(\"npm:crypto-js@4.1.1\")');",
+              "})();",
+              "",
+              "const orderId = pm.collectionVariables.get('MIDTRANS_ORDER_ID');",
+              "const statusCode = '200';",
+              "const grossAmount = pm.collectionVariables.get('GROSS_AMOUNT_STRING') || '50000.00';",
+              "const serverKey = pm.collectionVariables.get('SERVER_KEY') || '';",
+              "const signature = cryptoJs.SHA512(orderId + statusCode + grossAmount + serverKey).toString();",
+              "pm.collectionVariables.set('SIGNATURE_KEY', signature);"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Notifikasi expired diterima (200)', function () { pm.response.to.have.status(200); });"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Accept", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"transaction_time\": \"2026-10-21 12:20:00\",\n  \"transaction_status\": \"expire\",\n  \"transaction_id\": \"{{TRANSACTION_ID}}\",\n  \"status_message\": \"Midtrans payment is expired\",\n  \"status_code\": \"{{STATUS_CODE}}\",\n  \"signature_key\": \"{{SIGNATURE_KEY}}\",\n  \"payment_type\": \"qris\",\n  \"order_id\": \"{{MIDTRANS_ORDER_ID}}\",\n  \"merchant_id\": \"M000001\",\n  \"gross_amount\": \"{{GROSS_AMOUNT_STRING}}\",\n  \"currency\": \"IDR\"\n}"
+        },
+        "url": {
+          "raw": "{{BASE_URL}}/webhooks/midtrans",
+          "host": ["{{BASE_URL}}"],
+          "path": ["webhooks", "midtrans"]
+        },
+        "description": "Jalankan pada pesanan yang masih pending. payment_log menjadi expire dan order.payment_status menjadi expired, tetapi order.status_order tetap pending (tidak lunas)."
+      }
+    }
+  ]
+}

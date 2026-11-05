@@ -19,7 +19,7 @@ class ReviewController extends Controller
         Review::updateOrCreate(
             [
                 'user_id' => Auth::id(),
-                'menu_id' => $menu->id,
+                'menu_id' => $menu->id_menu ?? $menu->id,
             ],
             [
                 'rating' => $request->rating,
