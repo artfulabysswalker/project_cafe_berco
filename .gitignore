@@ -37,3 +37,5 @@ Thumbs.db
 
 # Testing
 /phpunit.result.cache
+
+.history
